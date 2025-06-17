@@ -22,3 +22,28 @@ git branch -M main
 git push -uf origin main
 ```
 
+## ⚡ Getting Started (Local)
+
+1️⃣ **Clone the repository**
+
+```bash
+git clone https://git.aapnainfotech.com/Shivam-Ks/ea-aura-ai-platform.git
+cd ea-aura-ai-platform
+
+```
+# Run the App
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## ⚡ Getting Started (Docker)
+
+
+# Run the script
+
+```bash
+./start.ps1
+
+```
+
