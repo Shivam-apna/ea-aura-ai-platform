@@ -38,9 +38,14 @@ services:
       - esdata:/usr/share/elasticsearch/data
     networks:
       - ea-aura
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    image: tiangolo/uvicorn-gunicorn-fastapi:python3.9
+    build: ./backend
     container_name: backend
     volumes:
       - ./backend:/app
@@ -49,6 +54,9 @@ services:
       - "8081"
     networks:
       - ea-aura
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   esdata:
