@@ -1,6 +1,6 @@
 fastapi==0.115.2
-uvicorn==0.32.0
+uvicorn[standard]
 hvac==2.3.0
 pyautogen==0.9.0
-elasticsearch==7.17.0
+elasticsearch>=8.8.0,<9.0.0
 pydantic==2.7.1
