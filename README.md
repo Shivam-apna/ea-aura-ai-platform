@@ -27,7 +27,7 @@ git push -uf origin main
 1️⃣ **Clone the repository**
 
 ```bash
-git clone https://git.aapnainfotech.com/Shivam-Ks/ea-aura-ai-platform.git
+git clone https://github.com/Shivam-apna/ea-aura-ai-platform/tree/main
 cd ea-aura-ai-platform
 
 ```

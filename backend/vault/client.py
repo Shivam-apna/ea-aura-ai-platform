@@ -1,5 +1,9 @@
 import os
 import hvac
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
 
 def get_vault_secret(secret_path: str, key: str) -> str:
     """
@@ -12,6 +16,12 @@ def get_vault_secret(secret_path: str, key: str) -> str:
     Returns:
         The secret value as a string
     """
+
+    #For local
+    # vault_addr = os.getenv("VAULT_ADDR", "http://127.0.0.1:8200")
+    # vault_token = os.getenv("VAULT_TOKEN", "for local")
+
+    #For Docker
     vault_addr = os.getenv("VAULT_ADDR", "http://vault:8200")
     vault_token = os.getenv("VAULT_TOKEN")
 

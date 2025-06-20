@@ -52,6 +52,9 @@ services:
     working_dir: /app
     expose:
       - "8081"
+    environment:
+      VAULT_TOKEN: demo         # ✅ Add this line to provide the Vault token
+      VAULT_ADDR: http://vault:8200  # Optional: ensure VAULT_ADDR points to the Vault service
     networks:
       - ea-aura
     depends_on:
