@@ -1,19 +1,25 @@
 from fastapi import FastAPI
-from app.dao import job_index
-from app.api.v1.routes import health, agent_job, sub_agent_chain
+from app.dao.job_index import index_job
+from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, test_agent_run
+from app.core.index_manager import IndexManager
+from app.core.elastic import get_es_client
+
 app = FastAPI()
 
-# API v1 routes
+# ✅ Include all API routers
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(agent_job.router, prefix="/api/v1")
 app.include_router(sub_agent_chain.router, prefix="/api/v1")
+app.include_router(agent_memory.router, prefix="/api/v1")
+app.include_router(test_agent_run.router, tags=["Debug"])
 
+# ✅ One startup event for both ES + Index init
 @app.on_event("startup")
 async def startup_event():
-    job_index.create_index_if_not_exists()
+    get_es_client()
+    IndexManager.create_indices()
 
-
+# ✅ Root endpoint
 @app.get("/")
 async def root():
     return {"message": "EA AURA AI Platform"}
-
