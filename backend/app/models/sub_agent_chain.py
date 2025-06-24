@@ -9,6 +9,7 @@ class SubAgent(BaseModel):
     name: str
     prompt: Optional[str] = None
     created_at: datetime  # individual subagent creation time
+    parent_agent: Optional[str] = None 
 
 class SubAgentChain(BaseModel):
     id: Optional[str]
