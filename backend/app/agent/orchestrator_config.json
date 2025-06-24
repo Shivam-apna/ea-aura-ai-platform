@@ -1,0 +1,478 @@
+{
+    "orchestrator": {
+        "model": "gemma2-9b-it",
+        "temperature": 0.3,
+        "max_tokens": 2000,
+        "system_message": "You are the Central Orchestrator Agent - the conductor that coordinates all other agents in the AI platform ecosystem. Your role is to manage agent workflows, maintain shared context, and ensure mission alignment.",
+        "configuration": {
+            "triggers": {
+                "timer_based": [
+                    {
+                        "name": "nightly_analysis",
+                        "schedule": "0 2 * * *",
+                        "description": "Daily comprehensive analysis run",
+                        "enabled": true,
+                        "agents_to_trigger": [
+                            "vitality_agent",
+                            "customer_analyzer",
+                            "brand_index",
+                            "mission_alignment"
+                        ]
+                    },
+                    {
+                        "name": "hourly_monitoring",
+                        "schedule": "0 * * * *",
+                        "description": "Hourly metric monitoring",
+                        "enabled": true,
+                        "agents_to_trigger": [
+                            "vitality_agent",
+                            "customer_analyzer"
+                        ]
+                    },
+                    {
+                        "name": "weekly_deep_dive",
+                        "schedule": "0 8 * * 1",
+                        "description": "Weekly comprehensive review",
+                        "enabled": true,
+                        "agents_to_trigger": [
+                            "vitality_agent",
+                            "customer_analyzer",
+                            "brand_index",
+                            "mission_alignment",
+                            "competitive_analyzer"
+                        ]
+                    }
+                ],
+                "event_based": [
+                    {
+                        "name": "new_sales_data",
+                        "event_type": "file_upload",
+                        "file_patterns": [
+                            "sales_*.csv",
+                            "revenue_*.xlsx"
+                        ],
+                        "description": "New sales data arrived",
+                        "agents_to_trigger": [
+                            "customer_analyzer",
+                            "vitality_agent"
+                        ],
+                        "priority": "high"
+                    },
+                    {
+                        "name": "customer_feedback",
+                        "event_type": "data_update",
+                        "source": "feedback_system",
+                        "description": "New customer feedback received",
+                        "agents_to_trigger": [
+                            "customer_analyzer",
+                            "brand_index"
+                        ],
+                        "priority": "medium"
+                    },
+                    {
+                        "name": "system_alert",
+                        "event_type": "threshold_breach",
+                        "description": "Critical metric threshold breached",
+                        "agents_to_trigger": [
+                            "vitality_agent",
+                            "mission_alignment"
+                        ],
+                        "priority": "urgent"
+                    }
+                ],
+                "user_requests": [
+                    {
+                        "name": "dashboard_analysis",
+                        "request_type": "manual_trigger",
+                        "description": "User-initiated analysis from dashboard",
+                        "default_agents": [
+                            "customer_analyzer",
+                            "vitality_agent"
+                        ],
+                        "allow_custom_agents": true
+                    },
+                    {
+                        "name": "custom_report",
+                        "request_type": "report_generation",
+                        "description": "Custom report requested by user",
+                        "agents_to_trigger": [
+                            "customer_analyzer",
+                            "brand_index",
+                            "vitality_agent"
+                        ],
+                        "parameters_required": [
+                            "timeframe",
+                            "metrics",
+                            "segments"
+                        ]
+                    }
+                ]
+            },
+            "shared_context": {
+                "storage_config": {
+                    "type": "in_memory",
+                    "backup_enabled": true,
+                    "retention_days": 30
+                },
+                "context_types": {
+                    "metrics": {
+                        "retention_rate": {
+                            "current_value": null,
+                            "previous_value": null,
+                            "trend": null,
+                            "last_updated": null
+                        },
+                        "churn_rate": {
+                            "current_value": null,
+                            "previous_value": null,
+                            "trend": null,
+                            "last_updated": null
+                        },
+                        "customer_satisfaction": {
+                            "current_value": null,
+                            "previous_value": null,
+                            "trend": null,
+                            "last_updated": null
+                        },
+                        "revenue_per_customer": {
+                            "current_value": null,
+                            "previous_value": null,
+                            "trend": null,
+                            "last_updated": null
+                        }
+                    },
+                    "recommendations": {
+                        "recent_recommendations": [],
+                        "implemented_recommendations": [],
+                        "pending_recommendations": [],
+                        "recommendation_history": []
+                    },
+                    "timeframes": {
+                        "current_analysis_period": {
+                            "start_date": null,
+                            "end_date": null,
+                            "period_type": "monthly"
+                        },
+                        "comparison_period": {
+                            "start_date": null,
+                            "end_date": null,
+                            "period_type": "monthly"
+                        }
+                    },
+                    "data_sources": {
+                        "last_data_sync": null,
+                        "active_data_sources": [
+                            "sales_database",
+                            "customer_feedback",
+                            "usage_analytics",
+                            "support_tickets"
+                        ],
+                        "data_quality_scores": {}
+                    }
+                }
+            },
+            "agent_coordination": {
+                "available_agents": {
+                    "vitality_agent": {
+                        "name": "Vitality Agent",
+                        "description": "Monitors customer health and engagement metrics",
+                        "capabilities": [
+                            "customer_health_scoring",
+                            "engagement_analysis",
+                            "churn_prediction"
+                        ],
+                        "required_data": [
+                            "customer_usage",
+                            "engagement_metrics",
+                            "subscription_data"
+                        ],
+                        "output_format": "vitality_report",
+                        "execution_time_estimate": "5-10 minutes",
+                        "dependencies": [],
+                        "priority": "high"
+                    },
+                    "customer_analyzer": {
+                        "name": "Customer Analyzer",
+                        "description": "Analyzes customer behavior and segmentation",
+                        "capabilities": [
+                            "customer_segmentation",
+                            "behavior_analysis",
+                            "satisfaction_scoring"
+                        ],
+                        "required_data": [
+                            "customer_data",
+                            "usage_patterns",
+                            "feedback_data"
+                        ],
+                        "output_format": "customer_analysis_report",
+                        "execution_time_estimate": "7-12 minutes",
+                        "dependencies": [],
+                        "priority": "high"
+                    },
+                    "brand_index": {
+                        "name": "Brand Index Agent",
+                        "description": "Evaluates brand perception and market positioning",
+                        "capabilities": [
+                            "brand_sentiment",
+                            "market_analysis",
+                            "competitive_positioning"
+                        ],
+                        "required_data": [
+                            "customer_feedback",
+                            "market_data",
+                            "competitor_data"
+                        ],
+                        "output_format": "brand_index_report",
+                        "execution_time_estimate": "10-15 minutes",
+                        "dependencies": [
+                            "customer_analyzer"
+                        ],
+                        "priority": "medium"
+                    },
+                    "mission_alignment": {
+                        "name": "Mission Alignment Agent",
+                        "description": "Ensures all recommendations align with company mission and values",
+                        "capabilities": [
+                            "mission_compliance_check",
+                            "ethical_review",
+                            "value_alignment"
+                        ],
+                        "required_data": [
+                            "company_mission",
+                            "recommendations",
+                            "ethical_guidelines"
+                        ],
+                        "output_format": "alignment_report",
+                        "execution_time_estimate": "3-5 minutes",
+                        "dependencies": [
+                            "vitality_agent",
+                            "customer_analyzer",
+                            "brand_index"
+                        ],
+                        "priority": "critical"
+                    },
+                    "competitive_analyzer": {
+                        "name": "Competitive Analyzer",
+                        "description": "Analyzes competitive landscape and positioning",
+                        "capabilities": [
+                            "competitor_analysis",
+                            "market_trends",
+                            "positioning_recommendations"
+                        ],
+                        "required_data": [
+                            "competitor_data",
+                            "market_intelligence",
+                            "pricing_data"
+                        ],
+                        "output_format": "competitive_analysis_report",
+                        "execution_time_estimate": "8-12 minutes",
+                        "dependencies": [],
+                        "priority": "low"
+                    }
+                },
+                "execution_workflows": {
+                    "nightly_comprehensive": {
+                        "name": "Nightly Comprehensive Analysis",
+                        "description": "Complete analysis workflow run every night",
+                        "sequence": [
+                            {
+                                "step": 1,
+                                "agents": [
+                                    "vitality_agent",
+                                    "customer_analyzer"
+                                ],
+                                "execution_type": "parallel",
+                                "wait_for_completion": true
+                            },
+                            {
+                                "step": 2,
+                                "agents": [
+                                    "brand_index"
+                                ],
+                                "execution_type": "sequential",
+                                "wait_for_completion": true,
+                                "depends_on": [
+                                    "customer_analyzer"
+                                ]
+                            },
+                            {
+                                "step": 3,
+                                "agents": [
+                                    "mission_alignment"
+                                ],
+                                "execution_type": "sequential",
+                                "wait_for_completion": true,
+                                "depends_on": [
+                                    "vitality_agent",
+                                    "customer_analyzer",
+                                    "brand_index"
+                                ]
+                            }
+                        ],
+                        "output_combination": "comprehensive_report",
+                        "alert_thresholds": {
+                            "churn_rate": {
+                                "warning": 0.15,
+                                "critical": 0.25
+                            },
+                            "satisfaction_score": {
+                                "warning": 7.0,
+                                "critical": 6.0
+                            },
+                            "retention_rate": {
+                                "warning": 0.85,
+                                "critical": 0.75
+                            }
+                        }
+                    },
+                    "urgent_response": {
+                        "name": "Urgent Response Workflow",
+                        "description": "Quick response to critical alerts",
+                        "sequence": [
+                            {
+                                "step": 1,
+                                "agents": [
+                                    "vitality_agent"
+                                ],
+                                "execution_type": "immediate",
+                                "wait_for_completion": true
+                            },
+                            {
+                                "step": 2,
+                                "agents": [
+                                    "mission_alignment"
+                                ],
+                                "execution_type": "immediate",
+                                "wait_for_completion": true,
+                                "depends_on": [
+                                    "vitality_agent"
+                                ]
+                            }
+                        ],
+                        "output_combination": "urgent_alert_report",
+                        "notification_channels": [
+                            "email",
+                            "slack",
+                            "dashboard"
+                        ]
+                    }
+                }
+            },
+            "output_processing": {
+                "combination_rules": {
+                    "cross_pattern_analysis": {
+                        "enabled": true,
+                        "patterns_to_detect": [
+                            "churn_correlation",
+                            "satisfaction_retention_link",
+                            "usage_engagement_pattern",
+                            "support_satisfaction_correlation"
+                        ]
+                    },
+                    "threshold_monitoring": {
+                        "enabled": true,
+                        "alert_levels": {
+                            "info": {
+                                "notification_channels": [
+                                    "dashboard"
+                                ],
+                                "escalation_delay": "24h"
+                            },
+                            "warning": {
+                                "notification_channels": [
+                                    "dashboard",
+                                    "email"
+                                ],
+                                "escalation_delay": "4h"
+                            },
+                            "critical": {
+                                "notification_channels": [
+                                    "dashboard",
+                                    "email",
+                                    "slack"
+                                ],
+                                "escalation_delay": "immediate"
+                            }
+                        }
+                    },
+                    "mission_alignment_check": {
+                        "enabled": true,
+                        "required_score": 0.8,
+                        "block_on_failure": true,
+                        "review_criteria": [
+                            "ethical_compliance",
+                            "customer_value_focus",
+                            "long_term_sustainability",
+                            "brand_consistency"
+                        ]
+                    }
+                },
+                "output_formats": {
+                    "comprehensive_report": {
+                        "sections": [
+                            "executive_summary",
+                            "key_metrics",
+                            "customer_insights",
+                            "brand_analysis",
+                            "recommendations",
+                            "mission_alignment_score"
+                        ],
+                        "format": "structured_json",
+                        "include_charts": true
+                    },
+                    "dashboard_summary": {
+                        "sections": [
+                            "key_metrics_snapshot",
+                            "priority_alerts",
+                            "quick_recommendations"
+                        ],
+                        "format": "dashboard_widgets",
+                        "refresh_interval": "15m"
+                    }
+                }
+            },
+            "company_context": {
+                "mission_statement": "To democratize AI capabilities while maintaining ethical standards and customer-centric focus",
+                "core_values": [
+                    "Customer Success First",
+                    "Ethical AI Development",
+                    "Transparency and Trust",
+                    "Innovation with Purpose",
+                    "Data Privacy and Security"
+                ],
+                "business_objectives": [
+                    {
+                        "objective": "Achieve 90% customer retention rate",
+                        "timeline": "Q4 2025",
+                        "priority": "high",
+                        "current_status": "in_progress"
+                    },
+                    {
+                        "objective": "Improve customer satisfaction score to 8.5+",
+                        "timeline": "Q3 2025",
+                        "priority": "high",
+                        "current_status": "in_progress"
+                    },
+                    {
+                        "objective": "Reduce customer support response time to <2 hours",
+                        "timeline": "Q2 2025",
+                        "priority": "medium",
+                        "current_status": "planning"
+                    }
+                ],
+                "success_metrics": {
+                    "primary": [
+                        "retention_rate",
+                        "customer_satisfaction",
+                        "revenue_growth"
+                    ],
+                    "secondary": [
+                        "support_response_time",
+                        "feature_adoption",
+                        "user_engagement"
+                    ]
+                }
+            }
+        }
+    }
+}

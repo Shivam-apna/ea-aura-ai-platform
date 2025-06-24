@@ -4,3 +4,4 @@ hvac==2.3.0
 pyautogen==0.9.0
 elasticsearch>=8.8.0,<9.0.0
 pydantic==2.7.1
+openai==1.70.0

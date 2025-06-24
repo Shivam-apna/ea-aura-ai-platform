@@ -47,3 +47,13 @@ uvicorn app.main:app --reload
 
 ```
 
+# Set API Key on Vault
+
+```bash
+
+1.Go to "http://localhost:8200/"
+
+2.Login in vault using password 'demo'
+
+3.Set path and your api key 
+
