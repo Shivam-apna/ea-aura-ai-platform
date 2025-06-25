@@ -1,3 +1,4 @@
+# app/dao/job_index.py
 from elasticsearch import Elasticsearch
 from app.core.elastic import get_es_client
 
@@ -17,6 +18,9 @@ def create_index_if_not_exists():
                 }
             }
         })
+        print(f"🆕 Created index: {INDEX_NAME}")
+    else:
+        print(f"✅ Index already exists: {INDEX_NAME}")
 
 def index_job(job_data: dict):
     es = get_es_client()
