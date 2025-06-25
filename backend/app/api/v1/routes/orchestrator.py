@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from autogen import UserProxyAgent
 from app.agent.orchestrator import create_groq_orchestrator
 from app.data_connector.http_tools import http_request_tool
+from app.data_connector.google_drive_tools import google_drive_tool
 from typing import Optional, Dict, Any
 import json
 
@@ -11,10 +12,12 @@ router = APIRouter()
 class OrchestratorRequest(BaseModel):
     user_input: str
     http_request_config: Optional[Dict[str, Any]] = None
+    google_drive_config: Optional[Dict[str, Any]] = None 
 
 @router.post("/orchestrator")
 async def run_orchestrator(req: OrchestratorRequest):
     http_result = None
+    drive_result = None
 
     # Perform HTTP request if config provided
     if req.http_request_config:
@@ -40,6 +43,26 @@ async def run_orchestrator(req: OrchestratorRequest):
 
         except Exception as e:
             http_result = f"HTTP tool error: {str(e)}"
+
+    if req.google_drive_config:
+        try:
+            service_account_info = req.google_drive_config.get("service_account_info")
+            query = req.google_drive_config.get("query")
+
+            drive_result = google_drive_tool(service_account_info, query)
+
+            # Ensure compact JSON if SUCCESS
+            if drive_result.startswith("SUCCESS:"):
+                data_part = drive_result[len("SUCCESS:"):].strip()
+                try:
+                    json_data = json.loads(data_part)
+                    compact_drive = json.dumps(json_data, separators=(',', ':'))
+                    drive_result = f"SUCCESS:{compact_drive}"
+                except Exception:
+                    pass
+
+        except Exception as e:
+            drive_result = f"Google Drive tool error: {str(e)}"
 
     # Create the orchestrator agent (no extra_context!)
     orchestrator = create_groq_orchestrator()
@@ -72,6 +95,9 @@ async def run_orchestrator(req: OrchestratorRequest):
     if http_result:
         combined_input += f"\n\nHere is external data fetched via HTTP tool:\n{http_result}"
 
+    if drive_result:
+        combined_input += f"\n\nHere is external data fetched via Google Drive tool:\n{drive_result}"
+
     try:
         chat_result = user_proxy.initiate_chat(
             orchestrator,
@@ -95,5 +121,6 @@ async def run_orchestrator(req: OrchestratorRequest):
     return {
         "success": bool(response_content),
         "response": response_content or "No response generated",
-        "http_result": http_result
+        "http_result": http_result,
+        "google_drive_result": drive_result
     }

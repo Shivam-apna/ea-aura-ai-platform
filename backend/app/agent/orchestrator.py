@@ -1,6 +1,7 @@
 from autogen import AssistantAgent
 from app.groq_config import get_groq_config
 from app.data_connector.http_tools import http_request_tool
+from app.data_connector.google_drive_tools import google_drive_tool
 import json
 import os
 
@@ -33,12 +34,13 @@ def create_groq_orchestrator():
     # Compose system message
     system_message = (
         "You are the Central Orchestrator Agent — the conductor that coordinates all other agents in the AI platform ecosystem. "
-        "Do not provide info if querty not found related to the dataset or any http request"
+        "Do not provide info if query not found related to the dataset or any external data provided. "
         "Your role is to manage agent workflows, maintain shared context, and ensure mission alignment. "
-        "When provided JSON data via HTTP tool, you must parse the JSON, extract requested fields (e.g., all usernames), and output only those fields as requested. "
+        "When provided JSON data via HTTP tool or Google Drive tool, you must parse the JSON, extract requested fields (e.g., all usernames, all file names), and output only those fields as requested. "
         "Respond with ONLY the extracted data — no extra text. "
         f"Here is your configuration context:\n{config_summary}\n"
     )
+
 
 
     # Create the assistant agent
@@ -50,7 +52,8 @@ def create_groq_orchestrator():
 
     # Register the HTTP request tool (correct usage)
     agent.register_function({
-        "http_request_tool": http_request_tool
+        "http_request_tool": http_request_tool,
+        "google_drive_tool": google_drive_tool 
     })
 
     return agent
