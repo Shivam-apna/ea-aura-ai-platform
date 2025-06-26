@@ -3,6 +3,7 @@ from app.services.dispatcher import dispatch_agent_job
 from fastapi import Body
 from fastapi import APIRouter
 from app.models.agent_job import AgentJob
+from app.services.orchestrator_agent import run_autogen_agent
 from app.dao import agent_job_dao
 
 router = APIRouter()
@@ -26,3 +27,10 @@ def run_agent_job(payload: dict = Body(...)):
     tenant_id = payload["tenant_id"]
     chain = payload["agent_chain"]  # List of agent names
     return dispatch_agent_job(input_text, tenant_id, chain)
+
+
+@router.post("/run-autogen")
+def run_with_autogen(payload: dict = Body(...)):
+    input_text = payload["input"]
+    tenant_id = payload["tenant_id"]
+    return run_autogen_agent(input_text, tenant_id)
