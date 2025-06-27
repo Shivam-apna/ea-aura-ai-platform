@@ -1,17 +1,39 @@
 {
   "BusinessVitalityAgent": {
     "type": "agent",
-    "model": "groq/llama3-70b-8192",
-    "sub_agents": ["VitalityForecaster", "AnomalyScanner"]
+    "model": "gemma2-9b-it",
+    "description": "Top-level agent that handles business vitality tasks by delegating to sub-agents.",
+    "sub_agents": [
+      "VitalityForecaster",
+      "AnomalyScanner"
+    ]
   },
   "VitalityForecaster": {
     "type": "sub_agent",
-    "model": "groq/llama3-70b-8192",
-    "prompt_template": "Forecast growth trends from:\n\n{{input}}"
+    "model": "gemma2-9b-it",
+    "description": "Analyzes data to forecast business growth, trends, and future performance indicators.",
+    "prompt_template": "Forecast growth trends from:\n\n{{input}}",
+    "keywords": [
+      "forecast",
+      "growth",
+      "trends",
+      "future",
+      "projection"
+    ],
+    "category": "Forecasting"
   },
   "AnomalyScanner": {
     "type": "sub_agent",
-    "model": "groq/llama3-70b-8192",
-    "prompt_template": "Detect anomalies in this data:\n\n{{input}}"
+    "model": "gemma2-9b-it",
+    "description": "Detects unusual patterns, outliers, or anomalies in business metrics or datasets.",
+    "prompt_template": "Detect anomalies in this data:\n\n{{input}}",
+    "keywords": [
+      "anomaly",
+      "irregularity",
+      "outlier",
+      "deviation",
+      "unexpected"
+    ],
+    "category": "Diagnostics"
   }
 }
