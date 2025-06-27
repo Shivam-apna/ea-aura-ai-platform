@@ -12,3 +12,8 @@ def store_memory(log: AgentMemoryLog):
 @router.get("/{agent_id}")
 def get_memory(agent_id: str):
     return agent_memory_dao.search(filters={"agent_id": agent_id})
+
+
+@router.get("/agent-memory/tenant/{tenant_id}")
+def get_memory_by_tenant(tenant_id: str):
+    return agent_memory_dao.search(filters={"tenant_id": tenant_id})
