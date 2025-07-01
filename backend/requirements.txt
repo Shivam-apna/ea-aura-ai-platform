@@ -9,3 +9,6 @@ google-api-python-client==2.162.0
 google-auth==2.35.0
 langchain-groq==0.3.2
 langchain==0.3.3
+filebeat==0.0.2
+python-json-logger==3.3.0
+kafka-python==2.2.14
