@@ -29,3 +29,10 @@ data/*
 
 # Kubernetes secrets
 infra/secrets/*
+
+# EA-AURA Backend Log Files
+backend/app/logs/
+!backend/app/logs/.gitkeep
+
+
+kafka\data
