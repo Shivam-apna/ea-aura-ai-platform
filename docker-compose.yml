@@ -13,6 +13,26 @@ services:
     networks:
       - ea-aura
 
+  nifi:
+    image: apache/nifi:latest
+    container_name: devnifi
+    ports:
+      - "8443:8443"
+    environment:
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
+      - NIFI_SENSITIVE_PROPS_KEY=12345678901234567890A
+    restart: unless-stopped
+    volumes:
+      - nifi_data:/opt/nifi/nifi-current/logs
+      - nifi_conf:/opt/nifi/nifi-current/conf
+    networks:
+      - ea-aura
+
+  
+
   vault:
     image: vault:1.13.3
     ports:
@@ -85,8 +105,8 @@ services:
     expose:
       - "8081"
     environment:
-      VAULT_TOKEN: demo         # ✅ Add this line to provide the Vault token
-      VAULT_ADDR: http://vault:8200  # Optional: ensure VAULT_ADDR points to the Vault service
+      VAULT_TOKEN: demo
+      VAULT_ADDR: http://vault:8200
     networks:
       - ea-aura
     depends_on:
@@ -119,6 +139,8 @@ services:
 volumes:
   esdata:
   filebeat-data:
+  nifi_data:
+  nifi_conf:
 
 networks:
   ea-aura:

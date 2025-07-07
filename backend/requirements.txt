@@ -12,3 +12,4 @@ langchain==0.3.3
 filebeat==0.0.2
 python-json-logger==3.3.0
 kafka-python==2.2.14
+PyMuPDF==1.23.1
