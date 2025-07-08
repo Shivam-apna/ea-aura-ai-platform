@@ -1,7 +1,7 @@
 {
   "BusinessVitalityAgent": {
     "type": "agent",
-    "model": "gemma2-9b-it",
+    "model": "demo",
     "description": "Top-level agent that handles business vitality tasks by delegating to sub-agents.",
     "sub_agents": [
       "VitalityForecaster",
@@ -10,7 +10,7 @@
   },
   "VitalityForecaster": {
     "type": "sub_agent",
-    "model": "gemma2-9b-it",
+    "model": "demo",
     "description": "Analyzes data to forecast business growth, trends, and future performance indicators.",
     "prompt_template": "Forecast growth trends from:\n\n{{input}}",
     "keywords": [
@@ -24,7 +24,7 @@
   },
   "AnomalyScanner": {
     "type": "sub_agent",
-    "model": "gemma2-9b-it",
+    "model": "demo",
     "description": "Detects unusual patterns, outliers, or anomalies in business metrics or datasets.",
     "prompt_template": "Detect anomalies in this data:\n\n{{input}}",
     "keywords": [
@@ -35,5 +35,20 @@
       "unexpected"
     ],
     "category": "Diagnostics"
+  },
+  "SalesAgent": {
+    "type": "sub_agent",
+    "model": "gemma2-9b-it",
+    "description": "Detects all the sales from the dataset and respone.",
+    "prompt_template": "Detect sales in this data:\n\n{{input}}",
+    "keywords": [
+      "sales",
+      "price",
+      "margin",
+      "profit",
+      "GMROI",
+      "expense"
+    ],
+    "category": "Sales "
   }
 }
