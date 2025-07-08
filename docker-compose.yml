@@ -136,11 +136,28 @@ services:
     networks:
       - ea-aura
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - ea-aura
+
 volumes:
   esdata:
   filebeat-data:
   nifi_data:
   nifi_conf:
+  minio_data:
 
 networks:
   ea-aura:

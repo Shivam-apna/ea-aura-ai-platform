@@ -13,3 +13,5 @@ filebeat==0.0.2
 python-json-logger==3.3.0
 kafka-python==2.2.14
 PyMuPDF==1.23.1
+langchain-community==0.3.2
+sentence-transformers>=2.2.2
