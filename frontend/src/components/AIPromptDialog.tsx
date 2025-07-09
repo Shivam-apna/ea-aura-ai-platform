@@ -1,0 +1,112 @@
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Send } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+
+interface AIPromptDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface ChatMessage {
+  id: number;
+  sender: "user" | "ai";
+  text: string;
+}
+
+const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: 1, sender: "ai", text: "Hello! What can I help you analyze or generate today?" },
+  ]);
+  const [input, setInput] = useState("");
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+
+  const handleSend = () => {
+    if (input.trim()) {
+      const newUserMessage: ChatMessage = { id: messages.length + 1, sender: "user", text: input.trim() };
+      setMessages((prev) => [...prev, newUserMessage]);
+      setInput("");
+
+      // Simulate AI response
+      setTimeout(() => {
+        let aiResponse = "I'm processing your request. Please give me a moment...";
+        if (newUserMessage.text.toLowerCase().includes("revenue")) {
+          aiResponse = "Based on current trends, next quarter's revenue forecast is projected to increase by 8%. Key drivers include new market penetration and increased customer retention.";
+        } else if (newUserMessage.text.toLowerCase().includes("churn")) {
+          aiResponse = "Customer churn risk is currently at 7.5%. Our analysis suggests focusing on personalized engagement campaigns for at-risk segments to reduce this by 2% over the next month.";
+        } else if (newUserMessage.text.toLowerCase().includes("brand")) {
+          aiResponse = "The overall brand gravity score is strong at 88%. Social media engagement shows a positive trend, but there's an opportunity to boost brand mentions in traditional media.";
+        } else if (newUserMessage.text.toLowerCase().includes("mission")) {
+          aiResponse = "Mission alignment for the Q3 initiatives is at 92%. One critical recommendation failed due to resource allocation, which could impact our sustainability goals. Immediate review is advised.";
+        } else if (newUserMessage.text.includes("?")) {
+          aiResponse = "That's a great question! I'm still learning to answer complex queries directly. Can you try a more specific command or keyword?";
+        } else {
+          aiResponse = "I'm sorry, I don't have specific data or a direct action for that request yet. Could you try asking about revenue, churn, brand, or mission alignment?";
+        }
+        setMessages((prev) => [...prev, { id: prev.length + 1, sender: "ai", text: aiResponse }]);
+      }, 1500);
+    }
+  };
+
+  React.useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] h-[500px] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-600" /> AI Prompt Assistant
+          </DialogTitle>
+          <DialogDescription>
+            Ask me anything about your dashboard data or generate insights.
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-grow pr-4 mb-4">
+          <div className="space-y-4">
+            {messages.map((msg) => (
+              <div key={msg.id} className={cn("flex", msg.sender === "user" ? "justify-end" : "justify-start")}>
+                <div
+                  className={cn(
+                    "max-w-[70%] p-3 rounded-lg",
+                    msg.sender === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-900"
+                  )}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="flex gap-2 mt-auto">
+          <Input
+            placeholder="Type your prompt here..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            className="flex-grow bg-white/50 border-blue-300/50 text-gray-900 placeholder:text-gray-500"
+          />
+          <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Send className="h-5 w-5" />
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AIPromptDialog;
