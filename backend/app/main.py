@@ -5,7 +5,6 @@ from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, 
 from app.core.index_manager import IndexManager
 from app.core.elastic import get_es_client
 from app.core.core_log import logger
-from app.api.v1.routes import orchestrator
 
 logger.info("✅ EA-AURA backend logging initialized")
 
@@ -15,7 +14,6 @@ app = FastAPI()
 #Include all API routers
 
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
-app.include_router(orchestrator.router, prefix="/api/v1", tags=["Orchestrator"])
 app.include_router(agent_job.router, prefix="/api/v1")
 app.include_router(sub_agent_chain.router, prefix="/api/v1")
 app.include_router(agent_memory.router, prefix="/api/v1")

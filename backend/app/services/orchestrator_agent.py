@@ -7,6 +7,8 @@ from app.groq_config import get_groq_config
 from datetime import datetime
 import uuid
 from transformers import AutoTokenizer
+import json
+import re
 
 
 def count_tokens_with_transformers(text: str, model_name: str = "NousResearch/Llama-2-7b-hf"):
@@ -91,23 +93,150 @@ def run_autogen_agent(input_text: str, tenant_id: str):
     prompt_template = agent_data.get("prompt_template", "Analyze this:\n\n{{input}} Always respond in clear natural language.")
 
     if selected_agent == "SalesAgent":
-        prompt_template = (
-            "You are a helpful financial analyst assistant. Given the following business data, answer the user's query in clear, conversational language. "
-            "Be precise, use relevant numbers, and never include code or ask what the user wants — just answer what they asked based on data.\n\n"
-            "{{input}}\n\nUser Question: " + input_text
-        )
+        prompt_template = """
+            You are a financial analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code.
+    
+            Your JSON format:
+            {
+            "response": "...",           // A clear answer to the user's question
+            "task": "plot",              // Always "plot" if chart needed
+            "plot_type": "line",         // "line", "bar", or "none"
+            "columns": [...],            // Data columns shown in chart
+            "filters": {...},            // Filters applied based on the user's question
+            "title": "...",              // Title of the chart
+            "data": [...]                // At least 10 rows of relevant data, even if user asked for one date
+            }
+    
+            Rules:
+            - If user asks about a specific date (e.g. "1st July 2025"), still show ~10 nearby data points in `data`, including that date.
+            - Use only the provided dataset — do not invent data.
+            - Keep the response clean, no markdown or code, and output only the JSON object.
+            - task MUST always be "plot" - never "none".
+            - plot_type MUST bein bar graph  - never "none".
+    
+            DATASET:
+            {{input}}
+    
+            USER QUESTION:
+            """ + input_text
+
         from app.services.es_search import query_sales_data
         business_name = "PILKHAN TREE (Retail Entrepreneur)"
         sales_data = query_sales_data(business_name=business_name, query_text=input_text)
         final_input = sales_data
+
+
+    elif selected_agent == "CustomerSurveyAgent":
+        prompt_template = """
+            You are a financial analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code.
+    
+            Your JSON format:
+            {
+            "response": "...",           // A clear answer to the user's question
+            "task": "plot",              // Always "plot" if chart needed
+            "plot_type": "line",         // "line", "bar", or "none"
+            "columns": [...],            // Data columns shown in chart
+            "filters": {...},            // Filters applied based on the user's question
+            "title": "...",              // Title of the chart
+            "data": [...]                // At least 10 rows of relevant data, even if user asked for one date
+            }
+    
+            Rules:
+            - If user asks about a specific date (e.g. "1st July 2025"), still show ~10 nearby data points in `data`, including that date.
+            - Use only the provided dataset — do not invent data.
+            - Keep the response clean, no markdown or code, and output only the JSON object.
+            - task MUST always be "plot" - never "none".
+           - plot_type MUST be dynamic as per the given datset  - never "none".
+    
+            DATASET:
+            {{input}}
+    
+            USER QUESTION:
+            """ + input_text
+
+
+        from app.services.es_search import query_customer_survey_data
+        business_name = "PILKHAN TREE (Retail Entrepreneur)"
+        survey_data = query_customer_survey_data(business_name=business_name, query_text=input_text)
+        final_input = survey_data
+
+    elif selected_agent == "MissionAlignmentAgent":
+        prompt_template = """
+            You are a mission alignment analyst. Given the following mission alignment data, you must respond ONLY with a valid JSON object. Do not include any markdown, commentary, or explanation — just return the JSON.
+
+             Your JSON format:
+            {
+            "response": "...",           // A clear answer to the user's question
+            "task": "plot",              // Always "plot" if chart needed
+            "plot_type": "line",         // "line", "bar", or "none"
+            "columns": [...],            // Data columns shown in chart
+            "filters": {...},            // Filters applied based on the user's question
+            "title": "...",              // Title of the chart
+            "data": [...]                // At least 10 rows of relevant data, even if user asked for one date
+            }
+
+            Rules: 
+            - If the user asks about a specific date or topic, still include context data (~10 items) around that.
+            - Use ONLY the provided dataset — do NOT fabricate or extrapolate data.
+            - Output must be a valid JSON object with no markdown or code block formatting.
+            - task MUST always be "plot" - never "none".
+           - plot_type MUST be dynamic as per the given datset  - never "none".
+
+            DATASET:
+            {{input}}
+
+            USER QUESTION:
+            """ + input_text
+
+        from app.services.es_search import query_mission_alignment_data
+        business_name = "PILKHAN TREE (Retail Entrepreneur)"
+        mission_alignment_data = query_mission_alignment_data(business_name=business_name, query_text=input_text)
+        final_input = mission_alignment_data
+
+
+    elif selected_agent == "WebsiteAnalyticsAgent":
+        prompt_template = """
+            You are a web analytics analyst. Given the following brand audit data, you must respond ONLY with a valid JSON object. Do not include any markdown, commentary, or explanation — just return the JSON.
+
+             Your JSON format:
+            {
+            "response": "...",           // A clear answer to the user's question
+            "task": "plot",              // Always "plot" if chart needed
+            "plot_type": "line",         // "line", "bar", or "none"
+            "columns": [...],            // Data columns shown in chart
+            "filters": {...},            // Filters applied based on the user's question
+            "title": "...",              // Title of the chart
+            "data": [...]                // At least 10 rows of relevant data, even if user asked for one date
+            }
+
+            Rules: 
+            - If the user asks about a specific date or topic, still include context data (~10 items) around that.
+            - Use ONLY the provided dataset — do NOT fabricate or extrapolate data.
+            - Output must be a valid JSON object with no markdown or code block formatting.
+            - task MUST always be "plot" - never "none".
+            - plot_type MUST bein bar graph  - never "none".
+
+            DATASET:
+            {{input}}
+
+            USER QUESTION:
+            """ + input_text
+
+
+        from app.services.es_search import query_brand_audit_data
+        business_name = "PILKHAN TREE (Retail Entrepreneur)"
+        brand_audit_data = query_brand_audit_data(business_name=business_name, query_text=input_text)
+        final_input = brand_audit_data
+
+
     else:
         final_input = input_text
 
     final_prompt = prompt_template.replace("{{input}}", final_input)
 
     # === Models ===
-    agent_model = agent_data.get("model", "llama3-70b-8192")
-    orchestrator_model = "llama3-8b-8192"
+    agent_model = agent_data.get("model", "gemma2-9b-it")
+    orchestrator_model = "gemma2-9b-it"
 
     agent_config_list = [{
         "model": agent_model,
@@ -140,15 +269,33 @@ def run_autogen_agent(input_text: str, tenant_id: str):
     orchestrator_output_tokens = count_tokens_with_transformers(last_response, model_name=orchestrator_model)
     orchestrator_total_tokens = orchestrator_input_tokens + orchestrator_output_tokens
 
-    print("\n--- TOKEN USAGE SUMMARY ---")
-    print(f"Selected agent: {selected_agent} (model={agent_model})")
-    print(f"  • Input tokens:  {selected_input_tokens}")
-    print(f"  • Output tokens: {selected_output_tokens}")
-    print(f"  • Total:         {selected_total_tokens}")
-    print(f"Orchestrator (model={orchestrator_model}):")
-    print(f"  • Input tokens:  {orchestrator_input_tokens}")
-    print(f"  • Output tokens: {orchestrator_output_tokens}")
-    print(f"  • Total:         {orchestrator_total_tokens}")
+    import re
+
+    raw_response = group_chat.messages[-1]["content"]
+
+    # 1. Try to extract a JSON object inside any code block (``` or ```json or ```python)
+    json_match = re.search(r"```(?:json|python)?\s*(\{.*?\})\s*```", raw_response, re.DOTALL)
+
+    if json_match:
+        json_str = json_match.group(1)
+        try:
+            last_response_json = json.loads(json_str)
+        except json.JSONDecodeError:
+            print("⚠️ JSON block found but parsing failed.")
+            last_response_json = {"response": raw_response, "error": "Invalid JSON inside code block"}
+    else:
+        # 2. Try to find JSON object in raw string (no markdown)
+        json_match_alt = re.search(r"(\{.*?\})", raw_response, re.DOTALL)
+        if json_match_alt:
+            try:
+                last_response_json = json.loads(json_match_alt.group(1))
+            except json.JSONDecodeError:
+                last_response_json = {"response": raw_response, "error": "Could not parse loose JSON"}
+        else:
+            # 3. Fallback if nothing is parsable
+            last_response_json = {"response": raw_response, "error": "No JSON found"}
+
+
     print("----------------------------\n")
 
     # === Save Logs ===
@@ -194,8 +341,17 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         "log": last_response
     })
 
+    # Try parsing the "response" field if it looks like JSON string
+    final_response = last_response_json.get("response", "")
+    try:
+        nested_json = json.loads(final_response)
+        # Merge the parsed response instead of using the raw string
+        last_response_json = nested_json
+    except (json.JSONDecodeError, TypeError):
+        pass  # Keep the original if not parsable
+
     return {
         "job_id": job_id,
         "selected_agent": selected_agent,
-        "response": last_response,
+        **last_response_json
     }
