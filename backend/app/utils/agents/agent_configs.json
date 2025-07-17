@@ -1,47 +1,20 @@
 {
-  "BusinessVitalityAgent": {
-    "type": "agent",
-    "model": "demo",
-    "description": "Top-level agent that handles business vitality tasks by delegating to sub-agents.",
-    "sub_agents": [
-      "VitalityForecaster",
-      "AnomalyScanner"
-    ]
-  },
-  "VitalityForecaster": {
-    "type": "sub_agent",
-    "model": "demo",
-    "description": "Analyzes data to forecast business growth, trends, and future performance indicators.",
-    "prompt_template": "Forecast growth trends from:\n\n{{input}}",
+  "business_vitality_agent": {
+    "type": "main",
+    "enabled": true,
+    "description": "Evaluates the financial and operational strength of the business.",
+    "capabilities": [
+      "kpi_analysis",
+      "trend_analysis",
+      "subagent_dispatch"
+    ],
     "keywords": [
-      "forecast",
+      "vitality",
+      "business health",
+      "financial strength",
       "growth",
-      "trends",
-      "future",
-      "projection"
-    ],
-    "category": "Forecasting"
-  },
-  "AnomalyScanner": {
-    "type": "sub_agent",
-    "model": "demo",
-    "description": "Detects unusual patterns, outliers, or anomalies in business metrics or datasets.",
-    "prompt_template": "Detect anomalies in this data:\n\n{{input}}",
-    "keywords": [
-      "anomaly",
-      "irregularity",
-      "outlier",
-      "deviation",
-      "unexpected"
-    ],
-    "category": "Diagnostics"
-  },
-  "SalesAgent": {
-    "type": "sub_agent",
-    "model": "gemma2-9b-it",
-    "description": "Detects all the sales from the dataset and respone.",
-    "prompt_template": "Detect sales in this data:\n\n{{input}}",
-    "keywords": [
+      "performance",
+      "profitability",
       "sales",
       "price",
       "margin",
@@ -49,6 +22,206 @@
       "GMROI",
       "expense"
     ],
-    "category": "Sales "
+    "llm_config": {
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.6,
+      "max_tokens": 700
+    },
+    "prompt_template": "You are a senior business performance advisor specializing in retail business analysis. You have received a comprehensive analysis from a specialized sales data agent.\n\nYour task is to:\n1. Analyze ALL the numerical data, trends, and patterns provided\n2. Calculate key business metrics (gross margin, growth rates, etc.)\n3. Identify significant trends and anomalies\n4. Provide actionable business insights and recommendations\n5. Structure your response with clear sections\n\nIMPORTANT: Use ALL the data provided below, not just the summary. Analyze trends, calculate margins, and provide comprehensive insights.Keep in mind that do not show any code snippet of python or js , only the details needed.\n\nSUB-AGENT ANALYSIS:\n{{input}}\n\nUSER QUESTION: {{question}}\n\nProvide a detailed business performance analysis with specific numbers, trends, and actionable recommendations:",
+    "sub_agents": [
+      {
+        "agent_id": "sales_agent",
+        "type": "sub",
+        "enabled": true,
+        "parent_agent": "business_vitality_agent",
+        "description": "Analyzes sales volume, revenue trends, and growth indicators to support business vitality.",
+        "capabilities": [
+          "sales_analysis",
+          "forecasting",
+          "visualization"
+        ],
+        "keywords": [
+          "sales",
+          "price",
+          "margin",
+          "profit",
+          "GMROI",
+          "expense"
+        ],
+        "llm_config": {
+          "model": "llama-3.3-70b-versatile",
+          "temperature": 0.5,
+          "max_tokens": 512
+        },
+        "params": {
+          "prompt_template": "You are a financial analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code.Also do not include any value with none.\n\nYour JSON format:\n{\n  \"response\": \"...\",           // A clear answer to the user's question\n  \"task\": \"plot\",              // Always \"plot\" if chart needed\n  \"plot_type\": \"line\",         // \"line\", \"bar\", or \"none\"\n  \"columns\": [...],            // Data columns shown in chart\n  \"filters\": {...},            // Filters applied based on the user's question\n  \"title\": \"...\",              // Title of the chart\n  \"data\": [...]                // At least 10 rows of relevant data, even if user asked for one date\n}\n\nRules:\n- If user asks about a specific date (e.g. \"1st July 2025\"), still show ~10 nearby data points in `data`, including that date.\n- Use only the provided dataset — do not invent data.\n- Keep the response clean, no markdown or code, and output only the JSON object.\n- task MUST always be \"plot\" - never \"none\".\n- plot_type MUST be in bar graph  - never \"none\".\n- do not show any value with \"none\" in the json.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n\"\"",
+          "chart_type": "line",
+          "chart_params": {
+            "x": "date",
+            "y": "sales",
+            "title": "Sales Trends Over Time"
+          }
+        }
+      }
+    ]
+  },
+  "customer_survey_agent": {
+    "type": "main",
+    "enabled": true,
+    "description": "Analyzes customer survey data to extract key sentiments and satisfaction trends.",
+    "capabilities": [
+      "nlp",
+      "survey_analysis",
+      "summary",
+      "visualization"
+    ],
+    "keywords": [
+      "survey",
+      "feedback",
+      "satisfaction",
+      "CSAT",
+      "NPS",
+      "customer opinion"
+    ],
+    "llm_config": {
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.6,
+      "max_tokens": 700
+    },
+    "prompt_template": "You are a customer survey advisor. Do not wrap your response in markdown or return Python code. The following JSON was generated by a specialized sub-agent analyzing business data. Your task is to review the JSON, extract the key insights, and respond in plain natural language.\n\nJSON DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}",
+    "sub_agents": [
+      {
+        "agent_id": "customer_survey_agent",
+        "type": "sub",
+        "enabled": true,
+        "parent_agent": "customer_survey_agent",
+        "description": "Processes individual survey entries and extracts actionable insights.",
+        "capabilities": [
+          "sentiment_analysis",
+          "customer_feedback",
+          "summary",
+          "visualization"
+        ],
+        "keywords": [
+          "survey",
+          "feedback",
+          "margin",
+          "Tags",
+          "Channel"
+        ],
+        "llm_config": {
+          "model": "llama-3.3-70b-versatile",
+          "temperature": 0.5,
+          "max_tokens": 512
+        },
+        "params": {
+          "prompt_template": "You are a financial analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code.\n\nYour JSON format:\n{\n  \"response\": \"...\",           // A clear answer to the user's question\n  \"task\": \"plot\",              // Always \"plot\" if chart needed\n  \"plot_type\": \"line\",         // \"line\", \"bar\", or \"none\"\n  \"columns\": [...],            // Data columns shown in chart\n  \"filters\": {...},            // Filters applied based on the user's question\n  \"title\": \"...\",              // Title of the chart\n  \"data\": [...]                // At least 10 rows of relevant data, even if user asked for one date\n}\n\nRules:\n- If user asks about a specific date (e.g. \"1st July 2025\"), still show ~10 nearby data points in `data`, including that date.\n- Use only the provided dataset — do not invent data.\n- Keep the response clean, no markdown or code, and output only the JSON object.\n- task MUST always be \"plot\" - never \"none\".\n- plot_type MUST be dynamic as per the given dataset - never \"none\".\n- do not show any value with \"none\" in the json.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:"
+        }
+      }
+    ]
+  },
+  "mission_alignment_agent": {
+    "type": "main",
+    "enabled": true,
+    "description": "Evaluates how well strategies and initiatives align with the startup’s mission.",
+    "capabilities": [
+      "mission_analysis",
+      "qualitative_reasoning",
+      "visualization"
+    ],
+    "keywords": [
+      "mission",
+      "alignment",
+      "strategy",
+      "company goals",
+      "objective fit"
+    ],
+    "llm_config": {
+      "model": "llama-3.3-70b-versatile"
+    },
+    "prompt_template": "You are a Mission Alignment advisor. Do not wrap your response in markdown or return Python code. The following JSON was generated by a specialized sub-agent analyzing business data. Your task is to review the JSON, extract the key insights, and respond in plain natural language.\n\nJSON DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}",
+    "sub_agents": [
+      {
+        "agent_id": "mission_alignment_agent",
+        "type": "sub",
+        "enabled": true,
+        "parent_agent": "mission_alignment_agent",
+        "description": "Compares mission statements with company goals to determine alignment.",
+        "capabilities": [
+          "goal_matching",
+          "mission_parsing",
+          "visualization"
+        ],
+        "keywords": [
+          "mission",
+          "metrics",
+          "aligned activities",
+          "Dependencies",
+          "Resource Allocation",
+          "Owner",
+          "Mitigation Strategies"
+        ],
+        "llm_config": {
+          "model": "llama-3.3-70b-versatile"
+        },
+        "params": {
+          "prompt_template": "You are a mission alignment analyst. Given the following mission alignment data, you must respond ONLY with a valid JSON object. Do not include any markdown, commentary, or explanation — just return the JSON.\n\nYour JSON format:\n{\n  \"response\": \"...\",           // A clear answer to the user's question\n  \"task\": \"plot\",              // Always \"plot\" if chart needed\n  \"plot_type\": \"line\",         // \"line\", \"bar\", or \"none\"\n  \"columns\": [...],            // Data columns shown in chart\n  \"filters\": {...},            // Filters applied based on the user's question\n  \"title\": \"...\",              // Title of the chart\n  \"data\": [...]                // At least 10 rows of relevant data, even if user asked for one date\n}\n\nRules:\n- If the user asks about a specific date or topic, still include context data (~10 items) around that.\n- Use ONLY the provided dataset — do NOT fabricate or extrapolate data.\n- Output must be a valid JSON object with no markdown or code block formatting.\n- task MUST always be \"plot\" — never \"none\".\n- plot_type MUST be dynamic as per the given dataset — never \"none\".\n- Do not show any value with \"none\" in the JSON.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n{{question}}"
+        }
+      }
+    ]
+  },
+  "brand_index_agent": {
+    "type": "main",
+    "enabled": true,
+    "description": "Assesses brand perception across digital presence and user feedback.",
+    "capabilities": [
+      "branding",
+      "web_analysis",
+      "public_perception"
+    ],
+    "keywords": [
+      "brand",
+      "digital footprint",
+      "website",
+      "tone",
+      "reputation",
+      "Backlinks",
+      "Website Visitors",
+      "Unique visitors",
+      "Page views",
+      "time Spent"
+    ],
+    "llm_config": {
+      "model": "llama-3.3-70b-versatile"
+    },
+    "prompt_template": "You are a brand index advisor. Do not wrap your response in markdown or return Python code. The following JSON was generated by a specialized sub-agent analyzing business data. Your task is to review the JSON, extract the key insights, and respond in plain natural language.\n\nJSON DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}",
+    "sub_agents": [
+      {
+        "agent_id": "website_analyzer_agent",
+        "type": "sub",
+        "enabled": true,
+        "parent_agent": "brand_index_agent",
+        "description": "Analyzes website content for tone, professionalism, and brand messaging.",
+        "capabilities": [
+          "html_review",
+          "tone_analysis",
+          "message_consistency",
+          "visualization"
+        ],
+        "keywords": [
+          "Backlinks",
+          "Website Visitors",
+          "Unique visitors",
+          "Page views",
+          "time Spent"
+        ],
+        "llm_config": {
+          "model": "llama-3.3-70b-versatile"
+        },
+        "params": {
+          "prompt_template": "You are a web analytics analyst. Given the following brand audit data, you must respond ONLY with a valid JSON object. Do not include any markdown, commentary, or explanation — just return the JSON.\n\nYour JSON format:\n{\n  \"response\": \"...\",           // A clear answer to the user's question\n  \"task\": \"plot\",              // Always \"plot\" if chart needed\n  \"plot_type\": \"line\",         // \"line\", \"bar\", or \"none\"\n  \"columns\": [...],            // Data columns shown in chart\n  \"filters\": {...},            // Filters applied based on the user's question\n  \"title\": \"...\",              // Title of the chart\n  \"data\": [...]                // At least 10 rows of relevant data, even if user asked for one date\n}\n\nRules:\n- If the user asks about a specific date or topic, still include context data (~10 items) around that.\n- Use ONLY the provided dataset — do NOT fabricate or extrapolate data.\n- Output must be a valid JSON object with no markdown or code block formatting.\n- task MUST always be \"plot\" - never \"none\".\n- plot_type MUST be in bar graph - never \"none\".\n- do not show any value with \"none\" in the json.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:"
+        }
+      }
+    ]
   }
 }

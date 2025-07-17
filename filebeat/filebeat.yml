@@ -31,6 +31,38 @@ filebeat.inputs:
           fields:
             event.dataset: "ea-aura"
 
+  - type: filestream
+    id: ea-aura-agent-log
+    enabled: true
+    paths:
+      - /backend/app/logs/ea_aura_backend_agent.log
+    fields:
+      service.name: ea-aura-backend-agent
+      service.type: application
+      service.version: "1.0.0"
+    fields_under_root: true
+
+    json.keys_under_root: true
+    json.add_error_key: true
+
+    multiline.pattern: '^\{'
+    multiline.negate: true
+    multiline.match: after
+
+    processors:
+      - timestamp:
+          field: asctime
+          layouts:
+            - '2006-01-02 15:04:05,000'
+            - '2006-01-02T15:04:05'
+          test:
+            - '2025-06-26 12:46:53,976'
+            - '2025-06-26T13:15:00'
+      - add_fields:
+          target: ""
+          fields:
+            event.dataset: "ea-aura"
+
 output.elasticsearch:
   hosts: ["http://elasticsearch:9200"]
 

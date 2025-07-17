@@ -5,31 +5,32 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pythonjsonlogger import jsonlogger
 
-# ✅ Step 1: Get absolute path to /app folder
 APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 LOG_DIR = os.path.join(APP_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# ✅ Step 2: Log file in /app/logs/
-LOG_FILE = os.path.join(LOG_DIR, "ea_aura_backend.log")
-
-# ✅ Step 3: Configure logger
-formatter = logging.Formatter(
-    "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-)
-
-file_handler = RotatingFileHandler(
-    LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=5
-)
-# Use JSON formatter
+# General app logger
+app_log_file = os.path.join(LOG_DIR, "ea_aura_backend.log")
+app_file_handler = RotatingFileHandler(app_log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
 json_formatter = jsonlogger.JsonFormatter('%(asctime)s %(levelname)s %(name)s %(message)s')
-file_handler.setFormatter(json_formatter)
+app_file_handler.setFormatter(json_formatter)
 
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(json_formatter)
+app_console_handler = logging.StreamHandler()
+app_console_handler.setFormatter(json_formatter)
 
 logger = logging.getLogger("ea-aura")
 logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+logger.addHandler(app_file_handler)
+logger.addHandler(app_console_handler)
 logger.propagate = False
+
+# Agent-specific logger
+agent_log_file = os.path.join(LOG_DIR, "ea_aura_backend_agent.log")
+agent_file_handler = RotatingFileHandler(agent_log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
+agent_file_handler.setFormatter(json_formatter)
+
+agent_logger = logging.getLogger("agent-logger")
+agent_logger.setLevel(logging.INFO)
+agent_logger.addHandler(agent_file_handler)
+agent_logger.addHandler(app_console_handler)
+agent_logger.propagate = False
