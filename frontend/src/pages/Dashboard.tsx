@@ -32,8 +32,10 @@ import CustomerAnalyzer from "./CustomerAnalyzer";
 import MissionAlignment from "./MissionAlignment";
 import BrandIndex from "./BrandIndex";
 import Settings from "./Settings"; // Import the enhanced Settings page
-import Users from "./Users"; // Import the enhanced Users page
+import Profile from "./Profile"; // Import the new Profile page
+import Users from "./Users"; // Import the new Users page
 import AIPromptDialog from "@/components/AIPromptDialog"; // Import the new AI Prompt Dialog
+import DynamicChartDisplay from "@/components/DynamicChartDisplay"; // Import the new DynamicChartDisplay
 
 // HolographicCard Component - Adjusted for light background
 export const HolographicCard = ({ children, className, ...props }: React.ComponentProps<typeof Card>) => {
@@ -204,7 +206,7 @@ const PredictiveInsightsCard: React.FC = () => {
             <AlertCircle className="h-4 w-4 text-orange-600" /> {/* Adjusted icon color */}
             <p className="text-orange-600 font-semibold">Risk Assessment</p> {/* Adjusted text color */}
           </div>
-          <p className="text-xl font-bold text-gray-900 mb-2">Server overload risk: {riskLevel}%</p> {/* Adjusted text color */}
+          <p className="text-xl font-bold text-gray-900">Server overload risk: {riskLevel}%</p> {/* Adjusted text color */}
           <div className="text-sm text-gray-700 flex justify-between items-center mb-1"> {/* Adjusted text color */}
             Confidence Level
             <span>{confidence}%</span>
@@ -436,9 +438,18 @@ const AIChatAssistant: React.FC = () => {
 };
 
 // OverviewContent Component (the original dashboard content)
-const OverviewContent = ({ onOpenAIPrompt }: { onOpenAIPrompt: () => void }) => {
+const OverviewContent = ({ onOpenAIPrompt, dynamicPlotData, onClearPlot }: { onOpenAIPrompt: () => void; dynamicPlotData: any; onClearPlot: () => void }) => {
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
   const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  const [elasticData, setElasticData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/search')
+      .then(res => res.json())
+      .then(setElasticData)
+      .catch(console.error);
+  }, []);
 
   return (
     <div className="flex-grow p-4 md:p-8 font-sans relative overflow-hidden">
@@ -473,6 +484,11 @@ const OverviewContent = ({ onOpenAIPrompt }: { onOpenAIPrompt: () => void }) => 
             </div>
           </Button>
         </div>
+
+        {/* Dynamic Chart Display */}
+        {dynamicPlotData && (
+          <DynamicChartDisplay plotData={dynamicPlotData} onClose={onClearPlot} />
+        )}
 
         {/* Summary Cards at the top of the dashboard */}
         <DashboardSummaryCards />
@@ -513,6 +529,25 @@ const OverviewContent = ({ onOpenAIPrompt }: { onOpenAIPrompt: () => void }) => 
           <div className="lg:col-span-2">
             <AIChatAssistant />
           </div>
+
+          {/* Elasticsearch Data Display */}
+          <HolographicCard className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <BarChart className="h-5 w-5 text-blue-600" /> Elasticsearch Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64 w-full rounded-md border p-4 bg-gray-50">
+                <pre className="text-sm text-gray-800 whitespace-pre-wrap break-words">{JSON.stringify(elasticData, null, 2)}</pre>
+              </ScrollArea>
+              {elasticData.length === 0 && (
+                <p className="text-center text-gray-500 mt-4">
+                  No data from Elasticsearch. Make sure your backend server is running and Elasticsearch has data in 'your-index-name'.
+                </p>
+              )}
+            </CardContent>
+          </HolographicCard>
         </div>
       </div>
     </div>
@@ -524,15 +559,26 @@ const Dashboard = () => {
   const [activeAgent, setActiveAgent] = useState('overview'); // Default active agent
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // State for sidebar collapse
   const [isAIPromptDialogOpen, setIsAIPromptDialogOpen] = useState(false); // State for AI Prompt Dialog
+  const [dynamicPlotData, setDynamicPlotData] = useState<any | null>(null); // State for dynamic plot data
 
   const handleToggleCollapse = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const handlePlotGenerated = (plotData: any) => {
+    setDynamicPlotData(plotData);
+    setIsAIPromptDialogOpen(false); // Close dialog after plot is generated
+    setActiveAgent('overview'); // Ensure we are on the overview page to see the plot
+  };
+
+  const handleClearPlot = () => {
+    setDynamicPlotData(null);
+  };
+
   const renderAgentContent = () => {
     switch (activeAgent) {
       case 'overview':
-        return <OverviewContent onOpenAIPrompt={() => setIsAIPromptDialogOpen(true)} />;
+        return <OverviewContent onOpenAIPrompt={() => setIsAIPromptDialogOpen(true)} dynamicPlotData={dynamicPlotData} onClearPlot={handleClearPlot} />;
       case 'business-vitality':
         return <BusinessVitality />;
       case 'customer-analyzer':
@@ -549,10 +595,12 @@ const Dashboard = () => {
         return <Reports />;
       case 'settings':
         return <Settings />;
-      case 'users':
+      case 'profile': // Render Profile component for 'profile' agent
+        return <Profile />;
+      case 'users': // Render Users component for 'users' agent
         return <Users />;
       default:
-        return <OverviewContent onOpenAIPrompt={() => setIsAIPromptDialogOpen(true)} />;
+        return <OverviewContent onOpenAIPrompt={() => setIsAIPromptDialogOpen(true)} dynamicPlotData={dynamicPlotData} onClearPlot={handleClearPlot} />;
     }
   };
 
@@ -570,6 +618,7 @@ const Dashboard = () => {
       <AIPromptDialog
         isOpen={isAIPromptDialogOpen}
         onOpenChange={setIsAIPromptDialogOpen}
+        onPlotGenerated={handlePlotGenerated}
       />
     </div>
   );

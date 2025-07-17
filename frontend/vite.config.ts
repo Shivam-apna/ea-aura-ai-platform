@@ -6,7 +6,7 @@ import path from "path";
 export default defineConfig(() => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 5000, // Changed port to 5000
   },
   plugins: [dyadComponentTagger(), react()],
   resolve: {

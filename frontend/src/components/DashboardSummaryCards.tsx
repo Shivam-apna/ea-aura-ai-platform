@@ -12,7 +12,7 @@ interface SummaryCardProps {
   description: string;
 }
 
-const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, icon: Icon, colorClass, description }) => {
+export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, icon: Icon, colorClass, description }) => {
   const isPositive = change !== undefined && change >= 0;
   const changeColor = change === undefined ? "text-gray-600" : isPositive ? "text-green-600" : "text-red-600";
   const ChangeIcon = isPositive ? TrendingUp : TrendingDown;
