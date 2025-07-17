@@ -17,7 +17,7 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://git.aapnainfotech.com/Shivam-Ks/ea-aura-ai-platform.git
+git remote add origin https://github.com/Shivam-apna/ea-aura-ai-platform/tree/main
 git branch -M main
 git push -uf origin main
 ```
