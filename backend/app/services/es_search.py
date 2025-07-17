@@ -97,7 +97,7 @@ def query_sales_data(
 def query_customer_survey_data(
     query_text: str,
     index_name: str = "agent_dataset",
-    sub_index: str = "sales_dataset",
+    sub_index: str = "customer_survey_dataset",
     size: int = 10
 ) -> str:
     try:
@@ -159,7 +159,7 @@ def query_customer_survey_data(
 def query_mission_alignment_data(
     query_text: str,
     index_name: str = "agent_dataset",
-    sub_index: str = "sales_dataset",
+    sub_index: str = "mission_alignment_dataset",
     size: int = 10
 ) -> str:
     try:
@@ -220,7 +220,7 @@ def query_mission_alignment_data(
 def query_brand_audit_data(
     query_text: str,
     index_name: str = "agent_dataset",
-    sub_index: str = "sales_dataset",
+    sub_index: str = "brand_audit_dataset",
     size: int = 10
 ) -> str:
     try:
