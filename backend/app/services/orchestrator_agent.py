@@ -10,6 +10,9 @@ from app.core.core_log import agent_logger as logger
 from openai import BadRequestError
 import traceback
 from typing import Dict, List, Optional, Tuple
+from app.services.es_cache import search_cache, save_to_cache, create_cache_index_if_not_exists
+
+
 
 # Import the new modules
 from app.services.token_tracker import token_tracker
@@ -70,7 +73,6 @@ def get_enhanced_data_for_agent(agent_name: str, input_text: str):
         query_brand_audit_data
     )
     
-    business_name = "PILKHAN TREE (Retail Entrepreneur)"
     
     # Map agent names to data queries
     agent_data_mapping = {
@@ -100,16 +102,46 @@ def prepare_agent_prompt(agent_data: dict, input_text: str, enhanced_data: str) 
     return agent_prompt
 
 
+def create_cache_key(user_input: str, agent_name: str, enhanced_data_hash: str = None) -> str:
+    """Create a cache key based on user input and agent context"""
+    import hashlib
+    
+    # Create a unique key combining user input and agent context
+    key_components = [user_input, agent_name]
+    if enhanced_data_hash:
+        key_components.append(enhanced_data_hash)
+    
+    cache_key = "|".join(key_components)
+    return cache_key
+
+def get_enhanced_data_hash(enhanced_data: str) -> str:
+    """Get a hash of enhanced data to detect changes"""
+    import hashlib
+    return hashlib.md5(enhanced_data.encode()).hexdigest()[:8]  # Short hash
+
 def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job_id: str, tenant_id: str):
     """Execute a single agent with enhanced token tracking"""
     groq_config = get_groq_config()
     
     # Get enhanced data for the agent
     enhanced_data = get_enhanced_data_for_agent(agent_name, input_text)
+    enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
+    
+    # Create cache key based on user input + agent + data context
+    cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
+    
+    # Check cache with the cache key
+    cached_response = search_cache(cache_key)
+    if cached_response:
+        print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+        logger.info(f"✅ Cache hit for agent {agent_name}. Skipping LLM call.")
+        return cached_response, None
     
     # Prepare agent prompt
     agent_prompt = prepare_agent_prompt(agent_data, input_text, enhanced_data)
-    
+
+    print("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", agent_prompt)
+
     # Configure agent
     model = agent_data["llm_config"]["model"]
     config_list = [{
@@ -127,6 +159,9 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
         
         user_proxy.initiate_chat(manager, message=agent_prompt)
         response = group_chat.messages[-1]["content"]
+
+        # Save response to cache with the cache key
+        save_to_cache(cache_key, response)
         
         # Track tokens for this agent
         token_usage = token_tracker.track_agent_tokens(
@@ -171,12 +206,21 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
             "details": error_message
         }
 
-
 def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str, 
                      input_text: str, job_id: str, tenant_id: str):
     """Execute a sub-agent with token tracking"""
     groq_config = get_groq_config()
     enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text)
+    enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
+    
+    # Create cache key for sub-agent
+    cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
+    
+    # Check cache with the cache key
+    cached_response = search_cache(cache_key)
+    if cached_response:
+        logger.info(f"✅ Cache hit for sub-agent {agent_name}. Skipping LLM call.")
+        return cached_response, None
     
     # Prepare sub-agent prompt
     subagent_prompt_template = sub_agent_config["params"]["prompt_template"]
@@ -197,6 +241,9 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         
         sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
         subagent_response = sub_group_chat.messages[-1]["content"]
+
+        # Save response to cache with the cache key
+        save_to_cache(cache_key, subagent_response)
         
         # Track tokens for sub-agent
         token_usage = token_tracker.track_agent_tokens(
@@ -242,6 +289,7 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         }
 
 
+create_cache_index_if_not_exists()
 def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent_type: str = None):
     """Run a specific agent individually with detailed token tracking"""
     job_id = str(uuid.uuid4())
@@ -349,6 +397,9 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                 "token_usage": token_summary
             }
         
+       
+
+        
         else:
             return {
                 "job_id": job_id,
@@ -369,7 +420,7 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
             "details": str(e)
         }
 
-
+create_cache_index_if_not_exists()
 def run_autogen_agent(input_text: str, tenant_id: str):
     """Main orchestration function with comprehensive token tracking"""
     job_id = str(uuid.uuid4())
