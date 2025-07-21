@@ -1,278 +1,233 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, BarChart, TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, Percent, Scale, TrendingUp as TrendingUpIcon } from 'lucide-react';
-import { HolographicCard } from './Dashboard';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  LineChart as RechartsLineChart,
-  Line,
-  BarChart as RechartsBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  LabelList,
-  Cell,
-  ReferenceLine,
-  ScatterChart,
-  Scatter,
-} from "recharts";
-import { cn } from '@/lib/utils';
-import SalesKPICards from '@/components/SalesKPICards'; // Re-import SalesKPICards
-import SalesPromptBar from '@/components/SalesPromptBar';
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import Plot from "react-plotly.js";
+import { Info } from "lucide-react";
+import { useKeycloak } from '@/components/Auth/KeycloakProvider';
 
-const BusinessVitality = () => {
-  const [competitorMarginData, setCompetitorMarginData] = useState([]);
-  const [netProfitMarginData, setNetProfitMarginData] = useState([]);
-  const [quickRatioData, setQuickRatioData] = useState([]);
-  const [gmroiData, setGmroiData] = useState([]);
+const supportedTypes = ["line", "bar", "area", "scatter"];
 
+interface PlotData {
+  plot_type: string;
+  columns: string[];
+  data: Record<string, any>[];
+  title: string;
+}
+
+const LOCAL_STORAGE_KEY = "business_vitality_cache";
+  
+  const BusinessVitality = () => {
+  const [query, setQuery] = useState("");
+  const [plotData, setPlotData] = useState<PlotData | null>(null);
+  const [plotTypeOverride, setPlotTypeOverride] = useState<string | null>(null);
+  const [finalResponse, setFinalResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { keycloak } = useKeycloak();
+  const userToken = keycloak?.tokenParsed.organization.myorg.Tenant_id[0];
+  console.log(userToken, "tst")
+  // Load from localStorage on mount
   useEffect(() => {
-    const fetchBusinessVitalityData = async () => {
-      try {
-        const response = await fetch('http://localhost:3002/api/business-vitality');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setCompetitorMarginData(data.grossProfitMargin.sort((a: any, b: any) => b.margin - a.margin));
-        setNetProfitMarginData(data.netProfitMargin.sort((a: any, b: any) => b.margin - a.margin));
-        setQuickRatioData(data.quickRatio.sort((a: any, b: any) => b.ratio - a.ratio));
-        setGmroiData(data.gmroi.sort((a: any, b: any) => b.gmroi - a.gmroi));
-      } catch (error) {
-        console.error("Failed to fetch business vitality data:", error);
-      }
-    };
-
-    fetchBusinessVitalityData();
+    const cache = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (cache) {
+      const parsed = JSON.parse(cache);
+      setPlotData(parsed.plotData);
+      setFinalResponse(parsed.finalResponse);
+    }
   }, []);
 
-  // Calculate linear regression for the trendline
-  const N = competitorMarginData.length;
-  const sumX = competitorMarginData.reduce((acc, _, i) => acc + i, 0);
-  const sumY = competitorMarginData.reduce((acc, d: any) => acc + d.margin, 0);
-  const sumXY = competitorMarginData.reduce((acc, d: any, i) => acc + i * d.margin, 0);
-  const sumX2 = competitorMarginData.reduce((acc, _, i) => acc + i * i, 0);
+  const handleAsk = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:8081/api/v1/run-autogen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: query,
+          tenant_id: userToken,
+        }),
+      });
 
-  let slope = 0;
-  let intercept = 0;
+      const result = await res.json();
+      if (result?.sub_agent_response) {
+        setPlotData(result.sub_agent_response);
+        setFinalResponse(result.final_response || "No summary provided.");
 
-  if (N > 1 && (N * sumX2 - sumX * sumX) !== 0) {
-    slope = (N * sumXY - sumX * sumY) / (N * sumX2 - sumX * sumX);
-    intercept = (sumY - slope * sumX) / N;
-  }
+        // Save to localStorage
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY,
+          JSON.stringify({
+            plotData: result.sub_agent_response,
+            finalResponse: result.final_response || "No summary provided.",
+          })
+        );
+      } else {
+        console.error("Unexpected response format:", result);
+      }
+    } catch (err) {
+      console.error("Failed to fetch plot data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const trendlineData = competitorMarginData.map((d: any, i) => ({
-    name: d.name,
-    trend: slope * i + intercept,
-  }));
+  const renderPlotFromData = (data: PlotData) => {
+    const columns = data.columns;
+    const x = data.data.map((d) => d[columns[0]]);
+    const plotType = plotTypeOverride || data.plot_type;
+    const baseType = plotType.toLowerCase();
 
-  const BAR_COLORS = ['#4F46E5', '#10B981', '#F59E0B']; // More vibrant colors for bars
+    if (!supportedTypes.includes(baseType)) {
+      console.warn(`Unsupported plot type: ${baseType}. Falling back to bar chart.`);
+    }
 
-  const NET_PROFIT_COLORS = ['#22C55E', '#FACC15', '#EF4444']; // Green, Yellow, Red for highest to lowest
+    const COLORS = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A"];
 
-  const QUICK_RATIO_COLORS = ['#3B82F6', '#A855F7', '#EC4899']; // Blue, Purple, Pink
+    const traces = columns.slice(1).map((col, idx) => {
+      const y = data.data.map((d) => d[col]);
+      const color = COLORS[idx % COLORS.length];
 
-  const GMROI_COLORS = ['#10B981', '#3B82F6', '#F59E0B']; // Green, Blue, Amber
+      if (baseType === "area") {
+        return {
+          x,
+          y,
+          name: col,
+          type: "scatter",
+          mode: "lines",
+          fill: "tozeroy",
+          line: { color },
+        };
+      }
 
-  const highestMarginCompany = netProfitMarginData.length > 0 ? netProfitMarginData[0] : null;
-  const lowestMarginCompany = netProfitMarginData.length > 0 ? netProfitMarginData[netProfitMarginData.length - 1] : null;
+      return {
+        x,
+        y,
+        name: col,
+        type: ["line", "scatter"].includes(baseType) ? "scatter" : baseType,
+        mode:
+          baseType === "line"
+            ? "lines+markers"
+            : baseType === "scatter"
+            ? "markers"
+            : undefined,
+        marker: { color },
+      };
+    });
+
+    return (
+      <Plot
+        data={traces}
+        layout={{
+          title: data.title || "Business Vitality Plot",
+          xaxis: { title: columns[0] },
+          yaxis: { title: "Values" },
+          autosize: true,
+          margin: { t: 40, l: 50, r: 30, b: 50 },
+          plot_bgcolor: "#fff",
+          paper_bgcolor: "#fff",
+        }}
+        style={{ width: "100%", height: "100%" }}
+        useResizeHandler={true}
+        config={{ responsive: true }}
+      />
+    );
+  };
 
   return (
-    <div className="p-4 h-full">
-      <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-800 mb-6 text-center">
-        EA-AURA
-      </h1>
-      {/* Sales KPI Cards */}
-      <div className="mb-6">
-        <SalesKPICards />
-      </div>
-      {/* Sales Prompt Bar */}
-      <div className="mb-6">
-        <SalesPromptBar />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Card for Gross Profit Margin of Competitors */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Percent className="h-5 w-5 text-orange-600" /> Gross Profit Margin of Competitors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={competitorMarginData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <YAxis stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} label={{ value: 'Margin (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value}%`, 'Gross Profit Margin']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="margin" barSize={60}>
-                    {competitorMarginData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                    ))}
-                    <LabelList dataKey="margin" position="top" formatter={(value: number) => `${value}%`} fill="hsl(var(--foreground))" />
-                  </Bar>
-                  {/* Trendline */}
-                  <Line
-                    type="linear"
-                    dataKey="trend"
-                    stroke="#EF4444" // Red color for trendline
-                    strokeWidth={2}
-                    dot={false}
-                    data={trendlineData} // Use the separate trendline data
-                  />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-sm text-gray-700 text-center mt-2">Competitor Gross Profit Margins with Linear Trend</p>
-          </CardContent>
-        </HolographicCard>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Vitality Analysis</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Ask your business question..."
+          />
+          <div className="flex items-center gap-4">
+            <Button onClick={handleAsk} disabled={loading}>
+              {loading ? "Processing..." : "Ask"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setPlotData(null);
+                setFinalResponse(null);
+                setPlotTypeOverride(null);
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+              }}
+            >
+              Clear
+            </Button>
+            {plotData && (
+              <Select
+                onValueChange={(value) => setPlotTypeOverride(value)}
+                value={plotTypeOverride || plotData.plot_type}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Switch Plot Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {supportedTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* New Card for Net Profit Margin Comparison */}
-        <HolographicCard>
+      {plotData && (
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Percent className="h-5 w-5 text-blue-600" /> Net Profit Margin Comparison
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={netProfitMarginData}
-                  layout="vertical"
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} label={{ value: 'Net Profit Margin (%)', position: 'insideBottom', offset: -5, fill: 'hsl(var(--foreground))' }} />
-                  <YAxis type="category" dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value}%`, 'Net Profit Margin']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="margin" barSize={40}>
-                    {netProfitMarginData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={NET_PROFIT_COLORS[index]} />
-                    ))}
-                    <LabelList dataKey="margin" position="right" formatter={(value: number) => `${value}%`} fill="hsl(var(--foreground))" />
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
+            <div className="flex items-center justify-between">
+              <CardTitle>Visualization</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="p-2 rounded-full hover:bg-muted" title="View Summary">
+                    <Info className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Business Insights</DialogTitle>
+                    <DialogDescription className="mt-2">
+                      {finalResponse}
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Highest Margin: <span className="font-semibold text-green-600">{highestMarginCompany?.name} ({highestMarginCompany?.margin}%)</span> |
-              Lowest Margin: <span className="font-semibold text-red-600">{lowestMarginCompany?.name} ({lowestMarginCompany?.margin}%)</span>
-            </p>
-          </CardContent>
-        </HolographicCard>
+          </CardHeader>
 
-        {/* New Card for Quick Ratio Comparison (Bullet Chart / Dot Plot) */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Scale className="h-5 w-5 text-green-600" /> Quick Ratio Comparison
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={quickRatioData}
-                  layout="vertical"
-                  margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    domain={[0, 3]} // Set fixed domain for comparison
-                    stroke="hsl(var(--foreground))"
-                    tick={{ fill: 'hsl(var(--foreground))' }}
-                    label={{ value: 'Quick Ratio Value', position: 'insideBottom', offset: -5, fill: 'hsl(var(--foreground))' }}
-                  />
-                  <YAxis type="category" dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [value.toFixed(1), 'Quick Ratio']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  {/* Benchmark Line at 1.0 */}
-                  <ReferenceLine x={1.0} stroke="#EF4444" strokeDasharray="3 3" label={{ value: 'Benchmark (1.0)', position: 'top', fill: '#EF4444', fontSize: 12 }} />
-                  <Bar dataKey="ratio" barSize={10}> {/* Small barSize to make it look like a dot */}
-                    {quickRatioData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={QUICK_RATIO_COLORS[index]} />
-                    ))}
-                    <LabelList dataKey="ratio" position="right" formatter={(value: number) => value.toFixed(1)} fill="hsl(var(--foreground))" />
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Visualize liquidity comparison across competitors.
-            </p>
+          <CardContent className="pt-6 min-h-[400px]">
+            {loading ? (
+              <Skeleton className="w-full h-[400px] rounded-lg" />
+            ) : (
+              renderPlotFromData(plotData)
+            )}
           </CardContent>
-        </HolographicCard>
-
-        {/* New Card for GMROI Comparison (Lollipop Chart) */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <TrendingUpIcon className="h-5 w-5 text-purple-600" /> GMROI Comparison with Competitors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={gmroiData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <YAxis
-                    stroke="hsl(var(--foreground))"
-                    tick={{ fill: 'hsl(var(--foreground))' }}
-                    domain={[0, 3]} // Consistent scale 0-3
-                    label={{ value: 'GMROI Values', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [value.toFixed(1), 'GMROI']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="gmroi" barSize={2}> {/* Thin bar for the stick */}
-                    {gmroiData.map((entry: any, index) => (
-                      <Cell key={`bar-cell-${index}`} fill={GMROI_COLORS[index % GMROI_COLORS.length]} />
-                    ))}
-                  </Bar>
-                  <Scatter dataKey="gmroi" data={gmroiData}> {/* Scatter for the lollipop head */}
-                    {gmroiData.map((entry: any, index) => (
-                      <Cell key={`scatter-cell-${index}`} fill={GMROI_COLORS[index % GMROI_COLORS.length]} />
-                    ))}
-                    <LabelList dataKey="gmroi" position="top" formatter={(value: number) => value.toFixed(1)} fill="hsl(var(--foreground))" />
-                  </Scatter>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Compare return on inventory investment across competitors.
-            </p>
-          </CardContent>
-        </HolographicCard>
-      </div>
+        </Card>
+      )}
     </div>
   );
 };
