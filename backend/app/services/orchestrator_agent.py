@@ -420,8 +420,138 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
         }
 
 create_cache_index_if_not_exists()
+# Add this function to handle parent agent execution with caching
+def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict, 
+                        subagent_response: str, input_text: str, job_id: str, tenant_id: str):
+    """Execute parent agent with caching support"""
+    groq_config = get_groq_config()
+    
+    # Create parent agent prompt
+    parent_prompt_template = parent_agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
+    parent_prompt = parent_prompt_template.replace("{{input}}", subagent_response).replace("{{question}}", input_text)
+    
+    # Create cache key for parent agent (include subagent response in hash)
+    subagent_hash = get_enhanced_data_hash(subagent_response)
+    cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash)
+    
+    # Check cache first
+    cached_response = search_cache(cache_key)
+    if cached_response:
+        logger.info(f"✅ Cache hit for parent agent {parent_agent_name}. Skipping LLM call.")
+        return cached_response, None
+    
+    # Execute parent agent if not in cache
+    parent_model = parent_agent_data["llm_config"]["model"]
+    parent_config_list = [{
+        "model": parent_model,
+        "api_key": groq_config["api_key"],
+        "base_url": groq_config["base_url"]
+    }]
+    
+    try:
+        parent_assistant = AssistantAgent(name=parent_agent_name, llm_config={"config_list": parent_config_list})
+        parent_user_proxy = UserProxyAgent(name="parent_user", human_input_mode="NEVER")
+        parent_group_chat = GroupChat(agents=[parent_user_proxy, parent_assistant], messages=[], max_round=2)
+        parent_manager = GroupChatManager(groupchat=parent_group_chat, llm_config={"config_list": parent_config_list})
+        
+        parent_user_proxy.initiate_chat(parent_manager, message=parent_prompt)
+        parent_response = parent_group_chat.messages[-1]["content"]
+        
+        # Save to cache
+        save_to_cache(cache_key, parent_response)
+        
+        # Track tokens
+        parent_token_usage = token_tracker.track_agent_tokens(
+            agent_id=parent_agent_name,
+            input_text=parent_prompt,
+            output_text=parent_response,
+            model_name=parent_model,
+            step=1
+        )
+        
+        # Save to memory
+        memory_manager.save_agent_memory(
+            agent_id=parent_agent_name,
+            job_id=job_id,
+            tenant_id=tenant_id,
+            step=1,
+            input_text=parent_prompt,
+            output_text=parent_response,
+            token_usage=parent_token_usage,
+            model_name=parent_model
+        )
+        
+        return parent_response, None
+        
+    except BadRequestError as e:
+        error_message = str(e)
+        if hasattr(e, 'response') and hasattr(e.response, 'json'):
+            try:
+                error_json = e.response.json()
+                error_message = json.dumps(error_json)
+            except Exception:
+                pass
+        
+        logger.error(f"🚫 Parent agent {parent_agent_name} failed due to OpenAI org/API key issue", extra={
+            "job_id": job_id,
+            "error": error_message,
+            "agent": parent_agent_name
+        })
+        
+        return None, {
+            "error": f"Parent agent {parent_agent_name} execution failed due to an issue with the API key or organization.",
+            "details": error_message
+        }
+
+# Add this function for orchestrator-level caching
+def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
+    """Execute orchestrator with full workflow caching"""
+    # Create a cache key for the entire orchestration workflow
+    workflow_cache_key = create_cache_key(input_text, "full_orchestration")
+    
+    # Check if we have a cached result for the entire workflow
+    cached_workflow = search_cache(workflow_cache_key)
+    if cached_workflow:
+        logger.info("✅ Full orchestration cache HIT - returning complete cached workflow")
+        try:
+            # Parse the cached result (assuming it's JSON)
+            import json
+            cached_result = json.loads(cached_workflow)
+            # Add a new job_id for this request
+            cached_result["job_id"] = str(uuid.uuid4())
+            cached_result["from_cache"] = True
+            
+            # Overwrite token usage fields to indicate no new tokens were used
+            cached_result["token_usage"] = {
+                "total_tokens": 0,
+                "agents": {}
+            }
+            cached_result["detailed_token_usage"] = {
+                "sub_agent": {"total_tokens": 0},
+                "parent_agent": {"total_tokens": 0},
+                "orchestrator": {"total_tokens": 0}
+            }
+                        
+            return cached_result
+        except json.JSONDecodeError:
+            # If not JSON, treat as regular response
+            return {
+                "job_id": str(uuid.uuid4()),
+                "response": cached_workflow,
+                "from_cache": True
+            }
+    
+    return None  # No cache hit, proceed with normal execution
+
+# Modified run_autogen_agent function
 def run_autogen_agent(input_text: str, tenant_id: str):
-    """Main orchestration function with comprehensive token tracking"""
+    """Main orchestration function with comprehensive token tracking and caching"""
+    
+    # First check for full workflow cache
+    cached_result = execute_orchestrator_with_cache(input_text, tenant_id)
+    if cached_result:
+        return cached_result
+    
     job_id = str(uuid.uuid4())
     groq_config = get_groq_config()
     
@@ -448,7 +578,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 agent_id="GeneralAgent",
                 input_text=input_text,
                 output_text=general_response,
-                model_name="general_model",  # Adjust as needed
+                model_name="general_model",
                 step=0
             )
 
@@ -490,7 +620,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             "sub_agent": selected_subagent["agent_id"]
         })
 
-        # Step 3: Execute Sub-Agent
+        # Step 3: Execute Sub-Agent (already has caching)
         subagent_response, error = execute_sub_agent(
             selected_subagent["agent_id"], selected_subagent, parent_agent_name, 
             input_text, job_id, tenant_id
@@ -500,73 +630,18 @@ def run_autogen_agent(input_text: str, tenant_id: str):
 
         subagent_response_json = parse_json_response(subagent_response)
 
-        # Step 4: Execute Parent Agent
-        parent_prompt_template = parent_agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
-        parent_prompt = parent_prompt_template.replace("{{input}}", subagent_response).replace("{{question}}", input_text)
-
+        # Step 4: Execute Parent Agent (now with caching)
         logger.info("▶️ Executing parent agent", extra={
             "job_id": job_id, 
             "agent": parent_agent_name
         })
-
-        parent_model = parent_agent_data["llm_config"]["model"]
-        parent_config_list = [{
-            "model": parent_model,
-            "api_key": groq_config["api_key"],
-            "base_url": groq_config["base_url"]
-        }]
-
-        try:
-            parent_assistant = AssistantAgent(name=parent_agent_name, llm_config={"config_list": parent_config_list})
-            parent_user_proxy = UserProxyAgent(name="parent_user", human_input_mode="NEVER")
-            parent_group_chat = GroupChat(agents=[parent_user_proxy, parent_assistant], messages=[], max_round=2)
-            parent_manager = GroupChatManager(groupchat=parent_group_chat, llm_config={"config_list": parent_config_list})
-
-            parent_user_proxy.initiate_chat(parent_manager, message=parent_prompt)
-            parent_response = parent_group_chat.messages[-1]["content"]
-
-            # Track tokens for parent agent
-            parent_token_usage = token_tracker.track_agent_tokens(
-                agent_id=parent_agent_name,
-                input_text=parent_prompt,
-                output_text=parent_response,
-                model_name=parent_model,
-                step=1
-            )
-
-            # Save parent agent memory
-            memory_manager.save_agent_memory(
-                agent_id=parent_agent_name,
-                job_id=job_id,
-                tenant_id=tenant_id,
-                step=1,
-                input_text=parent_prompt,
-                output_text=parent_response,
-                token_usage=parent_token_usage,
-                model_name=parent_model
-            )
-
-        except BadRequestError as e:
-            error_message = str(e)
-            if hasattr(e, 'response') and hasattr(e.response, 'json'):
-                try:
-                    error_json = e.response.json()
-                    error_message = json.dumps(error_json)
-                except Exception:
-                    pass
-
-            logger.error("🚫 Parent agent failed due to OpenAI org/API key issue", extra={
-                "job_id": job_id,
-                "error": error_message,
-                "agent": parent_agent_name
-            })
-
-            return {
-                "job_id": job_id,
-                "agent": parent_agent_name,
-                "error": "Parent agent execution failed due to an issue with the API key or organization.",
-                "details": error_message
-            }
+        
+        parent_response, error = execute_parent_agent(
+            parent_agent_name, parent_agent_data, subagent_response, 
+            input_text, job_id, tenant_id
+        )
+        if error:
+            return {"job_id": job_id, **error}
 
         # Step 5: Orchestrator Agent Summary
         orchestrator_summary = (
@@ -579,15 +654,9 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             agent_id="orchestrator_agent",
             input_text=parent_response,
             output_text=orchestrator_summary,
-            model_name=parent_model,
+            model_name=parent_agent_data["llm_config"]["model"],
             step=2
         )
-
-        parent_group_chat.messages.append({
-            "role": "assistant",
-            "name": "orchestrator_agent",
-            "content": orchestrator_summary
-        })
 
         # Step 6: Save All Memory Records
         memory_manager.save_orchestrator_memory(
@@ -606,7 +675,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             input_text=parent_response,
             output_text=orchestrator_summary,
             token_usage=orchestrator_token_usage,
-            model_name=parent_model
+            model_name=parent_agent_data["llm_config"]["model"]
         )
 
         # Save chain records
@@ -637,30 +706,17 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             token_usage=token_tracker.get_agent_token_summary("orchestrator_agent")
         )
 
-        # Step 7: Build Final Chat Turn List
-        chat_turns = [
-            {"speaker": m.get("name", "unknown"), "message": m["content"]}
-            for m in parent_group_chat.messages
-        ]
-
         # Get comprehensive token summary
         token_summary = token_tracker.get_job_token_summary(job_id)
         
-        logger.info("✅ Agent orchestration completed", extra={
-            "job_id": job_id,
-            "parent_agent": parent_agent_name,
-            "sub_agent": selected_subagent["agent_id"],
-            "token_summary": token_summary
-        })
-
-        return {
+        # Create final result
+        final_result = {
             "job_id": job_id,
             "parent_agent": parent_agent_name,
             "sub_agent": selected_subagent["agent_id"],
             "sub_agent_response": subagent_response_json,
             "final_response": parent_response,
             "orchestrator_response": orchestrator_summary,
-            "chat_turns": chat_turns,
             "response": orchestrator_summary,
             "token_usage": token_summary,
             "detailed_token_usage": {
@@ -669,6 +725,19 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 "orchestrator": token_tracker.get_agent_token_summary("orchestrator_agent")
             }
         }
+        
+        # Cache the entire workflow result
+        workflow_cache_key = create_cache_key(input_text, "full_orchestration")
+        save_to_cache(workflow_cache_key, json.dumps(final_result))
+        
+        logger.info("✅ Agent orchestration completed", extra={
+            "job_id": job_id,
+            "parent_agent": parent_agent_name,
+            "sub_agent": selected_subagent["agent_id"],
+            "token_summary": token_summary
+        })
+
+        return final_result
 
     except Exception as e:
         logger.exception("❌ Unhandled exception during agent orchestration", extra={
@@ -682,4 +751,3 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             "error": "Internal server error during agent execution.",
             "details": str(e)
         }
-
