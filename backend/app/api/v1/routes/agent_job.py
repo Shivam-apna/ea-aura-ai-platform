@@ -8,6 +8,13 @@ from app.dao import agent_job_dao
 from app.core.core_log import logger
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi import UploadFile, File, Form, APIRouter
+import pandas as pd
+from elasticsearch import Elasticsearch, helpers
+import os
+from app.services.excel_to_elasticsearch import ExcelToElasticsearch
+import tempfile
+
 
 router = APIRouter()
 
@@ -147,3 +154,66 @@ def run_individual_agent_endpoint(payload: dict = Body(...), request: Request = 
                 "details": str(e)
             }
         )
+    
+
+
+@router.post("/uploadfile")
+async def upload_file(
+    file: UploadFile = File(...),
+    sub_index: str = Form(...),
+    index_name: str = Form(...),
+    tenant_id: str = Form(...)
+):
+    temp_path = None
+    try:
+        # Validate file type
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Only Excel files (.xlsx, .xls) are supported"}
+            )
+
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_path = temp_file.name
+
+        logger.info(f"Processing file: {file.filename}, size: {len(content)} bytes")
+
+        # Initialize and validate Elasticsearch connection
+        pipeline = ExcelToElasticsearch(index_name=index_name, sub_index=sub_index,tenant_id=tenant_id)
+        
+        if not pipeline.validate_elasticsearch_connection():
+            return JSONResponse(
+                status_code=503,
+                content={"error": "Elasticsearch connection failed"}
+            )
+
+        # Process the Excel file
+        pipeline.process_excel(temp_path)
+
+        return {
+            "message": f"File '{file.filename}' processed and indexed successfully.",
+            "index_name": index_name,
+            "sub_index": sub_index,
+            "tenant_id": pipeline.tenant_id
+        }
+
+    except Exception as e:
+        logger.exception(f"Error processing file {file.filename}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": f"Failed to process file: {str(e)}",
+                "file": file.filename
+            }
+        )
+    finally:
+        # Clean up temporary file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+                logger.info(f"Temporary file {temp_path} cleaned up")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file: {str(e)}")
