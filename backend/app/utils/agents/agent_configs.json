@@ -23,7 +23,11 @@
       "expense",
       "campaign",
       "ROI",
-      "CPL"
+      "CPL",
+      "sale",
+      "gross profit margin",
+      "cogs",
+      "percentage"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile",
@@ -49,7 +53,11 @@
           "margin",
           "profit",
           "GMROI",
-          "expense"
+          "expense",
+          "sale",
+          "gross profit margin",
+          "cogs",
+          "percentage"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",

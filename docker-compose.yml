@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 
 services:
   nginx:
@@ -44,6 +44,21 @@ services:
       - IPC_LOCK
     networks:
       - ea-aura
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    # volumes:
+    #   - ./themes/my_login_theme:/opt/keycloak/themes/my_login_theme
+    command: start-dev
+    ports:
+      - "8080:8080"
+    networks:
+      - ea-aura
+
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
@@ -151,6 +166,20 @@ services:
     restart: unless-stopped
     networks:
       - ea-aura
+
+  frontend:
+    image: node:20
+    container_name: frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5000:5000"
+    command: sh -c "corepack enable && npm install && npm run dev"
+    networks:
+      - ea-aura
+    depends_on:
+      - backend
 
 volumes:
   esdata:

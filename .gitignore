@@ -35,4 +35,4 @@ backend/app/logs/
 !backend/app/logs/.gitkeep
 
 
-kafka\data
+kafka/

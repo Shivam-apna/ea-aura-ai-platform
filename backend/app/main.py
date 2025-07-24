@@ -5,6 +5,7 @@ from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, 
 from app.core.index_manager import IndexManager
 from app.core.elastic import get_es_client
 from app.core.core_log import logger
+from fastapi.middleware.cors import CORSMiddleware
 
 logger.info("✅ EA-AURA backend logging initialized")
 
@@ -25,6 +26,15 @@ app.include_router(test_agent_run.router, tags=["Debug"])
 async def startup_event():
     get_es_client()
     IndexManager.create_indices()
+    
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+ 
 
 # Root endpoint
 #Root endpoint
