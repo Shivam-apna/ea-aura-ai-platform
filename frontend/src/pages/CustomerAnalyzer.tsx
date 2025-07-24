@@ -4,6 +4,7 @@ import { MessageSquare, Ticket, Smile, Meh, Frown } from 'lucide-react';
 import { HolographicCard } from './Dashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/ThemeProvider';
 
 const CustomerAnalyzer = () => {
   const [sentimentData, setSentimentData] = useState([
@@ -11,9 +12,10 @@ const CustomerAnalyzer = () => {
     { name: 'Neutral', value: 25 },
     { name: 'Negative', value: 15 },
   ]);
-  const COLORS = ['#22C55E', '#FACC15', '#EF4444']; // Green, Yellow, Red
+  const COLORS = ['#00FF7F', '#FFD700', '#FF6347']; // Neon Green, Gold, Tomato
 
   const [highPriorityTickets, setHighPriorityTickets] = useState(7);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -34,23 +36,33 @@ const CustomerAnalyzer = () => {
     "Overall customer sentiment remains strongly positive, with 60% positive feedback. There's a slight increase in neutral responses, indicating areas for potential improvement in product clarity. Negative feedback is minimal but highlights specific issues related to recent service updates. Focus on addressing high-priority support tickets to maintain satisfaction."
   `;
 
+  const tooltipContentStyle = {
+    backgroundColor: theme === 'dark' ? "hsl(var(--neumorphic-bg))" : "hsl(var(--neumorphic-bg))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "8px",
+    color: theme === 'dark' ? "hsl(var(--foreground))" : "hsl(var(--foreground))"
+  };
+  const tooltipItemStyle = { color: theme === 'dark' ? "hsl(var(--foreground))" : "hsl(var(--foreground))" };
+  const tooltipLabelStyle = { color: theme === 'dark' ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground))" };
+
+
   return (
-    <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-      <HolographicCard className="lg:col-span-2">
+    <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      <HolographicCard className="lg:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-blue-600" /> AI-Generated Sentiment Summary
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-400" /> AI-Generated Sentiment Summary
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700 whitespace-pre-line">{aiSentimentSummary.trim()}</p>
+          <p className="text-muted-foreground whitespace-pre-line">{aiSentimentSummary.trim()}</p>
         </CardContent>
       </HolographicCard>
 
-      <HolographicCard>
+      <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Smile className="h-5 w-5 text-green-600" /> Customer Feedback Distribution
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Smile className="h-5 w-5 text-green-400" /> Customer Feedback Distribution
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center">
@@ -70,11 +82,11 @@ const CustomerAnalyzer = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }} itemStyle={{ color: "black" }} labelStyle={{ color: "gray" }} />
+                <Tooltip contentStyle={tooltipContentStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-center gap-4 mt-4 text-sm text-gray-700">
+          <div className="flex justify-center gap-4 mt-4 text-sm text-muted-foreground">
             {sentimentData.map((entry, index) => (
               <div key={entry.name} className="flex items-center">
                 <span className="h-3 w-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index] }}></span>
@@ -85,18 +97,18 @@ const CustomerAnalyzer = () => {
         </CardContent>
       </HolographicCard>
 
-      <HolographicCard>
+      <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Ticket className="h-5 w-5 text-orange-600" /> High-Priority Support Tickets
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Ticket className="h-5 w-5 text-orange-400" /> High-Priority Support Tickets
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-full">
-          <div className={cn("text-6xl font-bold", highPriorityTickets > 5 ? "text-red-600" : "text-orange-600")}>
+          <div className={cn("text-6xl font-bold", highPriorityTickets > 5 ? "text-red-400" : "text-orange-400")}>
             {highPriorityTickets}
           </div>
-          <p className="text-lg text-gray-700 mt-2">Tickets requiring immediate attention</p>
-          <p className="text-sm text-gray-600 mt-4">
+          <p className="text-lg text-muted-foreground mt-2">Tickets requiring immediate attention</p>
+          <p className="text-sm text-muted-foreground mt-4">
             These tickets are flagged by AI for critical impact on customer satisfaction. Prioritize resolution.
           </p>
         </CardContent>

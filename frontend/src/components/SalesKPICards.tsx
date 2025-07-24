@@ -28,7 +28,8 @@ const SalesKPICards: React.FC = () => {
         value={`$${totalSales.toLocaleString()}`}
         change={salesGrowth}
         icon={DollarSign}
-        colorClass="text-green-600"
+        colorClass="text-green-400"
+        bgColorClass="bg-card"
         description="vs. previous year"
       />
       <SummaryCard
@@ -36,21 +37,24 @@ const SalesKPICards: React.FC = () => {
         value={`${salesGrowth.toFixed(1)}%`}
         change={salesGrowth > 0 ? 0.1 : -0.1} // Small arbitrary change for icon
         icon={TrendingUp}
-        colorClass="text-blue-600"
+        colorClass="text-blue-400"
+        bgColorClass="bg-card"
         description="this quarter"
       />
       <SummaryCard
         title="Average Order Value"
         value={`$${avgOrderValue.toFixed(2)}`}
         icon={ShoppingCart}
-        colorClass="text-purple-600"
+        colorClass="text-purple-400"
+        bgColorClass="bg-card"
         description="across all channels"
       />
       <SummaryCard
         title="Conversion Rate"
         value={`${conversionRate.toFixed(1)}%`}
         icon={Percent}
-        colorClass="text-orange-600"
+        colorClass="text-orange-400"
+        bgColorClass="bg-card"
         description="from visitors to buyers"
       />
     </div>

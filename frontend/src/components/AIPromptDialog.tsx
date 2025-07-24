@@ -86,12 +86,12 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] h-[500px] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] h-[500px] flex flex-col neumorphic-card border border-border text-foreground">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-blue-600" /> AI Prompt Assistant
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <MessageSquare className="h-5 w-5 text-primary" /> AI Prompt Assistant
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-muted-foreground">
             Ask me anything about your dashboard data or generate insights. Try "plot sales data".
           </DialogDescription>
         </DialogHeader>
@@ -103,8 +103,8 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
                   className={cn(
                     "max-w-[70%] p-3 rounded-lg",
                     msg.sender === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-900"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   {msg.text}
@@ -119,7 +119,7 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            className="flex-grow bg-white/50 border-blue-300/50 text-gray-900 placeholder:text-gray-500"
+            className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
           />
           <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Send className="h-5 w-5" />

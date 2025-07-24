@@ -32,82 +32,82 @@ const Profile = () => {
   const position = "Software Engineer";
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 h-full">
-      <HolographicCard className="col-span-full">
+    <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      <HolographicCard className="col-span-full neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-blue-600" /> User Profile
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-blue-400" /> User Profile
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24">
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
-              <AvatarFallback className="text-4xl">{userName.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-blue-600 text-white">{userName.charAt(0)}</AvatarFallback>
             </Avatar>
-            <h2 className="text-2xl font-bold text-gray-900">{userName}</h2>
-            <p className="text-gray-600">{userEmail}</p>
+            <h2 className="text-2xl font-bold text-foreground">{userName}</h2>
+            <p className="text-muted-foreground">{userEmail}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="userId" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="userId" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Fingerprint className="h-4 w-4" /> User ID
               </Label>
-              <Input id="userId" type="text" value={userId} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="userId" type="text" value={userId} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="tenantId" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="tenantId" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Home className="h-4 w-4" /> Tenant ID
               </Label>
-              <Input id="tenantId" type="text" value={tenantId} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="tenantId" type="text" value={tenantId} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="organizationId" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="organizationId" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Building className="h-4 w-4" /> Organization ID
               </Label>
-              <Input id="organizationId" type="text" value={organizationId} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="organizationId" type="text" value={organizationId} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="name" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="name" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Name
               </Label>
-              <Input id="name" type="text" value={userName} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="name" type="text" value={userName} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="email" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Mail className="h-4 w-4" /> Email
               </Label>
-              <Input id="email" type="email" value={userEmail} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="email" type="email" value={userEmail} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="role" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="role" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Briefcase className="h-4 w-4" /> Role
               </Label>
-              <Input id="role" type="text" value={userRole} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="companyName" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="companyName" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Building className="h-4 w-4" /> Company Name
               </Label>
-              <Input id="companyName" type="text" value={companyName} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="companyName" type="text" value={companyName} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="department" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="department" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Briefcase className="h-4 w-4" /> Department
               </Label>
-              <Input id="department" type="text" value={department} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="department" type="text" value={department} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="position" className="text-gray-700 flex items-center gap-2 mb-2">
+              <Label htmlFor="position" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Position
               </Label>
-              <Input id="position" type="text" value={position} readOnly className="bg-white/50 border-blue-300/50 text-gray-900" />
+              <Input id="position" type="text" value={position} readOnly className="bg-input border-border text-foreground" />
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" className="bg-gray-100 text-gray-700 hover:bg-gray-200">Edit Profile</Button>
+            <Button variant="outline" className="bg-secondary text-secondary-foreground hover:bg-secondary/80">Edit Profile</Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">Save Changes</Button>
           </div>
         </CardContent>

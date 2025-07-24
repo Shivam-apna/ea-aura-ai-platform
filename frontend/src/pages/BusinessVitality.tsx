@@ -1,280 +1,345 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, BarChart, TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, Percent, Scale, TrendingUp as TrendingUpIcon } from 'lucide-react';
-import { HolographicCard } from './Dashboard';
+"use client";
+ 
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import Plot from "react-plotly.js";
 import {
-  LineChart as RechartsLineChart,
-  Line,
-  BarChart as RechartsBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  LabelList,
-  Cell,
-  ReferenceLine,
-  ScatterChart,
-  Scatter,
-} from "recharts";
-import { cn } from '@/lib/utils';
-import SalesKPICards from '@/components/SalesKPICards'; // Re-import SalesKPICards
-import SalesPromptBar from '@/components/SalesPromptBar';
-
-const BusinessVitality = () => {
-  const [competitorMarginData, setCompetitorMarginData] = useState([]);
-  const [netProfitMarginData, setNetProfitMarginData] = useState([]);
-  const [quickRatioData, setQuickRatioData] = useState([]);
-  const [gmroiData, setGmroiData] = useState([]);
-
-  useEffect(() => {
-    const fetchBusinessVitalityData = async () => {
-      try {
-        const response = await fetch('http://localhost:3002/api/business-vitality');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setCompetitorMarginData(data.grossProfitMargin.sort((a: any, b: any) => b.margin - a.margin));
-        setNetProfitMarginData(data.netProfitMargin.sort((a: any, b: any) => b.margin - a.margin));
-        setQuickRatioData(data.quickRatio.sort((a: any, b: any) => b.ratio - a.ratio));
-        setGmroiData(data.gmroi.sort((a: any, b: any) => b.gmroi - a.gmroi));
-      } catch (error) {
-        console.error("Failed to fetch business vitality data:", error);
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+ 
+import config from "@/config/business_dashboard.json";
+// Configurable metric layout
+const KPI_KEYS = config.kpi_keys;
+const METRIC_GROUPS = config.metric_groups;;
+import { BarChart2, LineChart, ScatterChart, Settings2 } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Input } from "@/components/ui/input";
+import { cn } from '@/lib/utils'; // Import cn for class merging
+ 
+const DEFAULT_MODEBAR = {
+  toImage: true,
+  zoom2d: true,
+  pan2d: true,
+  resetScale2d: true,
+  autoscale: true,
+  fullscreen: true,
+};
+ 
+const COLORS = ["#A8C574", "#4CB2FF"];
+ 
+const BusinessDashboard = () => {
+  const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
+  const [input, setInput] = useState("");
+  const [charts, setCharts] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(false);
+const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
+const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
+const [chartColors, setChartColors] = useState<Record<string, string>>({});
+ 
+  const handleCloseChart = (key: string) => {
+    setHiddenCharts((prev) => new Set(prev).add(key));
+  };
+ 
+  const handleRestoreCharts = () => {
+    setHiddenCharts(new Set());
+  };
+ 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:8081/api/v1/run-autogen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
+      });
+ 
+      const data = await res.json();
+      const parsed = data.sub_agent_response;
+      console.log(parsed);
+ 
+      const chartMap: Record<string, any> = {};
+ 
+      for (const key of Object.keys(parsed)) {
+        if (["response", "task", "columns", "filters"].includes(key)) continue;
+ 
+        const { plot_type, data: values, value, delta } = parsed[key] || {};
+        if (!values || values.length === 0) continue;
+ 
+        const xKey = Object.keys(values[0])[0];
+        const yKey = Object.keys(values[0]).find((k) => k !== xKey);
+        if (!yKey) continue;
+ 
+        chartMap[key] = {
+          title: key,
+          plotType: plot_type || "bar",
+          x: values.map((d) => {
+            const val = d[xKey];
+            // If value looks like a date string, format to YYYY-MM-DD
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}([ T]([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?(\.\d+)?(Z|[+-][01]\d:?[0-5]\d)?)?$/.test(val)) {
+              return val.slice(0, 10);
+            }
+            return val;
+          }),
+          y: values.map((d) => d[yKey]),
+          xLabel: xKey,
+          yLabel: yKey,
+          value,
+          delta,
+        };
       }
-    };
-
-    fetchBusinessVitalityData();
-  }, []);
-
-  // Calculate linear regression for the trendline
-  const N = competitorMarginData.length;
-  const sumX = competitorMarginData.reduce((acc, _, i) => acc + i, 0);
-  const sumY = competitorMarginData.reduce((acc, d: any) => acc + d.margin, 0);
-  const sumXY = competitorMarginData.reduce((acc, d: any, i) => acc + i * d.margin, 0);
-  const sumX2 = competitorMarginData.reduce((acc, _, i) => acc + i * i, 0);
-
-  let slope = 0;
-  let intercept = 0;
-
-  if (N > 1 && (N * sumX2 - sumX * sumX) !== 0) {
-    slope = (N * sumXY - sumX * sumY) / (N * sumX2 - sumX * sumX);
-    intercept = (sumY - slope * sumX) / N;
-  }
-
-  const trendlineData = competitorMarginData.map((d: any, i) => ({
-    name: d.name,
-    trend: slope * i + intercept,
-  }));
-
-  const BAR_COLORS = ['#4F46E5', '#10B981', '#F59E0B']; // More vibrant colors for bars
-
-  const NET_PROFIT_COLORS = ['#22C55E', '#FACC15', '#EF4444']; // Green, Yellow, Red for highest to lowest
-
-  const QUICK_RATIO_COLORS = ['#3B82F6', '#A855F7', '#EC4899']; // Blue, Purple, Pink
-
-  const GMROI_COLORS = ['#10B981', '#3B82F6', '#F59E0B']; // Green, Blue, Amber
-
-  const highestMarginCompany = netProfitMarginData.length > 0 ? netProfitMarginData[0] : null;
-  const lowestMarginCompany = netProfitMarginData.length > 0 ? netProfitMarginData[netProfitMarginData.length - 1] : null;
-
+ 
+      setCharts(chartMap);
+    } catch (err) {
+      console.error("Error fetching charts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
   return (
-    <div className="p-4 h-full">
-      <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-800 mb-6 text-center">
-        EA-AURA
-      </h1>
-      {/* Sales KPI Cards */}
-      <div className="mb-6">
-        <SalesKPICards />
+    <div className="p-6 space-y-6 bg-background min-h-screen"> {/* Apply background to the page */}
+      {/* Prompt Section */}
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <Input
+          type="text"
+          placeholder="Ask Aura anything..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="w-full neumorphic-card" // Apply neumorphic styling
+        />
+        <Button onClick={fetchData} disabled={loading} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+          {loading ? "Generating..." : "Generate"}
+        </Button>
       </div>
-      {/* Sales Prompt Bar */}
-      <div className="mb-6">
-        <SalesPromptBar />
+ 
+      {/* KPI Tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {KPI_KEYS.map((kpi, idx) => {
+          const chart = charts[kpi.key];
+          return (
+            <Card
+              key={idx}
+              style={{ backgroundColor: kpi.bgColor }}
+              className={cn("p-4 rounded-2xl shadow transition-all border neumorphic-card", kpi.bgColor)} // Apply neumorphic styling
+            >
+              <CardContent className="flex flex-col">
+                <span className="text-sm text-gray-500">{kpi.key}</span>
+                <span className="text-2xl font-bold">
+                  {chart?.y?.at(-1)?.toLocaleString() ?? "No data"}
+                </span>
+                <span
+                  className={`text-sm mt-1 ${
+                    chart?.delta > 0
+                      ? "text-green-600"
+                      : chart?.delta < 0
+                      ? "text-red-500"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {chart?.delta ? `${chart.delta > 0 ? "+" : ""}${chart.delta}%` : "--"}
+                </span>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Card for Gross Profit Margin of Competitors */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Percent className="h-5 w-5 text-orange-600" /> Gross Profit Margin of Competitors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={competitorMarginData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <YAxis stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} label={{ value: 'Margin (%)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value}%`, 'Gross Profit Margin']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="margin" barSize={60}>
-                    {competitorMarginData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                    ))}
-                    <LabelList dataKey="margin" position="top" formatter={(value: number) => `${value}%`} fill="hsl(var(--foreground))" />
-                  </Bar>
-                  {/* Trendline */}
-                  <Line
-                    type="linear"
-                    dataKey="trend"
-                    stroke="#EF4444" // Red color for trendline
-                    strokeWidth={2}
-                    dot={false}
-                    data={trendlineData} // Use the separate trendline data
-                  />
-                </RechartsBarChart>
-              </ResponsiveContainer>
+ 
+ {/* Tabbed Graph Section */}
+      <Tabs defaultValue={Object.keys(METRIC_GROUPS)[0]} className="space-y-4">
+        <TabsList className="flex gap-2 neumorphic-card"> {/* Apply neumorphic styling */}
+          {Object.keys(METRIC_GROUPS).map((tab) => (
+            <TabsTrigger key={tab} value={tab}>
+              {tab}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+ 
+        {Object.entries(METRIC_GROUPS).map(([tab, metrics]) => (
+          <TabsContent key={tab} value={tab}>
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setHiddenCharts((prev) => {
+                    const newSet = new Set(prev);
+                    metrics.forEach((metric) => newSet.delete(metric.key));
+                    return newSet;
+                  });
+                }}
+                disabled={metrics.every((metric) => !hiddenCharts.has(metric.key))}
+                className="neumorphic-card" // Apply neumorphic styling
+              >
+                Restore Graphs
+              </Button>
             </div>
-            <p className="text-sm text-gray-700 text-center mt-2">Competitor Gross Profit Margins with Linear Trend</p>
-          </CardContent>
-        </HolographicCard>
-
-        {/* New Card for Net Profit Margin Comparison */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Percent className="h-5 w-5 text-blue-600" /> Net Profit Margin Comparison
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={netProfitMarginData}
-                  layout="vertical"
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} label={{ value: 'Net Profit Margin (%)', position: 'insideBottom', offset: -5, fill: 'hsl(var(--foreground))' }} />
-                  <YAxis type="category" dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value}%`, 'Net Profit Margin']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="margin" barSize={40}>
-                    {netProfitMarginData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={NET_PROFIT_COLORS[index]} />
-                    ))}
-                    <LabelList dataKey="margin" position="right" formatter={(value: number) => `${value}%`} fill="hsl(var(--foreground))" />
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+              {metrics.map((metric, idx) => {
+                if (hiddenCharts.has(metric.key)) return null;
+                const chart = charts[metric.key];
+                return (
+                  <Card key={idx} className="rounded-2xl shadow-lg p-6 relative neumorphic-card"> {/* Apply neumorphic styling */}
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl font-bold z-10"
+                      onClick={() => handleCloseChart(metric.key)}
+                      aria-label={`Close ${metric.label} graph`}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                    <CardContent>
+                      <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                        <h3 className="text-lg font-semibold text-gray-800">{metric.label}</h3>
+                        {chart ? (
+                          <div className="flex items-center gap-2">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="border border-gray-200 neumorphic-card" title="Change chart type"> {/* Apply neumorphic styling */}
+                                  <Settings2 className="w-5 h-5" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center neumorphic-card"> {/* Apply neumorphic styling */}
+                                <div className="flex gap-2 mb-2">
+                                  <Button
+                                    variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'bar' }))}
+                                    title="Bar Chart"
+                                  >
+                                    <BarChart2 className="w-5 h-5" />
+                                  </Button>
+                                  <Button
+                                    variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'line' }))}
+                                    title="Line Chart"
+                                  >
+                                    <LineChart className="w-5 h-5" />
+                                  </Button>
+                                  <Button
+                                    variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'scatter' }))}
+                                    title="Scatter Plot"
+                                  >
+                                    <ScatterChart className="w-5 h-5" />
+                                  </Button>
+                                  <input
+                                    type="color"
+                                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
+                                    value={chartColors[metric.key] || chart.marker?.color || "#3b82f6"}
+                                    onChange={e => setChartColors(colors => ({ ...colors, [metric.key]: e.target.value }))}
+                                    title="Pick graph color"
+                                  />
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        ) : null}
+                      </div>
+                      {chart ? (
+                        <Plot
+                          data={(() => {
+                            const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
+                            // Multi-series: chart.y is array of arrays
+                            if (isBar && Array.isArray(chart.y[0])) {
+                              // Multi-series bar chart
+                              return chart.y.map((series, i) => ({
+                                x: chart.x,
+                                y: series,
+                                type: 'bar',
+                                marker: chartColors[metric.key]
+                                  ? { color: Array(series.length).fill(chartColors[metric.key]) }
+                                  : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
+                              }));
+                            } else if (isBar) {
+                              // Single-series bar chart
+                              return [{
+                                x: chart.x,
+                                y: chart.y,
+                                type: 'bar',
+                                marker: chartColors[metric.key]
+                                  ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
+                                  : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) },
+                              }];
+                            } else {
+                              // Not a bar chart
+                              const type = chartTypes[metric.key] || chart.plotType;
+                              return [{
+                                x: chart.x,
+                                y: chart.y,
+                                type,
+                                ...(type === 'scatter' ? { mode: 'markers' } : {}),
+                                marker: { color: chartColors[metric.key] || chart.marker?.color || COLORS[0] },
+                              }];
+                            }
+                          })()}
+                          layout={{
+                            width: undefined,
+                            height: undefined,
+                            autosize: true,
+                            title: chart.title,
+                            plot_bgcolor: "hsl(var(--neumorphic-bg))", // Use neumorphic background
+                            paper_bgcolor: "hsl(var(--neumorphic-bg))", // Use neumorphic background
+                            font: {
+                              family: 'Inter, sans-serif',
+                              size: 16,
+                              color: 'hsl(var(--foreground))' // Use foreground color
+                            },
+                            margin: { l: 60, r: 30, t: 50, b: 60 },
+                            xaxis: {
+                              title: chart.xLabel,
+                              gridcolor: 'hsl(var(--border))', // Use border color for grid
+                              zeroline: false,
+                              linecolor: 'hsl(var(--border))', // Use border color for line
+                              tickfont: { size: 14, color: 'hsl(var(--muted-foreground))' }, // Use muted-foreground
+                              titlefont: { size: 16, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' }, // Use foreground
+                            },
+                            yaxis: {
+                              title: chart.yLabel,
+                              gridcolor: 'hsl(var(--border))', // Use border color for grid
+                              zeroline: false,
+                              linecolor: 'hsl(var(--border))', // Use border color for line
+                              tickfont: { size: 14, color: 'hsl(var(--muted-foreground))' }, // Use muted-foreground
+                              titlefont: { size: 16, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' }, // Use foreground
+                            },
+                          }}
+                          style={{ width: '100%', height: '100%', minHeight: 300 }}
+                          config={{
+                            displayModeBar: true,
+                            displaylogo: false,
+                            modeBarButtonsToRemove: [
+                              'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
+                              'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'sendDataToCloud', 'editInChartStudio',
+                              'drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape',
+                              'orbitRotation', 'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
+                              'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover', 'resetViews', 'toggleHover', 'resetViews',
+                              'zoom3d', 'pan3d', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
+                              'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo',
+                              'toImage' // keep this at the end so we can remove all except toImage and fullscreen
+                            ].filter(btn => btn !== 'toImage' && btn !== 'fullscreen'),
+                            responsive: true,
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center text-gray-500 pt-12 pb-12">
+                          No data available
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Highest Margin: <span className="font-semibold text-green-600">{highestMarginCompany?.name} ({highestMarginCompany?.margin}%)</span> |
-              Lowest Margin: <span className="font-semibold text-red-600">{lowestMarginCompany?.name} ({lowestMarginCompany?.margin}%)</span>
-            </p>
-          </CardContent>
-        </HolographicCard>
-
-        {/* New Card for Quick Ratio Comparison (Bullet Chart / Dot Plot) */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Scale className="h-5 w-5 text-green-600" /> Quick Ratio Comparison
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={quickRatioData}
-                  layout="vertical"
-                  margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    domain={[0, 3]} // Set fixed domain for comparison
-                    stroke="hsl(var(--foreground))"
-                    tick={{ fill: 'hsl(var(--foreground))' }}
-                    label={{ value: 'Quick Ratio Value', position: 'insideBottom', offset: -5, fill: 'hsl(var(--foreground))' }}
-                  />
-                  <YAxis type="category" dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <Tooltip
-                    formatter={(value: number) => [value.toFixed(1), 'Quick Ratio']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  {/* Benchmark Line at 1.0 */}
-                  <ReferenceLine x={1.0} stroke="#EF4444" strokeDasharray="3 3" label={{ value: 'Benchmark (1.0)', position: 'top', fill: '#EF4444', fontSize: 12 }} />
-                  <Bar dataKey="ratio" barSize={10}> {/* Small barSize to make it look like a dot */}
-                    {quickRatioData.map((entry: any, index) => (
-                      <Cell key={`cell-${index}`} fill={QUICK_RATIO_COLORS[index]} />
-                    ))}
-                    <LabelList dataKey="ratio" position="right" formatter={(value: number) => value.toFixed(1)} fill="hsl(var(--foreground))" />
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Visualize liquidity comparison across competitors.
-            </p>
-          </CardContent>
-        </HolographicCard>
-
-        {/* New Card for GMROI Comparison (Lollipop Chart) */}
-        <HolographicCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <TrendingUpIcon className="h-5 w-5 text-purple-600" /> GMROI Comparison with Competitors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={gmroiData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" tick={{ fill: 'hsl(var(--foreground))' }} />
-                  <YAxis
-                    stroke="hsl(var(--foreground))"
-                    tick={{ fill: 'hsl(var(--foreground))' }}
-                    domain={[0, 3]} // Consistent scale 0-3
-                    label={{ value: 'GMROI Values', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [value.toFixed(1), 'GMROI']}
-                    contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "black" }}
-                    labelStyle={{ color: "gray" }}
-                  />
-                  <Bar dataKey="gmroi" barSize={2}> {/* Thin bar for the stick */}
-                    {gmroiData.map((entry: any, index) => (
-                      <Cell key={`bar-cell-${index}`} fill={GMROI_COLORS[index % GMROI_COLORS.length]} />
-                    ))}
-                  </Bar>
-                  <Scatter dataKey="gmroi" data={gmroiData}> {/* Scatter for the lollipop head */}
-                    {gmroiData.map((entry: any, index) => (
-                      <Cell key={`scatter-cell-${index}`} fill={GMROI_COLORS[index % GMROI_COLORS.length]} />
-                    ))}
-                    <LabelList dataKey="gmroi" position="top" formatter={(value: number) => value.toFixed(1)} fill="hsl(var(--foreground))" />
-                  </Scatter>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-sm text-gray-700 text-center mt-2">
-              Compare return on inventory investment across competitors.
-            </p>
-          </CardContent>
-        </HolographicCard>
-      </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 };
-
-export default BusinessVitality;
+ 
+export default BusinessDashboard;

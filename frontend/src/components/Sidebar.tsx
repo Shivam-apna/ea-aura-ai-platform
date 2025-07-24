@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, FileText, Settings, User, ChevronLeft, DollarSign, Users2, Target, Award, LogOut } from 'lucide-react';
+import { LayoutDashboard, DollarSign, Users2, Target, Award, FileText, Settings, LogOut, ChevronLeft, User as UserIcon, Users } from 'lucide-react';
 import { useKeycloak } from '@/components/Auth/KeycloakProvider';
+import ProfileDisplay from './ProfileDisplay';
 
 interface SidebarProps {
   activeAgent: string;
@@ -13,48 +14,21 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
+// Updated list of agents
 const allAgents = [
   { id: 'overview', name: 'Overview', icon: LayoutDashboard },
   { id: 'business-vitality', name: 'Business Vitality', icon: DollarSign },
-  { id: 'customer-analyzer', name: 'Customer Analyzer', icon: Users2 },
+  { id: 'customer-analyzer', name: 'Customer Analysis', icon: Users2 },
   { id: 'mission-alignment', name: 'Mission Alignment', icon: Target },
   { id: 'brand-index', name: 'Brand Index', icon: Award },
   { id: 'reports', name: 'Reports', icon: FileText },
   { id: 'settings', name: 'Settings', icon: Settings },
-  { id: 'profile', name: 'Profile', icon: User },
+  { id: 'profile', name: 'Profile', icon: UserIcon },
   { id: 'users', name: 'Users', icon: Users },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollapsed, onToggleCollapse }) => {
   const { keycloak, authenticated, loading } = useKeycloak();
-
-  // Get client-specific roles
-  const clientRoles: string[] = authenticated && keycloak?.tokenParsed?.resource_access?.[keycloak.clientId]?.roles
-    ? (keycloak.tokenParsed.resource_access[keycloak.clientId].roles as string[])
-    : [];
-
-  const isAdmin = clientRoles.includes('Admin'); // Check for 'Admin' client role
-
-  // --- DEBUGGING LOGS ---
-  useEffect(() => {
-    if (authenticated && keycloak) {
-      console.log("Keycloak authenticated:", authenticated);
-      console.log("Keycloak tokenParsed:", keycloak.tokenParsed);
-      console.log("Keycloak Client ID:", keycloak.clientId);
-      console.log("Client Roles (from resource_access):", clientRoles);
-      console.log("Is Admin (based on client role):", isAdmin);
-    } else if (!authenticated && !loading) {
-      console.log("Keycloak not authenticated or still initializing.");
-    }
-  }, [authenticated, keycloak, clientRoles, isAdmin, loading]);
-  // --- END DEBUGGING LOGS ---
-
-  const visibleAgents = allAgents.filter(agent => {
-    if (agent.id === 'users') {
-      return isAdmin; // Only show 'Users' tab if the user is an admin
-    }
-    return true; // Show all other tabs for everyone
-  });
 
   const handleLogout = () => {
     if (keycloak) {
@@ -65,53 +39,74 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border p-4 transition-all duration-300",
-        isCollapsed ? "w-20" : "w-64"
+        "flex flex-col h-full bg-background border-r border-border/50 p-3 transition-all duration-300",
+        isCollapsed ? "w-16" : "w-[200px] min-w-[200px] max-w-[200px] flex-shrink-0",
+        "rounded-r-3xl"
       )}
     >
-      <div className="flex items-center justify-between mb-6">
-        {!isCollapsed && <div className="text-xl font-bold text-sidebar-primary">Agents</div>}
+      {/* Combined Overview and Collapse Button */}
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-between text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm mb-2", // Added mb-2 for spacing
+          activeAgent === 'overview' && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-md",
+          isCollapsed ? "justify-center px-0 rounded-xl" : "justify-between rounded-xl pr-2" // Adjust padding for expanded state
+        )}
+        onClick={() => {
+          onSelectAgent('overview');
+        }}
+      >
+        <div className="flex items-center">
+          <LayoutDashboard className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+          {!isCollapsed && "Overview"}
+        </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggleCollapse}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent the parent button's onClick from firing
+            onToggleCollapse();
+          }}
           className={cn(
-            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            isCollapsed ? "mx-auto" : "ml-auto"
+            "text-muted-foreground hover:bg-muted hover:text-foreground",
+            isCollapsed ? "h-7 w-7" : "h-7 w-7" // Smaller button for collapse icon
           )}
         >
-          <ChevronLeft className={cn("h-5 w-5 transition-transform duration-300", isCollapsed && "rotate-180")} />
+          <ChevronLeft className={cn("h-4 w-4 transition-transform duration-300", isCollapsed && "rotate-180")} />
         </Button>
-      </div>
+      </Button>
+
       <ScrollArea className="flex-grow">
-        <nav className="space-y-2">
-          {visibleAgents.map((agent) => (
+        <nav className="space-y-1">
+          {allAgents.filter(agent => agent.id !== 'overview').map((agent) => ( // Filter out overview
             <Button
               key={agent.id}
               variant="ghost"
               className={cn(
-                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                activeAgent === agent.id && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
-                isCollapsed ? "justify-center px-0" : "justify-start"
+                "w-full justify-start text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm",
+                activeAgent === agent.id && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-md",
+                isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
               )}
               onClick={() => onSelectAgent(agent.id)}
             >
-              <agent.icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+              <agent.icon className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
               {!isCollapsed && agent.name}
             </Button>
           ))}
         </nav>
       </ScrollArea>
-      <div className="mt-auto pt-4 border-t border-sidebar-border">
+      {/* Profile Section at the bottom of the scrollable area */}
+      <ProfileDisplay isCollapsed={isCollapsed} />
+      <div className="mt-auto pt-3 border-t border-border/50">
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start text-red-500 hover:bg-red-100 hover:text-red-600",
-            isCollapsed ? "justify-center px-0" : "justify-start"
+            "w-full justify-start text-destructive hover:bg-destructive/20 hover:text-destructive transition-all duration-200 h-8 text-sm",
+            isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
           )}
           onClick={handleLogout}
         >
-          <LogOut className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+          <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
           {!isCollapsed && "Logout"}
         </Button>
       </div>

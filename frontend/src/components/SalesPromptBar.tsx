@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Send } from 'lucide-react';
-import { HolographicCard } from '@/pages/Dashboard'; // Reusing HolographicCard
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner'; // Import toast for notifications
 
@@ -62,25 +61,25 @@ const SalesPromptBar: React.FC<SalesPromptBarProps> = () => {
   };
 
   return (
-    <HolographicCard className="p-4 flex flex-col gap-4 h-full">
-      <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-        <MessageSquare className="h-5 w-5 text-blue-600" /> Sales AI Assistant
+    <Card className="p-4 flex flex-col gap-4 h-full neumorphic-card">
+      <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+        <MessageSquare className="h-5 w-5 text-blue-400" /> Sales AI Assistant
       </CardTitle>
       <div className="flex gap-2">
         <Input
-          placeholder="Ask about sales data..."
+          placeholder="Type your prompt here..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          className="flex-grow bg-white/50 border-blue-300/50 text-gray-900 placeholder:text-gray-500"
+          className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
           // The 'disabled' prop is intentionally NOT present here to ensure editability.
         />
         <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
           <Send className="h-5 w-5" />
         </Button>
       </div>
-      {response && <p className="text-sm text-gray-700 mt-2">{response}</p>}
-    </HolographicCard>
+      {response && <p className="text-sm text-muted-foreground mt-2">{response}</p>}
+    </Card>
   );
 };
 

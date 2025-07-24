@@ -42,9 +42,9 @@ const BrandIndex = () => {
   };
 
   const getTrendColor = (trend: 'up' | 'down' | 'stable') => {
-    if (trend === 'up') return "text-green-600";
-    if (trend === 'down') return "text-red-600";
-    return "text-gray-600";
+    if (trend === 'up') return "text-green-400";
+    if (trend === 'down') return "text-red-400";
+    return "text-muted-foreground";
   };
 
   const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
@@ -54,37 +54,37 @@ const BrandIndex = () => {
   };
 
   return (
-    <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-      <HolographicCard className="lg:col-span-2">
+    <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      <HolographicCard className="lg:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Award className="h-5 w-5 text-blue-600" /> Overall Brand Health
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Award className="h-5 w-5 text-blue-400" /> Overall Brand Health
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xl font-bold text-gray-900">Brand Health Score: {overallBrandHealth}%</p>
+            <p className="text-xl font-bold text-foreground">Brand Health Score: {overallBrandHealth}%</p>
             <span className={cn("text-sm font-semibold px-3 py-1 rounded-full", getHealthColor(overallBrandHealth))}>
               {overallBrandHealth >= 80 ? "Excellent" : overallBrandHealth >= 70 ? "Good" : "Needs Attention"}
             </span>
           </div>
-          <Progress value={overallBrandHealth} className={cn("w-full h-3", getHealthColor(overallBrandHealth))} />
-          <p className="text-sm text-gray-600 mt-2">
+          <Progress value={overallBrandHealth} className={cn("w-full h-3 bg-muted [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:", getHealthColor(overallBrandHealth))} />
+          <p className="text-sm text-muted-foreground mt-2">
             This score reflects public perception, market share, and customer loyalty.
           </p>
         </CardContent>
       </HolographicCard>
 
       {channelScores.map((channel) => (
-        <HolographicCard key={channel.name}>
+        <HolographicCard key={channel.name} className="neumorphic-card"> {/* Apply neumorphic styling */}
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <channel.icon className="h-5 w-5 text-purple-600" /> {channel.name} Score
+            <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <channel.icon className="h-5 w-5 text-purple-400" /> {channel.name} Score
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-3xl font-bold text-gray-900">{channel.score}</p>
+              <p className="text-3xl font-bold text-foreground">{channel.score}</p>
               <div className={cn("flex items-center gap-1 text-sm", getTrendColor(channel.trend))}>
                 <TrendIcon trend={channel.trend} />
                 {channel.trend === 'up' && 'Improving'}
@@ -92,8 +92,8 @@ const BrandIndex = () => {
                 {channel.trend === 'stable' && 'Stable'}
               </div>
             </div>
-            <Progress value={channel.score} className={cn("w-full h-2", getHealthColor(channel.score))} />
-            <p className="text-sm text-gray-600 mt-2">
+            <Progress value={channel.score} className={cn("w-full h-2 bg-muted [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:", getHealthColor(channel.score))} />
+            <p className="text-sm text-muted-foreground mt-2">
               Performance on this channel.
             </p>
           </CardContent>

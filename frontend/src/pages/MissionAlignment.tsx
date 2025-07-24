@@ -24,17 +24,19 @@ const MissionAlignment = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRecommendations(prev => prev.map(rec => {
-        if (Math.random() < 0.3) { // 30% chance to flip status
-          return {
-            ...rec,
-            status: rec.status === 'Pass' ? 'Fail' : 'Pass',
-            details: rec.status === 'Pass' ? 'Status flipped for demonstration.' : 'Status flipped back for demonstration.',
-            blockable: Math.random() < 0.5, // Randomly set blockable
-          };
-        }
-        return rec;
-      }));
+      if (Math.random() < 0.3) { // 30% chance to flip status
+        setRecommendations(prev => prev.map(rec => {
+          if (Math.random() < 0.5) { // 50% chance to flip this specific one
+            return {
+              ...rec,
+              status: rec.status === 'Pass' ? 'Fail' : 'Pass',
+              details: rec.status === 'Pass' ? 'Status flipped for demonstration.' : 'Status flipped back for demonstration.',
+              blockable: Math.random() < 0.5, // Randomly set blockable
+            };
+          }
+          return rec;
+        }));
+      }
     }, 10000); // Update every 10 seconds
     return () => clearInterval(interval);
   }, []);
@@ -44,79 +46,79 @@ const MissionAlignment = () => {
   const blockableCount = recommendations.filter(rec => rec.blockable && rec.status === 'Fail').length;
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 h-full">
+    <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <HolographicCard>
+        <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" /> Recommendations Passed
+            <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-400" /> Recommendations Passed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-gray-900">{passCount}</div>
-            <p className="text-sm text-gray-700">out of {recommendations.length} reviewed</p>
+            <div className="text-4xl font-bold text-foreground">{passCount}</div>
+            <p className="text-sm text-muted-foreground">out of {recommendations.length} reviewed</p>
           </CardContent>
         </HolographicCard>
 
-        <HolographicCard>
+        <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-600" /> Recommendations Failed
+            <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-400" /> Recommendations Failed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-gray-900">{failCount}</div>
-            <p className="text-sm text-gray-700">requiring attention</p>
+            <div className="text-4xl font-bold text-foreground">{failCount}</div>
+            <p className="text-sm text-muted-foreground">requiring attention</p>
           </CardContent>
         </HolographicCard>
 
-        <HolographicCard>
+        <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Flag className="h-5 w-5 text-orange-600" /> Blockable Items
+            <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Flag className="h-5 w-5 text-orange-400" /> Blockable Items
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-gray-900">{blockableCount}</div>
-            <p className="text-sm text-gray-700">critical mission conflicts</p>
+            <div className="text-4xl font-bold text-foreground">{blockableCount}</div>
+            <p className="text-sm text-muted-foreground">critical mission conflicts</p>
           </CardContent>
         </HolographicCard>
       </div>
 
-      <HolographicCard className="col-span-full">
+      <HolographicCard className="col-span-full neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Info className="h-5 w-5 text-purple-600" /> Detailed Recommendation Status
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Info className="h-5 w-5 text-purple-400" /> Detailed Recommendation Status
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Blockable</TableHead>
-                <TableHead>Details</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="w-[100px] text-muted-foreground">ID</TableHead>
+                <TableHead className="text-muted-foreground">Description</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Blockable</TableHead>
+                <TableHead className="text-muted-foreground">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recommendations.map((rec) => (
-                <TableRow key={rec.id}>
-                  <TableCell className="font-medium">{rec.id}</TableCell>
-                  <TableCell>{rec.description}</TableCell>
+                <TableRow key={rec.id} className="border-border">
+                  <TableCell className="font-medium text-foreground">{rec.id}</TableCell>
+                  <TableCell className="text-foreground">{rec.description}</TableCell>
                   <TableCell>
                     <span className={cn(
                       "px-2 py-1 rounded-full text-xs font-semibold",
-                      rec.status === 'Pass' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      rec.status === 'Pass' ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"
                     )}>
                       {rec.status}
                     </span>
                   </TableCell>
                   <TableCell>
-                    {rec.blockable ? <Flag className="h-4 w-4 text-orange-500" /> : <CheckCircle2 className="h-4 w-4 text-gray-400" />}
+                    {rec.blockable ? <Flag className="h-4 w-4 text-orange-400" /> : <CheckCircle2 className="h-4 w-4 text-muted-foreground" />}
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">{rec.details}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{rec.details}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -40,60 +40,60 @@ const Users = () => {
   });
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 h-full">
-      <HolographicCard className="col-span-full">
+    <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      <HolographicCard className="col-span-full neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-blue-600" /> User Management
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-blue-400" /> User Management
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-white/50 border-blue-300/50 text-gray-900 placeholder:text-gray-500"
+                className="pl-9 bg-input border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <Select onValueChange={setFilterRole} value={filterRole}>
-              <SelectTrigger className="w-full md:w-[180px] bg-white/50 border-blue-300/50 text-gray-900">
-                <Filter className="h-4 w-4 mr-2 text-gray-500" />
+              <SelectTrigger className="w-full md:w-[180px] bg-input border-border text-foreground">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="All">All Roles</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Editor">Editor</SelectItem>
-                <SelectItem value="Viewer">Viewer</SelectItem>
+              <SelectContent className="neumorphic-card text-popover-foreground border border-border">
+                <SelectItem value="All" className="focus:bg-accent focus:text-accent-foreground">All Roles</SelectItem>
+                <SelectItem value="Admin" className="focus:bg-accent focus:text-accent-foreground">Admin</SelectItem>
+                <SelectItem value="Editor" className="focus:bg-accent focus:text-accent-foreground">Editor</SelectItem>
+                <SelectItem value="Viewer" className="focus:bg-accent focus:text-accent-foreground">Viewer</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Name</TableHead>
+                <TableHead className="text-muted-foreground">Email</TableHead>
+                <TableHead className="text-muted-foreground">Role</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Last Login</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                  <TableRow key={user.id} className="border-border">
+                    <TableCell className="font-medium text-foreground">{user.name}</TableCell>
+                    <TableCell className="text-foreground">{user.email}</TableCell>
                     <TableCell>
                       <span className={cn(
                         "px-2 py-1 rounded-full text-xs font-semibold",
-                        user.role === 'Admin' && "bg-blue-100 text-blue-800",
-                        user.role === 'Editor' && "bg-purple-100 text-purple-800",
-                        user.role === 'Viewer' && "bg-gray-100 text-gray-800"
+                        user.role === 'Admin' && "bg-blue-600/20 text-blue-400",
+                        user.role === 'Editor' && "bg-purple-600/20 text-purple-400",
+                        user.role === 'Viewer' && "bg-muted/20 text-muted-foreground"
                       )}>
                         {user.role}
                       </span>
@@ -101,17 +101,17 @@ const Users = () => {
                     <TableCell>
                       <span className={cn(
                         "px-2 py-1 rounded-full text-xs font-semibold",
-                        user.status === 'Active' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        user.status === 'Active' ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"
                       )}>
                         {user.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600">{user.lastLogin}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{user.lastLogin}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-gray-500">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     No users found matching your criteria.
                   </TableCell>
                 </TableRow>

@@ -8,32 +8,35 @@ interface SummaryCardProps {
   value: string | number;
   change?: number;
   icon: React.ElementType;
-  colorClass: string;
+  colorClass: string; // This will now be for the icon/text color
+  bgColorClass: string; // New prop for background color
   description: string;
 }
 
-export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, icon: Icon, colorClass, description }) => {
+export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, icon: Icon, colorClass, bgColorClass, description }) => {
   const isPositive = change !== undefined && change >= 0;
-  const changeColor = change === undefined ? "text-gray-600" : isPositive ? "text-green-600" : "text-red-600";
-  const ChangeIcon = isPositive ? TrendingUp : TrendingDown;
+  const changeColor = change === undefined ? "text-muted-foreground" : isPositive ? "text-green-600" : "text-red-600"; // Stronger green/red
 
   return (
-    <Card className="relative overflow-hidden bg-white/70 backdrop-blur-sm border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card className={cn(
+      "relative overflow-hidden rounded-lg shadow-kpi-shadow border-none", // Use rounded-lg and custom shadow
+      bgColorClass // Apply the specific background color
+    )}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className={cn("h-4 w-4", colorClass)} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
         {change !== undefined && (
           <p className={cn("text-xs flex items-center", changeColor)}>
-            <ChangeIcon className="h-3 w-3 mr-1" />
-            {change >= 0 ? `+${change}` : change}%
-            <span className="ml-1 text-gray-500">{description}</span>
+            {isPositive ? `+${change}` : change}%
+            <span className="ml-1 text-muted-foreground">{description}</span>
+            {isPositive ? <TrendingUp className="h-3 w-3 ml-1" /> : <TrendingDown className="h-3 w-3 ml-1" />}
           </p>
         )}
         {change === undefined && (
-          <p className="text-xs text-gray-500">{description}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
         )}
       </CardContent>
     </Card>
@@ -41,69 +44,55 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, 
 };
 
 const DashboardSummaryCards: React.FC = () => {
-  const [revenueForecast, setRevenueForecast] = useState(12.5); // in millions
-  const [churnRisk, setChurnRisk] = useState(8.2); // in percentage
-  const [missionAlerts, setMissionAlerts] = useState(0); // count
-  const [brandGravity, setBrandGravity] = useState(78); // score out of 100
+  // Adjusted values to match the reference image
+  const revenueForecast = 7265;
+  const churnRisk = 3671;
+  const missionConflict = 156;
+  const brandGravity = 2318;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate real-time updates
-      setRevenueForecast(prev => parseFloat((prev + (Math.random() * 0.5 - 0.25)).toFixed(1)));
-      setChurnRisk(prev => parseFloat((prev + (Math.random() * 0.2 - 0.1)).toFixed(1)));
-      setMissionAlerts(Math.floor(Math.random() * 3)); // 0-2 alerts
-      setBrandGravity(prev => Math.min(100, Math.max(60, prev + Math.floor(Math.random() * 5) - 2))); // 60-100
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getChurnRiskColor = (risk: number) => {
-    if (risk > 10) return "text-red-600";
-    if (risk > 5) return "text-orange-600";
-    return "text-green-600";
-  };
-
-  const getMissionAlertsColor = (alerts: number) => {
-    if (alerts > 0) return "text-red-600";
-    return "text-green-600";
-  };
-
-  const getBrandGravityColor = (score: number) => {
-    if (score < 70) return "text-orange-600";
-    if (score < 60) return "text-red-600";
-    return "text-green-600";
-  };
+  // Static changes as per reference image
+  const revenueChange = 11.01;
+  const churnChange = -0.03;
+  const missionChange = 15.03;
+  const brandChange = 6.08;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <SummaryCard
-        title="Next-Month Revenue Forecast"
-        value={`$${revenueForecast.toFixed(1)}M`}
-        change={parseFloat(((revenueForecast / 12.0 - 1) * 100).toFixed(1))} // Example change calculation
+        title="Revenue Forecast"
+        value={`$${revenueForecast.toLocaleString()}`}
+        change={revenueChange}
         icon={DollarSign}
-        colorClass="text-blue-600"
-        description="vs. last month"
+        colorClass="text-green-600" // Icon color
+        bgColorClass="bg-kpi-green" // Background color
+        description="vs. last month" // Added description as per reference
       />
       <SummaryCard
         title="Customer Churn Risk"
-        value={`${churnRisk.toFixed(1)}%`}
+        value={`${churnRisk.toLocaleString()}`}
+        change={churnChange}
         icon={Users2}
-        colorClass={getChurnRiskColor(churnRisk)}
-        description="of active users"
+        colorClass="text-red-600" // Icon color
+        bgColorClass="bg-kpi-light-blue" // Changed to new light blue color
+        description="vs. last month" // Added description as per reference
       />
       <SummaryCard
-        title="Mission-Conflict Alerts"
-        value={missionAlerts}
+        title="Mission Conflict"
+        value={missionConflict}
+        change={missionChange}
         icon={AlertTriangle}
-        colorClass={getMissionAlertsColor(missionAlerts)}
-        description="critical issues"
+        colorClass="text-orange-600" // Icon color
+        bgColorClass="bg-kpi-green"
+        description="vs. last month" // Added description as per reference
       />
       <SummaryCard
-        title="Overall Brand Gravity"
-        value={`${brandGravity}%`}
+        title="Brand Gravity"
+        value={`${brandGravity.toLocaleString()}`}
+        change={brandChange}
         icon={Award}
-        colorClass={getBrandGravityColor(brandGravity)}
-        description="health score"
+        colorClass="text-blue-600" // Icon color
+        bgColorClass="bg-kpi-light-blue" // Changed to new light blue color
+        description="vs. last month" // Added description as per reference
       />
     </div>
   );
