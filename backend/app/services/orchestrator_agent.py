@@ -12,6 +12,7 @@ import traceback
 from typing import Dict, List, Optional, Tuple
 from app.services.es_cache import search_cache, save_to_cache, create_cache_index_if_not_exists
 from app.services.response_parser import parse_json_response, restructure_multimetric_data
+from app.services.data_enhancer import get_enhanced_data_for_agent
 
 # Import the new modules
 from app.services.token_tracker import token_tracker
@@ -61,28 +62,6 @@ def select_best_subagent(parent_agent_data, user_input: str):
     
     # If no specific match, return the first available sub-agent
     return sub_agents[0] if sub_agents else None
-
-
-def get_enhanced_data_for_agent(agent_name: str, input_text: str):
-    """Get enhanced data based on agent type"""
-    from app.services.es_search import (
-        query_sales_data,
-        query_customer_survey_data,
-        query_mission_alignment_data,
-        query_brand_audit_data
-    )
-    
-    
-    # Map agent names to data queries
-    agent_data_mapping = {
-        "business_vitality_agent": lambda: query_sales_data(query_text=input_text),
-        "customer_analyzer_agent": lambda: query_customer_survey_data(query_text=input_text),
-        "strategic_alignment_agent": lambda: query_mission_alignment_data(query_text=input_text),
-        "brand_index_agent": lambda: query_brand_audit_data(query_text=input_text)
-    }
-    
-    return agent_data_mapping.get(agent_name, lambda: input_text)()
-
 
 def prepare_agent_prompt(agent_data: dict, input_text: str, enhanced_data: str) -> str:
     """Prepare agent prompt with template replacement"""

@@ -13,6 +13,8 @@ def extract_date(text: str):
         return parsed.strftime('%Y-%m-%d')
     return None
 
+
+
 def build_dynamic_filters(query_text: str, sample_doc: dict):
     """
     Dynamically builds filters based on values in query_text that match fields in sample_doc
@@ -33,6 +35,7 @@ def build_dynamic_filters(query_text: str, sample_doc: dict):
                 filters.append({"match": {field: date_str}})
     return filters
 
+""" Business Vitality Subagents Dataset"""
 def query_sales_data(
     query_text: str,
     index_name: str = "agent_dataset",
@@ -94,6 +97,70 @@ def query_sales_data(
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+def query_marketing_dataset(
+    query_text: str,
+    index_name: str = "agent_dataset",
+    sub_index: str = "marketing_dataset",
+    size: int = 10
+) -> str:
+    try:
+        # Get vector for semantic match
+        query_vector = embedding_model.embed_query(query_text)
+
+        # Sample a doc to get fields
+        sample = es.search(index=index_name, body={
+            "query": {"match": {"sub_index": sub_index}},
+            "size": 1
+        })
+
+        sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
+
+        # Always include sub_index match
+        filters = [{"match": {"sub_index": sub_index}}]
+
+        # Add dynamic filters based on content
+        filters.extend(build_dynamic_filters(query_text, sample_doc))
+
+        # Final search body
+        body = {
+            "size": size,
+            "query": {
+                "script_score": {
+                    "query": {
+                        "bool": {
+                            "must": filters,
+                            "should": [
+                                {"match": {"combined_text": query_text}}
+                            ]
+                        }
+                    },
+                    "script": {
+                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                        "params": {
+                            "query_vector": query_vector
+                        }
+                    }
+                }
+            }
+        }
+
+        result = es.search(index=index_name, body=body)
+        hits = result["hits"]["hits"]
+
+        if not hits:
+            return "No relevant brand data found."
+
+        return "\n".join([
+            f"Score: {hit['_score']:.2f} | {hit['_source']['combined_text']}"
+            for hit in hits
+        ])
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+ 
+
+""" Customer Analyzer Agent Dataset"""
 def query_customer_survey_data(
     query_text: str,
     index_name: str = "agent_dataset",
@@ -155,7 +222,130 @@ def query_customer_survey_data(
     except Exception as e:
         return f"Error: {str(e)}"
 
+def query_support_tickets_dataset(
+    query_text: str,
+    index_name: str = "agent_dataset",
+    sub_index: str = "support_tickets_dataset",
+    size: int = 10
+) -> str:
+    try:
+        # Get vector for semantic match
+        query_vector = embedding_model.embed_query(query_text)
 
+        # Sample a doc to get fields
+        sample = es.search(index=index_name, body={
+            "query": {"match": {"sub_index": sub_index}},
+            "size": 1
+        })
+
+        sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
+
+        # Always include sub_index match
+        filters = [{"match": {"sub_index": sub_index}}]
+
+        # Add dynamic filters based on content
+        filters.extend(build_dynamic_filters(query_text, sample_doc))
+
+        # Final search body
+        body = {
+            "size": size,
+            "query": {
+                "script_score": {
+                    "query": {
+                        "bool": {
+                            "must": filters,
+                            "should": [
+                                {"match": {"combined_text": query_text}}
+                            ]
+                        }
+                    },
+                    "script": {
+                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                        "params": {
+                            "query_vector": query_vector
+                        }
+                    }
+                }
+            }
+        }
+
+        result = es.search(index=index_name, body=body)
+        hits = result["hits"]["hits"]
+
+        if not hits:
+            return "No relevant brand data found."
+
+        return "\n".join([
+            f"Score: {hit['_score']:.2f} | {hit['_source']['combined_text']}"
+            for hit in hits
+        ])
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+   
+
+def query_social_media_dataset(
+    query_text: str,
+    index_name: str = "agent_dataset",
+    sub_index: str = "social_media_dataset",
+    size: int = 10
+) -> str:
+    try:
+        # Get vector for semantic match
+        query_vector = embedding_model.embed_query(query_text)
+
+        # Sample a doc to get fields
+        sample = es.search(index=index_name, body={
+            "query": {"match": {"sub_index": sub_index}},
+            "size": 1
+        })
+
+        sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
+
+        # Always include sub_index match
+        filters = [{"match": {"sub_index": sub_index}}]
+
+        # Add dynamic filters based on content
+        filters.extend(build_dynamic_filters(query_text, sample_doc))
+
+        # Final search body
+        body = {
+            "size": size,
+            "query": {
+                "script_score": {
+                    "query": {
+                        "bool": {
+                            "must": filters,
+                            "should": [
+                                {"match": {"combined_text": query_text}}
+                            ]
+                        }
+                    },
+                    "script": {
+                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                        "params": {
+                            "query_vector": query_vector
+                        }
+                    }
+                }
+            }
+        }
+
+        result = es.search(index=index_name, body=body)
+        hits = result["hits"]["hits"]
+
+        if not hits:
+            return "No relevant brand data found."
+
+        return "\n".join([
+            f"Score: {hit['_score']:.2f} | {hit['_source']['combined_text']}"
+            for hit in hits
+        ])
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+   
+"""Strategic Alignment Agent Dataset"""
 def query_mission_alignment_data(
     query_text: str,
     index_name: str = "agent_dataset",
@@ -217,10 +407,73 @@ def query_mission_alignment_data(
     except Exception as e:
         return f"Error: {str(e)}"
     
+""" Brand Index Agent Dataset """
 def query_brand_audit_data(
     query_text: str,
     index_name: str = "agent_dataset",
     sub_index: str = "brand_audit_dataset",
+    size: int = 10
+) -> str:
+    try:
+        # Get vector for semantic match
+        query_vector = embedding_model.embed_query(query_text)
+
+        # Sample a doc to get fields
+        sample = es.search(index=index_name, body={
+            "query": {"match": {"sub_index": sub_index}},
+            "size": 1
+        })
+
+        sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
+
+        # Always include sub_index match
+        filters = [{"match": {"sub_index": sub_index}}]
+
+        # Add dynamic filters based on content
+        filters.extend(build_dynamic_filters(query_text, sample_doc))
+
+        # Final search body
+        body = {
+            "size": size,
+            "query": {
+                "script_score": {
+                    "query": {
+                        "bool": {
+                            "must": filters,
+                            "should": [
+                                {"match": {"combined_text": query_text}}
+                            ]
+                        }
+                    },
+                    "script": {
+                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                        "params": {
+                            "query_vector": query_vector
+                        }
+                    }
+                }
+            }
+        }
+
+        result = es.search(index=index_name, body=body)
+        hits = result["hits"]["hits"]
+
+        if not hits:
+            return "No relevant brand data found."
+
+        return "\n".join([
+            f"Score: {hit['_score']:.2f} | {hit['_source']['combined_text']}"
+            for hit in hits
+        ])
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+   
+  
+def query_social_media_engagement_dataset(
+    query_text: str,
+    index_name: str = "agent_dataset",
+    sub_index: str = "social_media_engagement_dataset",
     size: int = 10
 ) -> str:
     try:
