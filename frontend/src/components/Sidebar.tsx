@@ -39,17 +39,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-background border-r border-border/50 p-3 transition-all duration-300",
+        // Glassmorphism sidebar
+        "flex flex-col h-full bg-white/60 backdrop-blur-xl border-r border-blue-100 p-3 transition-all duration-300",
         isCollapsed ? "w-16" : "w-[200px] min-w-[200px] max-w-[200px] flex-shrink-0",
-        "rounded-r-3xl"
+        "rounded-r-3xl shadow-xl",
+        "bg-gradient-to-b from-white/80 via-blue-50/60 to-green-50/60"
       )}
     >
       {/* Combined Overview and Collapse Button */}
       <Button
         variant="ghost"
         className={cn(
-          "w-full justify-between text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm mb-2", // Added mb-2 for spacing
-          activeAgent === 'overview' && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-md",
+          "w-full justify-between text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm mb-2",
+          activeAgent === 'overview' && "bg-[#4AB1FF] text-white shadow-lg border border-[#4AB1FF] backdrop-blur-md",
           isCollapsed ? "justify-center px-0 rounded-xl" : "justify-between rounded-xl pr-2" // Adjust padding for expanded state
         )}
         onClick={() => {
@@ -84,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
               variant="ghost"
               className={cn(
                 "w-full justify-start text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm",
-                activeAgent === agent.id && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-md",
+                activeAgent === agent.id && "bg-[#4AB1FF] text-white shadow-lg border border-[#4AB1FF] backdrop-blur-md",
                 isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
               )}
               onClick={() => onSelectAgent(agent.id)}

@@ -161,50 +161,50 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
           </div>
         </div>
       )}
-      {/* Prompt Section */}
-      <div className="flex flex-col sm:flex-row items-center gap-4">
+      {/* Prompt Section - responsive, full width on mobile/tablet */}
+      <div className="flex flex-col lg:flex-row items-center gap-4 bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 border border-blue-100 w-full">
         <Input
           type="text"
-          placeholder="Ask Aura anything..."
+          placeholder="Ask about sales, profit, or any business metric..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="w-full"
+          className="w-full text-base px-4 py-3 rounded-lg border-2 border-blue-100 focus:border-blue-400 transition font-sans"
         />
-        <Button onClick={fetchData} disabled={loading} className="w-full sm:w-auto">
+        <Button onClick={fetchData} disabled={loading} className="w-full lg:w-auto text-base px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow hover:bg-blue-700 transition">
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>
 
-      {/* KPI Tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Tiles - responsive grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
         {KPI_KEYS.map((kpi, idx) => {
           const chart = charts[kpi.key];
+          // Alternate between BarChart2 and LineChart for no data icon
+          const icons = [BarChart2, LineChart];
+          const Icon = icons[idx % icons.length];
           return (
             <Card
               key={idx}
-              style={{ backgroundColor: kpi.bgColor }}
-              className={"p-4 rounded-2xl shadow transition-all border"}
+              style={{ backgroundColor: kpi.bgColor || '#fff' }}
+              className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg border border-gray-200 p-0 overflow-hidden group min-h-[90px]"}
             >
-              <CardContent className="flex flex-col">
-                <span className="text-sm text-gray-500">{kpi.key}</span>
-                <span className="flex flex-col items-center justify-center min-h-[2.5rem]">
+              <CardContent className="flex flex-col items-center justify-center py-3 px-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-gray-500 font-medium">{kpi.key}</span>
+                  {idx % 2 === 0 ? <BarChart2 className="w-4 h-4 text-blue-400" /> : <LineChart className="w-4 h-4 text-green-400" />}
+                </div>
+                <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
                   {chart?.y?.at(-1) !== undefined ? (
-                    <span className="text-2xl font-bold">{chart.y.at(-1).toLocaleString()}</span>
+                    <span className="text-lg font-bold text-blue-900 group-hover:text-green-700 transition-colors">{chart.y.at(-1).toLocaleString()}</span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
-                      <NoDataGhost />
-                      <span className="text-xs text-gray-400 mt-1 font-medium">No data</span>
+                      <Icon className="w-7 h-7 text-blue-300 mb-0.5" />
+                      <span className="text-[10px] text-gray-400 mt-0.5 font-medium">No data</span>
                     </span>
                   )}
                 </span>
                 <span
-                  className={`text-sm mt-1 ${
-                    chart?.delta > 0
-                      ? "text-green-600"
-                      : chart?.delta < 0
-                      ? "text-red-500"
-                      : "text-gray-400"
-                  }`}
+                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" : chart?.delta < 0 ? "text-red-500" : "text-gray-400"}`}
                 >
                   {chart?.delta ? `${chart.delta > 0 ? "+" : ""}${chart.delta}%` : "--"}
                 </span>
@@ -215,10 +215,10 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
       </div>
 
       {/* Tabbed Graph Section */}
-      <Tabs defaultValue={Object.keys(METRIC_GROUPS)[0]} className="space-y-4">
-        <TabsList className="flex gap-2">
+      <Tabs defaultValue={Object.keys(METRIC_GROUPS)[0]} className="space-y-4 w-full">
+        <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-1 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
           {Object.keys(METRIC_GROUPS).map((tab) => (
-            <TabsTrigger key={tab} value={tab}>
+            <TabsTrigger key={tab} value={tab} className="rounded-full px-3 py-1 text-base font-semibold transition-all data-[state=active]:bg-[#0070E2] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 focus-visible:ring-2 focus-visible:ring-blue-200">
               {tab}
             </TabsTrigger>
           ))}
@@ -241,15 +241,20 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
                 Restore Graphs
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+            {/* Graph cards - responsive grid, now 2 columns on xl+ screens for more width */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full">
               {metrics.map((metric, idx) => {
                 if (hiddenCharts.has(metric.key)) return null;
                 const chart = charts[metric.key];
                 return (
-                  <Card key={idx} className="rounded-2xl shadow-lg p-2 sm:p-4 relative bg-white transition-shadow hover:shadow-2xl border border-gray-200">
+                  <Card
+                    key={idx}
+                    className="rounded-3xl shadow-xl p-0 sm:p-0 relative bg-white/60 backdrop-blur-md transition-transform hover:-translate-y-1 hover:shadow-2xl border-0 overflow-hidden animate-fade-in"
+                    style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.10)' }}
+                  >
                     <CardContent className="flex flex-col h-full p-0">
-                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
-                        <h3 className="text-lg font-semibold text-gray-800">{metric.label}</h3>
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-4 pt-4">
+                        <h3 className="text-base font-semibold text-gray-800 truncate max-w-[70%]">{metric.label}</h3>
                         <div className="flex items-center gap-2">
                           {/* Settings popover */}
                           {chart ? (
@@ -308,7 +313,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
                           </button>
                         </div>
                       </div>
-                      <div className="flex-1 w-full h-full" style={{ minHeight: 350, overflow: 'hidden' }}>
+                      <div className="flex-1 w-full h-full flex items-center justify-center" style={{ minHeight: 420, overflow: 'hidden', background: 'rgba(255,255,255,0.25)', borderRadius: '1.5rem' }}>
                         {chart ? (
                           <Plot
                             data={(() => {
@@ -347,13 +352,13 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
                               }
                             })()}
                             layout={{
+                              ...chart.layout,
                               width: undefined,
                               height: undefined,
                               autosize: true,
-                              // Remove the title from inside the graph
                               title: '',
-                              plot_bgcolor: "#f9fafb",
-                              paper_bgcolor: "#fff",
+                              plot_bgcolor: 'rgba(255,255,255,0.15)',
+                              paper_bgcolor: 'rgba(255,255,255,0.10)',
                               font: {
                                 family: 'Inter, sans-serif',
                                 size: 16,
@@ -386,7 +391,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
                                 bordercolor: "#d1d5db",
                                 font: { color: "#222", size: 15 }
                               },
-                              transition: { duration: 500, easing: 'cubic-in-out' },
+                              transition: { duration: 800, easing: 'cubic-in-out' },
                             }}
                             style={{ width: '100%', height: '100%' }}
                             config={{
@@ -400,16 +405,18 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
                                 'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover', 'resetViews', 'toggleHover', 'resetViews',
                                 'zoom3d', 'pan3d', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
                                 'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo',
-                                'toImage' // keep this at the end so we can remove all except toImage and fullscreen
+                                'toImage'
                               ].filter(btn => btn !== 'toImage' && btn !== 'fullscreen'),
                               responsive: true,
                             }}
+                            transition={{ duration: 800, easing: 'cubic-in-out' }}
                           />
                         ) : (
-                          <div className="flex flex-col items-center justify-center text-gray-500 pt-12 pb-12">
-                          <BarChart2 className="w-16 h-16 mb-2 text-blue-300" />
-                          <span className="text-lg font-semibold">No data available</span>
-                        </div>
+                          <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
+                            <BarChart2 className="w-12 h-12 mb-2 text-blue-300 animate-bounce" />
+                            <span className="text-base font-semibold">No data available</span>
+                            <span className="text-xs text-gray-400 mt-1">Try a different prompt or check your data source.</span>
+                          </div>
                         )}
                       </div>
                     </CardContent>

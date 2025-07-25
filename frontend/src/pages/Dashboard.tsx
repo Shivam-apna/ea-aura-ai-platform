@@ -136,6 +136,18 @@ const OverviewContent = ({ onOpenAIPrompt, dynamicPlotData, onClearPlot }: { onO
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
   const [isAIPromptDialogOpen, setIsAIPromptDialogOpen] = useState(false);
   const [dynamicPlotData, setDynamicPlotData] = useState<any | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(window.innerWidth < 768);
+
+  // Auto-collapse sidebar on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSidebarCollapsed(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    // Initial check
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handlePlotGenerated = (plotData: any) => {
     setDynamicPlotData(plotData);

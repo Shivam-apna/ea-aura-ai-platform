@@ -29,7 +29,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
   // Show light theme by default until mounted
   if (!mounted) {
     return (
-      <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 px-6 py-3 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 px-4 py-1.5 flex items-center justify-between shadow-sm">
         <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
           <img
             src={logoLightImage}
@@ -40,16 +40,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
             }}
           />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <RefreshCw className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <RefreshCw className="h-4 w-4" />
             <span className="sr-only">Refresh Data</span>
           </Button>
-          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <Bell className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <Bell className="h-4 w-4" />
             <span className="sr-only">Notifications</span>
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
           </Button>
         </div>
       </header>
@@ -57,7 +57,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 px-6 py-3 flex items-center justify-between shadow-sm">
+    <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 px-4 py-1.5 flex items-center justify-between shadow-sm">
       {/* Left: Logo with CSS fallback approach */}
       <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
         {/* Light mode logo - hidden in dark mode */}
@@ -81,18 +81,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
       </Link>
 
       {/* Right: Header Actions (Theme Toggle, Refresh, Bell) */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <ThemeToggle />
 
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          <RefreshCw className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <RefreshCw className="h-4 w-4" />
           <span className="sr-only">Refresh Data</span>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <Bell className="h-4 w-4" />
           <span className="sr-only">Notifications</span>
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
         </Button>
       </div>
     </header>
