@@ -7,10 +7,10 @@
   ],
   "metric_groups": {
     "Sales": [
-      { "key": "Net Sales", "label": "Net Sales" },
+      { "key": "Net Sale", "label": "Net Sales" },
       { "key": "COGS", "label": "COGS" },
       { "key": "Gross Margin", "label": "Gross Profit Margin" },
-      { "key": "Gross Margin Percentage", "label": "GMROI" }
+      { "key": "GMROI", "label": "GMROI" }
     ],
     "Marketing": [
       { "key": "CTR", "label": "CTR (%)" },
@@ -20,4 +20,4 @@
     ]
   }
 }
- 
+
