@@ -5,6 +5,8 @@ import { HolographicCard } from './Dashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import PagePromptBar from '@/components/PagePromptBar'; // Import the new prompt bar
+import { toast } from 'sonner'; // Import toast for notifications
 
 const CustomerAnalyzer = () => {
   const [sentimentData, setSentimentData] = useState([
@@ -45,9 +47,22 @@ const CustomerAnalyzer = () => {
   const tooltipItemStyle = { color: theme === 'dark' ? "hsl(var(--foreground))" : "hsl(var(--foreground))" };
   const tooltipLabelStyle = { color: theme === 'dark' ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground))" };
 
+  const handlePromptSubmit = (prompt: string) => {
+    toast.info(`Customer Analyzer: Processing prompt "${prompt}"`);
+    // Here you would add logic to process the prompt, e.g., filter data, trigger AI analysis
+  };
 
   return (
     <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      {/* Prompt Bar */}
+      <div className="lg:col-span-2 mb-4 flex justify-center">
+        <PagePromptBar
+          placeholder="Ask about customer sentiment, churn, or support tickets..."
+          buttonText="Analyze"
+          onSubmit={handlePromptSubmit}
+        />
+      </div>
+
       <HolographicCard className="lg:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">

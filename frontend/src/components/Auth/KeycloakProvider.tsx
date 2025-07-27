@@ -16,6 +16,14 @@ export const KeycloakProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     const initKeycloak = async () => {
+      // Guard against re-initialization if Keycloak is already authenticated
+      if (keycloak.authenticated) {
+        console.log('Keycloak already authenticated. Skipping init().');
+        setAuthenticated(true); // It's already authenticated
+        setLoading(false);
+        return;
+      }
+
       try {
         const auth = await keycloak.init({
           onLoad: 'login-required', // Force login if not authenticated
@@ -32,8 +40,28 @@ export const KeycloakProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     initKeycloak();
-  }, []);
+  }, []); // Empty dependency array ensures it runs once on mount
 
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <p>Loading authentication...</p>
+      </div>
+    );
+  }
+
+  // If not authenticated after loading, Keycloak's 'login-required' will handle redirection.
+  // We can return null or a simple message here, as the browser will likely redirect quickly.
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <p>Authentication failed or not logged in. Redirecting...</p>
+      </div>
+    );
+  }
+
+  // Render children only when authenticated
   return (
     <KeycloakContext.Provider value={{ keycloak, authenticated, loading }}>
       {children}

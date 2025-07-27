@@ -19,6 +19,8 @@ import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import DataAnalysis from "./pages/DataAnalysis";
 import Security from "./pages/Security";
+import ChatbotLauncher from "./components/ChatbotLauncher"; // Import ChatbotLauncher
+import { cn } from "@/lib/utils"; // Import cn for conditional classes
 
 
 const queryClient = new QueryClient();
@@ -60,13 +62,14 @@ const App = () => {
           <KeycloakProvider>
             <div className="flex flex-col w-full h-screen bg-background text-foreground"> {/* Added w-full and h-screen */}
               <AppHeader companyName="EA AURA" onSelectAgent={setActiveAgent} />
-              <div className="flex flex-grow overflow-hidden"> {/* Added overflow-hidden to prevent scrollbars on this flex container */}
+              <div className="flex flex-grow overflow-hidden relative"> {/* Added overflow-hidden and relative for positioning toggle */}
                 <Sidebar
                   activeAgent={activeAgent}
                   onSelectAgent={setActiveAgent}
                   isCollapsed={isSidebarCollapsed}
                   onToggleCollapse={handleToggleCollapse}
                 />
+                {/* Removed the vertical divider and toggle button from here */}
                 <main className="flex-grow overflow-auto">
                   <Routes>
                     <Route
@@ -100,6 +103,16 @@ const App = () => {
                   </Routes>
                 </main>
               </div>
+              {/* Chatbot Launcher */}
+              <ChatbotLauncher
+                onOpen={() => console.log('Chatbot opened!')}
+                onClose={() => console.log('Chatbot closed!')}
+                onMessageSend={(msg) => console.log('Message sent:', msg)}
+                // You can customize position and colors here:
+                // position="bottom-left"
+                // backgroundColor="#FF5733"
+                // iconColor="#000000"
+              />
             </div>
           </KeycloakProvider>
         </BrowserRouter>

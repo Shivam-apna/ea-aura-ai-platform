@@ -108,7 +108,7 @@ const Profile = () => {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" className="bg-secondary text-secondary-foreground hover:bg-secondary/80">Edit Profile</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">Save Changes</Button>
+            <Button variant="default">Save Changes</Button>
           </div>
         </CardContent>
       </HolographicCard>
