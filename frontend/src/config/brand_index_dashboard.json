@@ -1,0 +1,58 @@
+{
+  "kpi_keys": [
+    {
+      "key": "Page Views",
+      "bgColor": "#E4F8C2"
+    },
+    {
+      "key": "Audience Growth",
+      "bgColor": "#E6F1FD"
+    },
+    {
+      "key": "Engagement Rate",
+      "bgColor": "#E4F8C2"
+    },
+    {
+      "key": "Bounce Rate",
+      "bgColor": "#E6F1FD"
+    }
+  ],
+  "metric_groups": {
+    "Social Engagement": [
+      {
+        "key": "Impressions",
+        "label": "Impressions"
+      },
+      {
+        "key": "Engagement_Rate",
+        "label": "Engagement Rate"
+      },
+      {
+        "key": "Sentiment Score",
+        "label": "Sentiment Score"
+      },
+      {
+        "key": "Share of Voice (%)",
+        "label": "Share of Voice "
+      }
+    ],
+    "Website Analyzer": [
+      {
+        "key": "Page_Views",
+        "label": "Page Views"
+      },
+      {
+        "key": "Bounce Rate (%)",
+        "label": "Bounce Rate "
+      },
+      {
+        "key": "Session Growth (%",
+        "label": "Session Growth"
+      },
+      {
+        "key": "Visitors",
+        "label": "Visitors"
+      }
+    ]
+  }
+}

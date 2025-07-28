@@ -61,13 +61,24 @@ def get_enhanced_data_for_agent(agent_name: str, input_text: str):
         
         return combined_data
     
+
+    def query_strategic_alignment_combined(query_text):
+        """Query mission alignment dataset for strategic alignment agent"""
+        mission_alignment_data = query_mission_alignment_data(query_text=query_text)
+        
+    # Add a clear separator for consistency
+        combined_data = f"""=== MISSION ALIGNMENT DATA ===
+    {mission_alignment_data}"""
+        
+        return combined_data
+
     # Map agent names to data queries
     agent_data_mapping = {
         # Parent agents with combined datasets
         "business_vitality_agent": lambda: query_business_vitality_combined(input_text),
         "customer_analyzer_agent": lambda: query_customer_analyzer_combined(input_text),
         "brand_index_agent": lambda: query_brand_index_combined(input_text),
-        "strategic_alignment_agent": lambda: query_mission_alignment_data(query_text=input_text),
+        "strategic_alignment_agent": lambda: query_strategic_alignment_combined(input_text),
         
         # Sub-agents with specific datasets
         # Business vitality sub-agents
