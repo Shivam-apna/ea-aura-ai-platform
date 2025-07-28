@@ -14,6 +14,7 @@ const METRIC_GROUPS = config.metric_groups;
 import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
  
 // Type definitions
 interface KpiItem {
@@ -172,7 +173,11 @@ const MissionAlignment = () => {
         body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
       });
       const data = await res.json();
-      console.log(data)
+      if (data.parent_agent !== "mission_alignment_agent") {
+        toast("Invalid Query: Ask query related to mission alignment.");
+        setLoading(false);
+        return;
+      }
       const parsed = data.sub_agent_response;
  
       console.log("parsed response:", parsed);
@@ -211,6 +216,7 @@ const MissionAlignment = () => {
       }
       setCharts(prevCharts => ({ ...prevCharts, ...chartMap }));
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
+      toast("Mission alignment dashboard generated successfully!");
     } catch (err) {
       console.error("Error fetching charts:", err);
     } finally {

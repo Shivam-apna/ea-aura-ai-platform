@@ -20,6 +20,7 @@ import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
+import { toast } from "sonner";
 
 // Type definitions
 interface KpiItem {
@@ -206,11 +207,7 @@ const CustomerAnalyzer = () => {
 
       const data = await res.json();
       if (data.parent_agent !== "customer_analyzer_agent") {
-        toast({
-          title: "Invalid Query",
-          description: "Ask query related to business",
-          variant: "destructive"
-        });
+        toast("Invalid Query: Ask query related to business.");
         setLoading(false);
         return;
       }
