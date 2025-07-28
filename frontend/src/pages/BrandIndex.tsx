@@ -20,6 +20,7 @@ import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
+import { toast } from "sonner";
 
 // Type definitions
 interface KpiItem {
@@ -205,6 +206,11 @@ const BrandIndex = () => {
       });
 
       const data = await res.json();
+      if (data.parent_agent !== "brand_index_agent") {
+        toast("Invalid Query: Ask query related to brand index.");
+        setLoading(false);
+        return;
+      }
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
 
