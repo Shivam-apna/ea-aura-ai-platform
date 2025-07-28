@@ -16,7 +16,6 @@ const SalesKPICards: React.FC = () => {
       setTotalSales(prev => Math.floor(prev + (Math.random() * 10000 - 5000))); // +/- 5000
       setSalesGrowth(prev => parseFloat((prev + (Math.random() * 0.5 - 0.25)).toFixed(1))); // +/- 0.25%
       setAvgOrderValue(prev => parseFloat((prev + (Math.random() * 5 - 2.5)).toFixed(1))); // +/- 2.5 USD
-      setConversionRate(prev => parseFloat((prev + (Math.random() * 0.1 - 0.05)).toFixed(1))); // +/- 0.05%
     }, 7000); // Update every 7 seconds
     return () => clearInterval(interval);
   }, []);
@@ -25,7 +24,7 @@ const SalesKPICards: React.FC = () => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <SummaryCard
         title="Total Sales (YTD)"
-        value={`$${totalSales.toLocaleString()}`}
+        value={totalSales.toLocaleString()}
         change={salesGrowth}
         icon={DollarSign}
         colorClass="text-green-400"
@@ -34,7 +33,7 @@ const SalesKPICards: React.FC = () => {
       />
       <SummaryCard
         title="Sales Growth"
-        value={`${salesGrowth.toFixed(1)}%`}
+        value={salesGrowth.toFixed(1)}
         change={salesGrowth > 0 ? 0.1 : -0.1} // Small arbitrary change for icon
         icon={TrendingUp}
         colorClass="text-blue-400"
@@ -43,7 +42,7 @@ const SalesKPICards: React.FC = () => {
       />
       <SummaryCard
         title="Average Order Value"
-        value={`$${avgOrderValue.toFixed(2)}`}
+        value={avgOrderValue.toFixed(2)}
         icon={ShoppingCart}
         colorClass="text-purple-400"
         bgColorClass="bg-card"
@@ -51,7 +50,7 @@ const SalesKPICards: React.FC = () => {
       />
       <SummaryCard
         title="Conversion Rate"
-        value={`${conversionRate.toFixed(1)}%`}
+        value={conversionRate.toFixed(1)}
         icon={Percent}
         colorClass="text-orange-400"
         bgColorClass="bg-card"

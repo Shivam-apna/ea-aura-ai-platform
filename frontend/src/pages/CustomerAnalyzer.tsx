@@ -14,7 +14,9 @@ const METRIC_GROUPS = config.metric_groups;
 import { BarChart2, LineChart, ScatterChart, Settings2, X, Smile } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
-
+import { useToast } from "@/hooks/use-toast";
+ 
+ 
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
     <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef"/>
@@ -24,7 +26,7 @@ const NoDataGhost = () => (
     <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1"/>
   </svg>
 );
-
+ 
 const GraphLoader = () => (
   <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
     <rect x="10" y="20" width="10" height="20" rx="2" fill="#4CB2FF">
@@ -45,10 +47,10 @@ const GraphLoader = () => (
     </rect>
   </svg>
 );
-
+ 
 const COLORS = ["#A8C574", "#4CB2FF"];
 const LOCAL_STORAGE_KEY = "customer_charts_cache";
-
+ 
 const CustomerAnalyzer = () => {
   const [modebarOptions, setModebarOptions] = useState({});
   const [input, setInput] = useState("");
@@ -57,7 +59,7 @@ const CustomerAnalyzer = () => {
   const [hiddenCharts, setHiddenCharts] = useState(new Set());
   const [chartTypes, setChartTypes] = useState({});
   const [chartColors, setChartColors] = useState({});
-
+  const { toast } = useToast();
   useEffect(() => {
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
@@ -66,15 +68,15 @@ const CustomerAnalyzer = () => {
       if (cachedCharts) setCharts(cachedCharts);
     }
   }, []);
-
+ 
   const handleCloseChart = (key) => {
     setHiddenCharts((prev) => new Set(prev).add(key));
   };
-
+ 
   const handleRestoreCharts = () => {
     setHiddenCharts(new Set());
   };
-
+ 
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -84,6 +86,16 @@ const CustomerAnalyzer = () => {
         body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
       });
       const data = await res.json();
+      if (data.parent_agent !== "customer_analyzer_agent") {
+        toast({
+          title: "Invalid Query",
+          description: "Ask query related to business",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+     
       const parsed = data.sub_agent_response;
       const chartMap = {};
       for (const key of Object.keys(parsed)) {
@@ -118,7 +130,7 @@ const CustomerAnalyzer = () => {
       setLoading(false);
     }
   };
-
+ 
   return (
     <div className="p-6 space-y-6 relative min-h-screen">
       {loading && (
@@ -388,5 +400,6 @@ const CustomerAnalyzer = () => {
     </div>
   );
 };
-
+ 
 export default CustomerAnalyzer;
+ 

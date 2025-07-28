@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, Award, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 import { HolographicCard } from './Dashboard';
 import { cn } from '@/lib/utils';
+import PagePromptBar from '@/components/PagePromptBar'; // Import the new prompt bar
+import { toast } from 'sonner'; // Import toast for notifications
 
 interface ChannelScore {
   name: string;
@@ -53,8 +55,22 @@ const BrandIndex = () => {
     return null;
   };
 
+  const handlePromptSubmit = (prompt: string) => {
+    toast.info(`Brand Index: Processing prompt "${prompt}"`);
+    // Here you would add logic to process the prompt, e.g., filter data, trigger AI analysis
+  };
+
   return (
     <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      {/* Prompt Bar */}
+      <div className="lg:col-span-2 mb-4 flex justify-center">
+        <PagePromptBar
+          placeholder="Ask about brand health, channel performance, or market perception..."
+          buttonText="Analyze"
+          onSubmit={handlePromptSubmit}
+        />
+      </div>
+
       <HolographicCard className="lg:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">

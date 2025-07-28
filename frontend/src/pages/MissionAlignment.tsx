@@ -4,6 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CheckCircle2, XCircle, Flag, Info } from 'lucide-react';
 import { HolographicCard } from './Dashboard';
 import { cn } from '@/lib/utils';
+import PagePromptBar from '@/components/PagePromptBar'; // Import the new prompt bar
+import { toast } from 'sonner'; // Import toast for notifications
 
 interface Recommendation {
   id: string;
@@ -45,8 +47,22 @@ const MissionAlignment = () => {
   const failCount = recommendations.filter(rec => rec.status === 'Fail').length;
   const blockableCount = recommendations.filter(rec => rec.blockable && rec.status === 'Fail').length;
 
+  const handlePromptSubmit = (prompt: string) => {
+    toast.info(`Mission Alignment: Processing prompt "${prompt}"`);
+    // Here you would add logic to process the prompt, e.g., filter data, trigger AI analysis
+  };
+
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      {/* Prompt Bar */}
+      <div className="col-span-full mb-4 flex justify-center">
+        <PagePromptBar
+          placeholder="Ask about mission alignment, recommendations, or compliance..."
+          buttonText="Evaluate"
+          onSubmit={handlePromptSubmit}
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
           <CardHeader>

@@ -2,142 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
+/* Google Font Imports for various themes */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&family=Georgia&family=Courier+New&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Source+Sans+Pro:wght@300;400;600;700&family=Lato:wght@300;400;700&family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Source+Code+Pro:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&family=Lora:wght@400;700&family=Inconsolata:wght@400;700&display=swap');
 
+@layer base {
   :root {
-    /* Light Mode Colors - Adjusted for reference design */
-    --background: 0 0% 100%; /* Pure white background */
-    --foreground: 222.2 84% 4.9%; /* Dark text */
-    --card: 0 0% 100%; /* Card background matches overall background */
+    --background: 210 25% 96.5%; /* HSL for #F2F6FA */
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+    
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217.2 91.2% 59.8%; /* A vibrant blue for primary actions/highlights */
-    --primary-foreground: 210 40% 98%; /* White text on primary */
-    --secondary: 210 40% 96.1%; /* Light gray for secondary elements */
+    
+    /* Default primary colors for light theme - now raw HSL values */
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%; /* Very light gray for muted elements */
-    --muted-foreground: 215.4 16.3% 46.9%; /* Gray for muted text */
-    --accent: 210 40% 96.1%; /* Light gray for accent */
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%; /* Softer border */
+
+    --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
+    
     --radius: 0.5rem;
 
-    /* Sidebar Light Mode - adjusted to match reference */
-    --sidebar-background: 0 0% 100%; /* White background for sidebar */
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 217.2 91.2% 59.8%; /* Blue for active state */
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 40% 96.1%; /* Light gray for hover */
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Neumorphism Variables for Light Mode - Adjusted for softer look */
-    --neumorphic-bg: 0 0% 100%; /* Pure white background for neumorphic elements */
-    --neumorphic-shadow-light: 0 0% 95%; /* Very light gray, almost white */
-    --neumorphic-shadow-dark: 0 0% 90%; /* Slightly darker gray, subtle dark shadow */
+    /* Default font variables */
+    --font-primary: 'Inter', sans-serif;
+    --font-secondary: 'Roboto', sans-serif;
+    --font-monospace: 'Fira Code', monospace;
   }
 
   .dark {
-    /* Dark Mode Colors - Adjusted for a softer, muted dark theme */
-    --background: 220 14.3% 15%; /* Dark muted background for neumorphism */
-    --foreground: 210 40% 98%; /* Light text */
-
-    /* Shadcn/UI Dark Mode Defaults - adjust to match neumorphic theme */
-    --card: 220 14.3% 15%;
+    --background: 0 0% 16.5%; /* HSL for #2A2A2A */
+    --foreground: 210 40% 98%;
+    
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
+    
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
+    
+    /* Default primary colors for dark theme - now raw HSL values */
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
+    
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+    
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+    
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%; /* Softer border */
+    
+    --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-
-    /* Sidebar Dark Mode - adjust to match neumorphic theme */
-    --sidebar-background: 220 14.3% 15%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Neumorphism Variables for Dark Mode */
-    --neumorphic-bg: 220 14.3% 15%;
-    --neumorphic-shadow-light: 220 14.3% 20%; /* Lighter than bg */
-    --neumorphic-shadow-dark: 220 14.3% 10%; /* Darker than bg */
   }
 
-  /* Apply neumorphism to specific elements */
-  .neumorphic-card {
-    background-color: hsl(var(--neumorphic-bg));
-    border: 1px solid hsl(var(--border)); /* Keep a subtle border */
-    box-shadow: 4px 4px 8px hsl(var(--neumorphic-shadow-dark)),
-                -4px -4px 8px hsl(var(--neumorphic-shadow-light)); /* Softer shadows */
-    @apply rounded-2xl; /* Apply large border-radius */
-    transition: all 0.3s ease-in-out; /* Smooth transitions for hover effects */
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-300 font-secondary; /* Apply the secondary font variable here */
   }
 
-  /* Optional: Add pressed state for neumorphic buttons/cards */
-  .neumorphic-card:active {
-    box-shadow: inset 2px 2px 4px hsl(var(--neumorphic-shadow-dark)),
-                inset -2px -2px 4px hsl(var(--neumorphic-shadow-light));
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-primary;
   }
-}
 
-/* Existing styles */
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+  code, pre {
+    @apply font-monospace;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
