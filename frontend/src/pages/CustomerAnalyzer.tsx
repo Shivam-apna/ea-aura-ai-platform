@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import Plot from "react-plotly.js";
 import {
@@ -8,25 +11,44 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+
 import config from "@/config/customer_dashboard.json";
+// Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
-const METRIC_GROUPS = config.metric_groups;
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Smile } from 'lucide-react';
+const METRIC_GROUPS = config.metric_groups;;
+import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
- 
- 
+import ClipLoader from "react-spinners/ClipLoader";
+
+// Type definitions
+interface KpiItem {
+  key: string;
+  bgColor: string;
+  originalKey?: string;
+}
+
+interface MetricItem {
+  key: string;
+  label: string;
+  originalKey?: string;
+}
+
+interface MetricGroups {
+  [groupName: string]: MetricItem[];
+}
+
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-    <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef"/>
-    <path d="M12 36V18a12 12 0 1 1 24 0v18c0 2-2 2-3 0s-3-2-4 0-3 2-4 0-3-2-4 0-3 2-3 0z" fill="#fff"/>
-    <circle cx="18" cy="24" r="2" fill="#a0aec0"/>
-    <circle cx="30" cy="24" r="2" fill="#a0aec0"/>
-    <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1"/>
+    <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef" />
+    <path d="M12 36V18a12 12 0 1 1 24 0v18c0 2-2 2-3 0s-3-2-4 0-3 2-4 0-3-2-4 0-3 2-3 0z" fill="#fff" />
+    <circle cx="18" cy="24" r="2" fill="#a0aec0" />
+    <circle cx="30" cy="24" r="2" fill="#a0aec0" />
+    <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1" />
   </svg>
 );
- 
+
+// Custom animated SVG graph loader
 const GraphLoader = () => (
   <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
     <rect x="10" y="20" width="10" height="20" rx="2" fill="#4CB2FF">
@@ -47,8 +69,18 @@ const GraphLoader = () => (
     </rect>
   </svg>
 );
- 
+
+const DEFAULT_MODEBAR = {
+  toImage: true,
+  zoom2d: true,
+  pan2d: true,
+  resetScale2d: true,
+  autoscale: true,
+  fullscreen: true,
+};
+
 const COLORS = ["#A8C574", "#4CB2FF"];
+
 const LOCAL_STORAGE_KEY = "customer_charts_cache";
  
 const CustomerAnalyzer = () => {
@@ -59,7 +91,10 @@ const CustomerAnalyzer = () => {
   const [hiddenCharts, setHiddenCharts] = useState(new Set());
   const [chartTypes, setChartTypes] = useState({});
   const [chartColors, setChartColors] = useState({});
-  const { toast } = useToast();
+  const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
+  const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
+
+  // Restore input and charts from cache on mount
   useEffect(() => {
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
@@ -68,8 +103,91 @@ const CustomerAnalyzer = () => {
       if (cachedCharts) setCharts(cachedCharts);
     }
   }, []);
- 
-  const handleCloseChart = (key) => {
+
+  // Function to create a mapping between config keys and actual API response keys
+  const createKeyMapping = (apiResponseKeys: string[], configKeys: any[]) => {
+    const mapping: { [key: string]: string } = {};
+
+    configKeys.forEach(configItem => {
+      const configKey = configItem.key;
+
+      // Try exact match first
+      if (apiResponseKeys.includes(configKey)) {
+        mapping[configKey] = configKey;
+        return;
+      }
+
+      // Try case-insensitive match
+      const exactMatch = apiResponseKeys.find(apiKey =>
+        apiKey.toLowerCase() === configKey.toLowerCase()
+      );
+      if (exactMatch) {
+        mapping[configKey] = exactMatch;
+        return;
+      }
+
+      // Try partial match (remove special characters and spaces)
+      const normalizeKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedConfigKey = normalizeKey(configKey);
+
+      const partialMatch = apiResponseKeys.find(apiKey =>
+        normalizeKey(apiKey) === normalizedConfigKey ||
+        normalizeKey(apiKey).includes(normalizedConfigKey) ||
+        normalizedConfigKey.includes(normalizeKey(apiKey))
+      );
+
+      if (partialMatch) {
+        mapping[configKey] = partialMatch;
+        return;
+      }
+
+      // If no match found, keep the original key (will show no data)
+      mapping[configKey] = configKey;
+    });
+
+    return mapping;
+  };
+
+  // Function to update metric groups and KPI keys based on API response
+  const updateDynamicKeys = (apiResponseKeys: string[]) => {
+    console.log("API Response Keys:", apiResponseKeys);
+    console.log("Original KPI Keys:", KPI_KEYS.map(k => k.key));
+    console.log("Original Metric Keys:", Object.values(METRIC_GROUPS).flat().map(m => m.key));
+
+    // Create mapping for KPI keys
+    const kpiKeyMapping = createKeyMapping(apiResponseKeys, KPI_KEYS);
+    console.log("KPI Key Mapping:", kpiKeyMapping);
+
+    // Create mapping for metric keys (collect all metrics from all groups)
+    const allMetrics = Object.values(METRIC_GROUPS).flat();
+    const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
+    console.log("Metric Key Mapping:", metricKeyMapping);
+
+    // Update KPI keys with mapped values
+    const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
+      ...kpi,
+      originalKey: kpi.key,
+      key: kpiKeyMapping[kpi.key] || kpi.key
+    }));
+
+    // Update metric groups with mapped values
+    const updatedMetricGroups: MetricGroups = {};
+    Object.entries(METRIC_GROUPS).forEach(([groupName, metrics]) => {
+      updatedMetricGroups[groupName] = metrics.map(metric => ({
+        ...metric,
+        originalKey: metric.key,
+        key: metricKeyMapping[metric.key] || metric.key
+      }));
+    });
+
+    console.log("Updated KPI Keys:", updatedKpiKeys);
+    console.log("Updated Metric Groups:", updatedMetricGroups);
+
+    setDynamicKpiKeys(updatedKpiKeys);
+    setDynamicMetricGroups(updatedMetricGroups);
+  };
+
+  const handleCloseChart = (key: string) => {
     setHiddenCharts((prev) => new Set(prev).add(key));
   };
  
@@ -85,6 +203,7 @@ const CustomerAnalyzer = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
       });
+
       const data = await res.json();
       if (data.parent_agent !== "customer_analyzer_agent") {
         toast({
@@ -97,19 +216,32 @@ const CustomerAnalyzer = () => {
       }
      
       const parsed = data.sub_agent_response;
-      const chartMap = {};
-      for (const key of Object.keys(parsed)) {
-        if (["response", "task", "columns", "filters"].includes(key)) continue;
+      console.log("parsed response:", parsed);
+
+      // Get all available keys from API response
+      const apiResponseKeys = Object.keys(parsed).filter(key =>
+        !["response", "task", "columns", "filters"].includes(key)
+      );
+
+      // Update dynamic keys based on API response
+      updateDynamicKeys(apiResponseKeys);
+
+      const chartMap: Record<string, any> = {};
+
+      for (const key of apiResponseKeys) {
         const { plot_type, data: values, value, delta } = parsed[key] || {};
         if (!values || values.length === 0) continue;
+
         const xKey = Object.keys(values[0])[0];
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
+
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
           x: values.map((d) => {
             const val = d[xKey];
+            // If value looks like a date string, format to YYYY-MM-DD
             if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}([ T]([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?(\.\d+)?(Z|[+-][01]\d:?[0-5]\d)?)?$/.test(val)) {
               return val.slice(0, 10);
             }
@@ -122,7 +254,12 @@ const CustomerAnalyzer = () => {
           delta,
         };
       }
-      setCharts(prevCharts => ({ ...prevCharts, ...chartMap }));
+
+      setCharts(prevCharts => ({
+        ...prevCharts,
+        ...chartMap
+      }));
+      // Save to localStorage
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
     } catch (err) {
       console.error("Error fetching charts:", err);
@@ -133,6 +270,7 @@ const CustomerAnalyzer = () => {
  
   return (
     <div className="p-6 space-y-6 relative min-h-screen">
+      {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
           <div className="flex flex-col items-center gap-4">
@@ -141,7 +279,7 @@ const CustomerAnalyzer = () => {
           </div>
         </div>
       )}
-      {/* Prompt Section - responsive, full width on mobile/tablet */}
+      {/* Prompt Section - match MissionAlignment */}
       <div className="flex flex-col lg:flex-row items-center gap-4 bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 border border-blue-100 w-full">
         <Input
           type="text"
@@ -154,11 +292,10 @@ const CustomerAnalyzer = () => {
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>
-      {/* KPI Tiles - responsive grid, match BusinessVitality */}
+      {/* KPI Tiles - match MissionAlignment */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
-        {KPI_KEYS.map((kpi, idx) => {
+        {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
-          // Alternate between BarChart2 and LineChart for no data icon
           const icons = [BarChart2, LineChart];
           const Icon = icons[idx % icons.length];
           return (
@@ -196,16 +333,16 @@ const CustomerAnalyzer = () => {
           );
         })}
       </div>
-      {/* Tabs - responsive, horizontal scroll on mobile, match BusinessVitality */}
-      <Tabs defaultValue={Object.keys(METRIC_GROUPS)[0]} className="space-y-4 w-full">
+      {/* Tabs - match MissionAlignment */}
+      <Tabs defaultValue={Object.keys(dynamicMetricGroups)[0]} className="space-y-4 w-full">
         <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
-          {Object.keys(METRIC_GROUPS).map((tab) => (
+          {Object.keys(dynamicMetricGroups).map((tab) => (
             <TabsTrigger key={tab} value={tab} className="rounded-full px-3 py-1 text-base font-semibold transition-all data-[state=active]:bg-[#0070E2] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 focus-visible:ring-2 focus-visible:ring-blue-200">
               {tab}
             </TabsTrigger>
           ))}
         </TabsList>
-        {Object.entries(METRIC_GROUPS).map(([tab, metrics]) => (
+        {Object.entries(dynamicMetricGroups).map(([tab, metrics]) => (
           <TabsContent key={tab} value={tab}>
             <div className="flex justify-end mb-2">
               <Button
@@ -222,7 +359,7 @@ const CustomerAnalyzer = () => {
                 Restore Graphs
               </Button>
             </div>
-            {/* Graph cards - responsive grid, now 2 columns on xl+ screens for more width */}
+            {/* Graph cards - match MissionAlignment */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full">
               {metrics.map((metric, idx) => {
                 if (hiddenCharts.has(metric.key)) return null;
@@ -379,7 +516,6 @@ const CustomerAnalyzer = () => {
                               ].filter(btn => btn !== 'toImage' && btn !== 'fullscreen'),
                               responsive: true,
                             }}
-                            transition={{ duration: 800, easing: 'cubic-in-out' }}
                           />
                         ) : (
                           <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
