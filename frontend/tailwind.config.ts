@@ -62,11 +62,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // New KPI Card Colors
+        "kpi-card-green": "hsl(var(--kpi-card-green))",
+        "kpi-card-blue": "hsl(var(--kpi-card-blue))",
+        "kpi-card-light-green": "hsl(80 70% 86%)", // #E4F8C2
+        "kpi-card-light-blue": "hsl(216 80% 94%)", // #E6F1FD
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "prompt-bar": "14px", // Custom radius for prompt bars (reduced by 4px from 18px)
       },
       keyframes: {
         "accordion-down": {
@@ -89,6 +95,14 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      fontFamily: {
+        primary: 'var(--font-primary)',
+        secondary: 'var(--font-secondary)',
+        monospace: 'var(--font-monospace)',
+      },
+      boxShadow: {
+        'custom-dropdown': '0px 4px 8px rgba(0, 0, 0, 0.05)', // Custom shadow for dropdown
       },
     },
   },

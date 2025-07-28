@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-
+ 
 import config from "@/config/business_dashboard.json";
 // Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
@@ -19,8 +19,9 @@ const METRIC_GROUPS = config.metric_groups;;
 import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
-import ClipLoader from "react-spinners/ClipLoader";
-
+// import ClipLoader from "react-spinners/ClipLoader";
+import { useToast } from "@/hooks/use-toast";
+ 
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
     <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef"/>
@@ -29,8 +30,8 @@ const NoDataGhost = () => (
     <circle cx="30" cy="24" r="2" fill="#a0aec0"/>
     <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1"/>
   </svg>
-); 
-
+);
+ 
 // Custom animated SVG graph loader
 const GraphLoader = () => (
   <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
@@ -52,7 +53,7 @@ const GraphLoader = () => (
     </rect>
   </svg>
 );
-
+ 
 const DEFAULT_MODEBAR = {
   toImage: true,
   zoom2d: true,
@@ -61,11 +62,11 @@ const DEFAULT_MODEBAR = {
   autoscale: true,
   fullscreen: true,
 };
-
+ 
 const COLORS = ["#A8C574", "#4CB2FF"];
-
+ 
 const LOCAL_STORAGE_KEY = "business_charts_cache";
-
+ 
 const BusinessDashboard = () => {
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState("");
@@ -74,7 +75,8 @@ const BusinessDashboard = () => {
 const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
 const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
 const [chartColors, setChartColors] = useState<Record<string, string>>({});
-
+const { toast } = useToast();
+ 
   // Restore input and charts from cache on mount
   useEffect(() => {
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -84,15 +86,15 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
       if (cachedCharts) setCharts(cachedCharts);
     }
   }, []);
-
+ 
   const handleCloseChart = (key: string) => {
     setHiddenCharts((prev) => new Set(prev).add(key));
   };
-
+ 
   const handleRestoreCharts = () => {
     setHiddenCharts(new Set());
   };
-
+ 
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -101,23 +103,32 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
       });
-
+ 
       const data = await res.json();
+      if (data.parent_agent !== "business_vitality_agent") {
+        toast({
+          title: "Invalid Query",
+          description: "Ask query related to business",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
       const parsed = data.sub_agent_response;
       console.log(parsed);
-
+ 
       const chartMap: Record<string, any> = {};
-
+ 
       for (const key of Object.keys(parsed)) {
         if (["response", "task", "columns", "filters"].includes(key)) continue;
-
+ 
         const { plot_type, data: values, value, delta } = parsed[key] || {};
         if (!values || values.length === 0) continue;
-
+ 
         const xKey = Object.keys(values[0])[0];
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
-
+ 
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
@@ -136,7 +147,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
           delta,
         };
       }
-
+ 
       setCharts(prevCharts => ({
         ...prevCharts,
         ...chartMap
@@ -149,7 +160,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
       setLoading(false);
     }
   };
-
+ 
   return (
     <div className="p-6 space-y-6 relative min-h-screen">
       {/* Loader Overlay */}
@@ -174,7 +185,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>
-
+ 
       {/* KPI Tiles - responsive grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
         {KPI_KEYS.map((kpi, idx) => {
@@ -213,7 +224,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
           );
         })}
       </div>
-
+ 
       {/* Tabbed Graph Section */}
       <Tabs defaultValue={Object.keys(METRIC_GROUPS)[0]} className="space-y-4 w-full">
         <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-1 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
@@ -223,7 +234,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
             </TabsTrigger>
           ))}
         </TabsList>
-
+ 
         {Object.entries(METRIC_GROUPS).map(([tab, metrics]) => (
           <TabsContent key={tab} value={tab}>
             <div className="flex justify-end mb-2">
@@ -430,5 +441,7 @@ const [chartColors, setChartColors] = useState<Record<string, string>>({});
     </div>
   );
 };
-
+ 
 export default BusinessDashboard;
+ 
+ 
