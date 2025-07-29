@@ -1,5 +1,5 @@
 "use client";
- 
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
- 
+
 import config from "@/config/business_dashboard.json";
 // Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
@@ -69,7 +69,7 @@ const GraphLoader = () => (
     </rect>
   </svg>
 );
- 
+
 const DEFAULT_MODEBAR = {
   toImage: true,
   zoom2d: true,
@@ -78,11 +78,13 @@ const DEFAULT_MODEBAR = {
   autoscale: true,
   fullscreen: true,
 };
- 
+
 const COLORS = ["#A8C574", "#4CB2FF"];
- 
+
 const LOCAL_STORAGE_KEY = "business_charts_cache";
- 
+const KPI_KEYS_STORAGE_KEY = "business_kpi_keys_cache";
+const METRIC_GROUPS_STORAGE_KEY = "business_metric_groups_cache";
+
 const BusinessDashboard = () => {
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState("");
@@ -94,13 +96,36 @@ const BusinessDashboard = () => {
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
 
-  // Restore input and charts from cache on mount
+  // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
+    // Restore charts and input
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
       const { input: cachedInput, charts: cachedCharts } = JSON.parse(cached);
       if (cachedInput) setInput(cachedInput);
       if (cachedCharts) setCharts(cachedCharts);
+    }
+
+    // Restore KPI keys
+    const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY);
+    if (cachedKpiKeys) {
+      try {
+        const parsedKpiKeys = JSON.parse(cachedKpiKeys);
+        setDynamicKpiKeys(parsedKpiKeys);
+      } catch (error) {
+        console.error("Error parsing cached KPI keys:", error);
+      }
+    }
+
+    // Restore metric groups
+    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY);
+    if (cachedMetricGroups) {
+      try {
+        const parsedMetricGroups = JSON.parse(cachedMetricGroups);
+        setDynamicMetricGroups(parsedMetricGroups);
+      } catch (error) {
+        console.error("Error parsing cached metric groups:", error);
+      }
     }
   }, []);
 
@@ -183,6 +208,10 @@ const BusinessDashboard = () => {
     console.log("Updated KPI Keys:", updatedKpiKeys);
     console.log("Updated Metric Groups:", updatedMetricGroups);
 
+    // Save updated keys to localStorage
+    localStorage.setItem(KPI_KEYS_STORAGE_KEY, JSON.stringify(updatedKpiKeys));
+    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY, JSON.stringify(updatedMetricGroups));
+
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
   };
@@ -190,11 +219,11 @@ const BusinessDashboard = () => {
   const handleCloseChart = (key: string) => {
     setHiddenCharts((prev) => new Set(prev).add(key));
   };
- 
+
   const handleRestoreCharts = () => {
     setHiddenCharts(new Set());
   };
- 
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -203,7 +232,7 @@ const BusinessDashboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
       });
- 
+
       const data = await res.json();
       if (data.parent_agent !== "business_vitality_agent") {
         toast("Invalid Query: Ask a query related to business.");
@@ -226,11 +255,11 @@ const BusinessDashboard = () => {
       for (const key of apiResponseKeys) {
         const { plot_type, data: values, value, delta } = parsed[key] || {};
         if (!values || values.length === 0) continue;
- 
+
         const xKey = Object.keys(values[0])[0];
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
- 
+
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
@@ -249,12 +278,12 @@ const BusinessDashboard = () => {
           delta,
         };
       }
- 
+
       setCharts(prevCharts => ({
         ...prevCharts,
         ...chartMap
       }));
-      // Save to localStorage
+      // Save charts and input to localStorage (keeping existing functionality)
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
     } catch (err) {
       console.error("Error fetching charts:", err);
@@ -262,7 +291,7 @@ const BusinessDashboard = () => {
       setLoading(false);
     }
   };
- 
+
   return (
     <div className="p-6 space-y-6 relative min-h-screen">
       {/* Loader Overlay */}
@@ -320,8 +349,8 @@ const BusinessDashboard = () => {
                   {chart?.delta === undefined || chart?.delta === null
                     ? "--"
                     : chart.delta === 0
-                    ? "0%"
-                    : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
+                      ? "0%"
+                      : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
                 </span>
               </CardContent>
             </Card>
@@ -531,5 +560,5 @@ const BusinessDashboard = () => {
     </div>
   );
 };
- 
+
 export default BusinessDashboard;
