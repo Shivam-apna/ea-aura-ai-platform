@@ -11,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 import config from "@/config/overview_dashboard.json";
 // Configurable metric layout
@@ -37,6 +38,22 @@ interface MetricItem {
 interface MetricGroups {
   [groupName: string]: MetricItem[];
 }
+
+// HolographicCard Component - Adjusted for light background and subtle glassmorphism
+export const HolographicCard = ({ children, className, ...props }: React.ComponentProps<typeof Card>) => {
+  return (
+    <Card
+      className={cn(
+        "relative overflow-hidden bg-neumorphic-background border border-border/50 shadow-neumorphic-light rounded-2xl", // Softer background, subtle border, neumorphic shadow
+        "text-foreground", // Ensure text color is foreground
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Card>
+  );
+};
 
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
