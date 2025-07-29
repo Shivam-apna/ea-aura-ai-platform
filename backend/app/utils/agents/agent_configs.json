@@ -236,7 +236,10 @@
       "alignment",
       "strategy",
       "company goals",
-      "objective fit"
+      "objective fit",
+      "Resource Allocation",
+      "Impact Metrics",
+      "Risks Identified"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile"
@@ -255,13 +258,16 @@
           "visualization"
         ],
         "keywords": [
+          "Alignment Score",
           "mission",
           "metrics",
           "aligned activities",
           "Dependencies",
           "Resource Allocation",
           "Owner",
-          "Mitigation Strategies"
+          "Mitigation Strategies",
+          "Impact Metrics",
+          "Risks Identified"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile"
@@ -283,6 +289,9 @@
     ],
     "keywords": [
       "brand",
+      "Share of Voice",
+      "Bounce Rate",
+      "Impressions",
       "digital footprint",
       "website",
       "tone",
@@ -296,7 +305,9 @@
       "Likes",
       "Comments",
       "Platform",
-      "Post"
+      "Post",
+      "Session Growth",
+      "Visitors"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile"
@@ -316,11 +327,14 @@
           "visualization"
         ],
         "keywords": [
+          "Bounce Rate",
           "Backlinks",
           "Website Visitors",
           "Unique visitors",
           "Page views",
-          "time Spent"
+          "time Spent",
+          "Visitors",
+          "Session Growth"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile"
@@ -342,6 +356,7 @@
           "visualization"
         ],
         "keywords": [
+          "Impressions",
           "Platform",
           "Post ID",
           "Post Type",
@@ -349,7 +364,10 @@
           "Reach",
           "Likes",
           "Shares",
-          "Comments"
+          "Comments",
+          "Engagement Rate",
+          "Sentiment Score",
+          "Share of Voice"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",

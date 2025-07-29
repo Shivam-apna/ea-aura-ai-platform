@@ -1,0 +1,48 @@
+{
+    "metric_groups": {
+        "Overview": [
+            {
+                "key": "Conversion Rate (%)",
+                "label": "Conversion Rate"
+            },
+            {
+                "key": "CXHS",
+                "label": "Customer Health Score (CXHS)"
+            },
+            {
+                "key": "Engagement Rate",
+                "label": "Engagement Rate"
+            },
+            {
+                "key": "Impact Metrics",
+                "label": "Impact Metrics"
+            },
+            {
+                "key": "Audience Growth (%)",
+                "label": "Audience Growth"
+            },
+            {
+                "key": "Traffic by Location",
+                "label": "Traffic by Location"
+            }
+        ]
+    },
+    "kpi_keys": [
+        {
+            "key": "Gross Profit Margin",
+            "bgColor": "#E4F8C2"
+        },
+        {
+            "key": "NPS Score",
+            "bgColor": "#E6F1FD"
+        },
+        {
+            "key": "Alignment Score (%)",
+            "bgColor": "#E4F8C2"
+        },
+        {
+            "key": "Unique Website Visitors",
+            "bgColor": "#E6F1FD"
+        }
+    ]
+}

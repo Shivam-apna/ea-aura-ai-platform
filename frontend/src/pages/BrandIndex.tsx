@@ -21,7 +21,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "sonner";
-
 // Type definitions
 interface KpiItem {
   key: string;
@@ -82,7 +81,9 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const LOCAL_STORAGE_KEY = "business_charts_cache";
+const LOCAL_STORAGE_KEY = "brand_charts_cache";
+const KPI_KEYS_STORAGE_KEY = "brand_kpi_keys_cache";
+const METRIC_GROUPS_STORAGE_KEY = "brand_metric_groups_cache";
 
 const BrandIndex = () => {
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
@@ -95,13 +96,36 @@ const BrandIndex = () => {
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
 
-  // Restore input and charts from cache on mount
+  // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
+    // Restore charts and input
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
       const { input: cachedInput, charts: cachedCharts } = JSON.parse(cached);
       if (cachedInput) setInput(cachedInput);
       if (cachedCharts) setCharts(cachedCharts);
+    }
+
+    // Restore KPI keys
+    const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY);
+    if (cachedKpiKeys) {
+      try {
+        const parsedKpiKeys = JSON.parse(cachedKpiKeys);
+        setDynamicKpiKeys(parsedKpiKeys);
+      } catch (error) {
+        console.error("Error parsing cached KPI keys:", error);
+      }
+    }
+
+    // Restore metric groups
+    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY);
+    if (cachedMetricGroups) {
+      try {
+        const parsedMetricGroups = JSON.parse(cachedMetricGroups);
+        setDynamicMetricGroups(parsedMetricGroups);
+      } catch (error) {
+        console.error("Error parsing cached metric groups:", error);
+      }
     }
   }, []);
 
@@ -184,6 +208,10 @@ const BrandIndex = () => {
     console.log("Updated KPI Keys:", updatedKpiKeys);
     console.log("Updated Metric Groups:", updatedMetricGroups);
 
+    // Save updated keys to localStorage
+    localStorage.setItem(KPI_KEYS_STORAGE_KEY, JSON.stringify(updatedKpiKeys));
+    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY, JSON.stringify(updatedMetricGroups));
+
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
   };
@@ -255,7 +283,7 @@ const BrandIndex = () => {
         ...prevCharts,
         ...chartMap
       }));
-      // Save to localStorage
+      // Save charts and input to localStorage (keeping existing functionality)
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
     } catch (err) {
       console.error("Error fetching charts:", err);
@@ -275,7 +303,7 @@ const BrandIndex = () => {
           </div>
         </div>
       )}
-      {/* Prompt Section - match CustomerAnalyzer */}
+      {/* Prompt Section - match Brand/Matrices */}
       <div className="flex flex-col lg:flex-row items-center gap-4 bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 border border-blue-100 w-full">
         <Input
           type="text"
@@ -288,7 +316,7 @@ const BrandIndex = () => {
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>
-      {/* KPI Tiles - match CustomerAnalyzer */}
+      {/* KPI Tiles - match Brand/Matrices  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
@@ -321,15 +349,15 @@ const BrandIndex = () => {
                   {chart?.delta === undefined || chart?.delta === null
                     ? "--"
                     : chart.delta === 0
-                    ? "0%"
-                    : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
+                      ? "0%"
+                      : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
                 </span>
               </CardContent>
             </Card>
           );
         })}
       </div>
-      {/* Tabs - match CustomerAnalyzer */}
+      {/* Tabs - match Brand/Matrices  */}
       <Tabs defaultValue={Object.keys(dynamicMetricGroups)[0]} className="space-y-4 w-full">
         <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
           {Object.keys(dynamicMetricGroups).map((tab) => (
@@ -355,7 +383,7 @@ const BrandIndex = () => {
                 Restore Graphs
               </Button>
             </div>
-            {/* Graph cards - match CustomerAnalyzer */}
+            {/* Graph cards - match Brand/Matrices  */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full">
               {metrics.map((metric, idx) => {
                 if (hiddenCharts.has(metric.key)) return null;

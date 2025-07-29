@@ -21,7 +21,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "sonner";
-
 // Type definitions
 interface KpiItem {
   key: string;
@@ -83,25 +82,50 @@ const DEFAULT_MODEBAR = {
 const COLORS = ["#A8C574", "#4CB2FF"];
 
 const LOCAL_STORAGE_KEY = "customer_charts_cache";
- 
+const KPI_KEYS_STORAGE_KEY = "customer_kpi_keys_cache";
+const METRIC_GROUPS_STORAGE_KEY = "customer_metric_groups_cache";
+
 const CustomerAnalyzer = () => {
-  const [modebarOptions, setModebarOptions] = useState({});
+  const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState("");
-  const [charts, setCharts] = useState({});
+  const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
-  const [hiddenCharts, setHiddenCharts] = useState(new Set());
-  const [chartTypes, setChartTypes] = useState({});
-  const [chartColors, setChartColors] = useState({});
+  const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
+  const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
+  const [chartColors, setChartColors] = useState<Record<string, string>>({});
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
 
-  // Restore input and charts from cache on mount
+  // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
+    // Restore charts and input
     const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
       const { input: cachedInput, charts: cachedCharts } = JSON.parse(cached);
       if (cachedInput) setInput(cachedInput);
       if (cachedCharts) setCharts(cachedCharts);
+    }
+
+    // Restore KPI keys
+    const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY);
+    if (cachedKpiKeys) {
+      try {
+        const parsedKpiKeys = JSON.parse(cachedKpiKeys);
+        setDynamicKpiKeys(parsedKpiKeys);
+      } catch (error) {
+        console.error("Error parsing cached KPI keys:", error);
+      }
+    }
+
+    // Restore metric groups
+    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY);
+    if (cachedMetricGroups) {
+      try {
+        const parsedMetricGroups = JSON.parse(cachedMetricGroups);
+        setDynamicMetricGroups(parsedMetricGroups);
+      } catch (error) {
+        console.error("Error parsing cached metric groups:", error);
+      }
     }
   }, []);
 
@@ -184,6 +208,10 @@ const CustomerAnalyzer = () => {
     console.log("Updated KPI Keys:", updatedKpiKeys);
     console.log("Updated Metric Groups:", updatedMetricGroups);
 
+    // Save updated keys to localStorage
+    localStorage.setItem(KPI_KEYS_STORAGE_KEY, JSON.stringify(updatedKpiKeys));
+    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY, JSON.stringify(updatedMetricGroups));
+
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
   };
@@ -191,11 +219,11 @@ const CustomerAnalyzer = () => {
   const handleCloseChart = (key: string) => {
     setHiddenCharts((prev) => new Set(prev).add(key));
   };
- 
+
   const handleRestoreCharts = () => {
     setHiddenCharts(new Set());
   };
- 
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -211,7 +239,6 @@ const CustomerAnalyzer = () => {
         setLoading(false);
         return;
       }
-     
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
 
@@ -256,7 +283,7 @@ const CustomerAnalyzer = () => {
         ...prevCharts,
         ...chartMap
       }));
-      // Save to localStorage
+      // Save charts and input to localStorage (keeping existing functionality)
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
     } catch (err) {
       console.error("Error fetching charts:", err);
@@ -264,7 +291,7 @@ const CustomerAnalyzer = () => {
       setLoading(false);
     }
   };
- 
+
   return (
     <div className="p-6 space-y-6 relative min-h-screen">
       {/* Loader Overlay */}
@@ -276,7 +303,7 @@ const CustomerAnalyzer = () => {
           </div>
         </div>
       )}
-      {/* Prompt Section - match MissionAlignment */}
+      {/* Prompt Section - match Customer/Alignment */}
       <div className="flex flex-col lg:flex-row items-center gap-4 bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 border border-blue-100 w-full">
         <Input
           type="text"
@@ -289,7 +316,7 @@ const CustomerAnalyzer = () => {
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>
-      {/* KPI Tiles - match MissionAlignment */}
+      {/* KPI Tiles - match Customer/Alignment */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
@@ -303,7 +330,7 @@ const CustomerAnalyzer = () => {
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-500 font-medium">{kpi.key}</span>
+                  <span className="text-xs text-gray-500 font-medium">{kpi.originalKey || kpi.key}</span>
                   {idx % 2 === 0 ? <BarChart2 className="w-4 h-4 text-blue-400" /> : <LineChart className="w-4 h-4 text-green-400" />}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
@@ -322,15 +349,15 @@ const CustomerAnalyzer = () => {
                   {chart?.delta === undefined || chart?.delta === null
                     ? "--"
                     : chart.delta === 0
-                    ? "0%"
-                    : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
+                      ? "0%"
+                      : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
                 </span>
               </CardContent>
             </Card>
           );
         })}
       </div>
-      {/* Tabs - match MissionAlignment */}
+      {/* Tabs - match Customer/Alignment */}
       <Tabs defaultValue={Object.keys(dynamicMetricGroups)[0]} className="space-y-4 w-full">
         <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
           {Object.keys(dynamicMetricGroups).map((tab) => (
@@ -356,7 +383,7 @@ const CustomerAnalyzer = () => {
                 Restore Graphs
               </Button>
             </div>
-            {/* Graph cards - match MissionAlignment */}
+            {/* Graph cards - match Customer/Alignment */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full">
               {metrics.map((metric, idx) => {
                 if (hiddenCharts.has(metric.key)) return null;
@@ -533,6 +560,5 @@ const CustomerAnalyzer = () => {
     </div>
   );
 };
- 
+
 export default CustomerAnalyzer;
- 
