@@ -86,7 +86,7 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] h-[500px] flex flex-col neumorphic-card border border-border text-foreground">
+      <DialogContent className="sm:max-w-[600px] h-[500px] flex flex-col neumorphic-card border border-border text-foreground bg-card"> {/* Added bg-card */}
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-primary">
             <MessageSquare className="h-5 w-5 text-primary" /> AI Prompt Assistant

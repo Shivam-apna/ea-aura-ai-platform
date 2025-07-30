@@ -46,35 +46,41 @@
   }
 
   .dark {
-    --background: 0 0% 16.5%;
-    /* HSL for #2A2A2A */
-    --foreground: 210 40% 98%;
+    --background: 0 0% 11.8%; /* #1E1E1E - Deep Charcoal Gray */
+    --foreground: 0 0% 100%; /* #FFFFFF - Pure White for headings/primary text */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 16.5%; /* #2A2A2A - Dark Gray for cards */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 16.5%; /* #2A2A2A */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Default primary colors for dark theme - now raw HSL values */
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Primary color is handled by ThemeProvider, its foreground should be light */
+    --primary: 210 40% 98%; /* This will be overridden by ThemeProvider if a custom color is set */
+    --primary-foreground: 222.2 47.4% 11.2%; /* This will be overridden by ThemeProvider */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 20%; /* #333333 - Slightly darker than card for secondary elements */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 20%; /* #333333 - Similar to secondary for muted elements */
+    --muted-foreground: 0 0% 80%; /* #CCCCCC - Light gray for labels/secondary text */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 20%; /* #333333 */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%; /* Keep red for destructive */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 25%; /* #404040 - Darker border for subtle separation */
+    --input: 0 0% 20%; /* #333333 - Darker input background */
+    --ring: 0 0% 40%; /* #666666 - Ring color */
+
+    /* New sidebar background variable */
+    --sidebar-background: 0 0% 16.5%; /* #2A2A2A */
+
+    /* New KPI Card Colors for dark mode */
+    --kpi-card-light-green: 90 80% 85.9%; /* #D4F8BE */
+    --kpi-card-light-blue: 210 100% 94.1%; /* #E1F0FF */
   }
 
   * {

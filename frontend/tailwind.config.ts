@@ -52,27 +52,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
+        sidebar: { // New sidebar colors
           DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+          foreground: "hsl(var(--foreground))", // Use general foreground for sidebar text
         },
         // New KPI Card Colors
         "kpi-card-green": "hsl(var(--kpi-card-green))",
         "kpi-card-blue": "hsl(var(--kpi-card-blue))",
-        "kpi-card-light-green": "hsl(80 70% 86%)", // #E4F8C2
-        "kpi-card-light-blue": "hsl(216 80% 94%)", // #E6F1FD
+        "kpi-card-light-green": "hsl(var(--kpi-card-light-green))", // Updated to use HSL var
+        "kpi-card-light-blue": "hsl(var(--kpi-card-light-blue))",   // Updated to use HSL var
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "prompt-bar": "14px", // Custom radius for prompt bars (reduced by 4px from 18px)
       },
       keyframes: {
         "accordion-down": {
@@ -102,7 +95,8 @@ export default {
         monospace: 'var(--font-monospace)',
       },
       boxShadow: {
-        'custom-dropdown': '0px 4px 8px rgba(0, 0, 0, 0.05)', // Custom shadow for dropdown
+        'custom-dropdown': '0px 4px 8px rgba(0, 0, 0, 0.05)',
+        'neumorphic-light': '0px 4px 8px rgba(0, 0, 0, 0.2), 0px 8px 16px rgba(0, 0, 0, 0.4)', // Darker shadows for depth
       },
     },
   },

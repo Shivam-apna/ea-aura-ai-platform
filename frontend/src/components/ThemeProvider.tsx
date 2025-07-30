@@ -83,9 +83,9 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   availableFonts: typeof FONT_THEMES; // Changed to FONT_THEMES
   themeColors: typeof THEME_COLORS;
-  selectedPrimaryColorKey: string | null;
-  setSelectedPrimaryColorKey: (key: string | null) => void;
-  previewPrimaryColorHex: string | null;
+  selectedPrimaryColor: string | null; // Stores the *actual hex* of the selected color
+  setSelectedPrimaryColor: (hex: string | null) => void;
+  previewPrimaryColorHex: string | null; // Temporary preview hex
   setPreviewPrimaryColorHex: (hex: string | null) => void;
   selectedFontThemeKey: string | null; // New
   setSelectedFontThemeKey: (key: string | null) => void; // New
@@ -99,7 +99,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultTheme = 'dark',
   storageKey = 'vite-ui-theme',
-  primaryColorStorageKey = 'vite-ui-primary-color-key',
+  primaryColorStorageKey = 'vite-ui-primary-color', // Changed storage key name for clarity
   fontThemeStorageKey = 'vite-ui-font-theme', // New default
 }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -111,8 +111,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     return defaultTheme;
   });
 
-  const [selectedPrimaryColorKey, setSelectedPrimaryColorKeyState] = useState<string | null>(() => {
-    return localStorage.getItem(primaryColorStorageKey);
+  const [selectedPrimaryColor, setSelectedPrimaryColorState] = useState<string | null>(() => {
+    return localStorage.getItem(primaryColorStorageKey); // Directly store/retrieve hex
   });
 
   const [previewPrimaryColorHex, setPreviewPrimaryColorHexState] = useState<string | null>(null); // New state for temporary preview
@@ -137,14 +137,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    let targetHex = '';
+    let targetHex: string | null = null;
 
-    // Priority: 1. Preview color (if set), 2. Selected persistent color (if set), 3. Default
+    // Priority: 1. Preview color (if set), 2. Selected persistent color (if set), 3. Default from THEME_COLORS
     if (previewPrimaryColorHex) {
       targetHex = previewPrimaryColorHex;
-    } else if (selectedPrimaryColorKey) {
-      const selectedColor = THEME_COLORS.find(color => color.name === selectedPrimaryColorKey);
-      targetHex = selectedColor ? selectedColor.hex : '';
+    } else if (selectedPrimaryColor) { // Use selectedPrimaryColor (which is already a hex)
+      targetHex = selectedPrimaryColor;
+    } else { // Fallback to default THEME_COLORS[0] if no custom or named color is selected
+      targetHex = THEME_COLORS[0].hex; // Default 'Default' color hex
     }
 
     if (targetHex) {
@@ -159,17 +160,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         root.style.setProperty('--primary-foreground', `${h} ${s}% ${foregroundL}`);
       }
     } else {
+      // This else block should ideally not be hit if a default is always provided
       // Reset to default primary colors defined in globals.css by removing inline styles
       root.style.removeProperty('--primary');
       root.style.removeProperty('--primary-foreground');
     }
-    // Only persist selectedPrimaryColorKey, not previewPrimaryColorHex
-    if (selectedPrimaryColorKey) {
-      localStorage.setItem(primaryColorStorageKey, selectedPrimaryColorKey);
+
+    // Persist the selected color (only the confirmed one)
+    if (selectedPrimaryColor) {
+      localStorage.setItem(primaryColorStorageKey, selectedPrimaryColor);
     } else {
       localStorage.removeItem(primaryColorStorageKey);
     }
-  }, [selectedPrimaryColorKey, previewPrimaryColorHex, primaryColorStorageKey, theme]); // Add previewPrimaryColorHex to dependencies
+  }, [selectedPrimaryColor, previewPrimaryColorHex, primaryColorStorageKey, theme]); // Add previewPrimaryColorHex to dependencies
 
   // New useEffect for font themes
   useEffect(() => {
@@ -205,8 +208,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     setThemeState(newTheme);
   };
 
-  const setSelectedPrimaryColorKey = (key: string | null) => {
-    setSelectedPrimaryColorKeyState(key);
+  const setSelectedPrimaryColor = (hex: string | null) => {
+    setSelectedPrimaryColorState(hex);
   };
 
   const setPreviewPrimaryColorHex = (hex: string | null) => {
@@ -227,8 +230,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       setTheme, 
       availableFonts: FONT_THEMES, // Changed to FONT_THEMES
       themeColors: THEME_COLORS,
-      selectedPrimaryColorKey,
-      setSelectedPrimaryColorKey,
+      selectedPrimaryColor, // Expose the new state
+      setSelectedPrimaryColor, // Expose the new setter
       previewPrimaryColorHex, // Expose preview state
       setPreviewPrimaryColorHex, // Expose preview setter
       selectedFontThemeKey, // New

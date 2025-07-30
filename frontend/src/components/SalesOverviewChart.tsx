@@ -27,7 +27,7 @@ const SalesOverviewChart: React.FC<SalesOverviewChartProps> = ({ className }) =>
     { name: 'Jan', 'Completed': 5, 'In Progress': 3 },
     { name: 'Feb', 'Completed': 7, 'In Progress': 4 },
     { name: 'Mar', 'Completed': 10, 'In Progress': 2 },
-    { name: 'Apr', 'Completed': 8, 'In Progress': 5 },
+    { name: 'Feb', 'Completed': 8, 'In Progress': 5 },
     { name: 'May', 'Completed': 12, 'In Progress': 3 },
     { name: 'Jun', 'Completed': 15, 'In Progress': 4 },
     { name: 'Jul', 'Completed': 13, 'In Progress': 6 },
@@ -66,8 +66,8 @@ const SalesOverviewChart: React.FC<SalesOverviewChartProps> = ({ className }) =>
     }
   };
 
-  const axisColor = theme === 'dark' ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))';
-  const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'; // Lighter grid for light mode
+  const axisColor = 'hsl(var(--foreground))'; // Use foreground for axis text
+  const gridColor = 'hsl(var(--border))'; // Use border for grid lines
 
   const commonAxisProps = {
     stroke: axisColor,

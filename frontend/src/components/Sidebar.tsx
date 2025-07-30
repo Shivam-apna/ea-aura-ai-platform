@@ -58,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   if (loading) {
     return (
       <div className={cn(
-        "flex flex-col h-full bg-background p-3 transition-all duration-300",
+        "flex flex-col h-full bg-sidebar p-3 transition-all duration-300", // Changed bg-background to bg-sidebar
         isCollapsed ? "w-16" : "w-[200px] min-w-[200px] max-w-[200px] flex-shrink-0",
         "rounded-r-3xl items-center justify-center text-muted-foreground"
       )}>
@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-background p-2 transition-all duration-300 shadow-lg", // Added shadow-lg
+        "flex flex-col h-full bg-sidebar p-2 transition-all duration-300 shadow-lg", // Changed bg-background to bg-sidebar
         isCollapsed ? "w-16" : "w-[200px] min-w-[200px] max-w-[200px] flex-shrink-0",
         "rounded-r-3xl relative" // Added relative for absolute positioning of the button
       )}
@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
                   variant="ghost"
                   className={cn(
                     "w-full justify-start hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm",
-                    activeAgent === agent.id ? "bg-[rgb(0,112,226)] text-white hover:bg-[rgb(0,112,226)] hover:text-white shadow-md" : "text-black",
+                    activeAgent === agent.id ? "bg-[rgb(0,112,226)] text-white hover:bg-[rgb(0,112,226)] hover:text-white shadow-md" : "text-foreground",
                     isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
                   )}
                   onClick={() => onSelectAgent(agent.id)}

@@ -20,7 +20,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, 
   const changeColor = change === undefined ? "text-muted-foreground" : isPositive ? "text-green-600" : "text-red-600"; // Stronger green/red
 
   // Default to text-black for all values, as requested for Revenue Forecast
-  let valueColorClass = "text-black"; 
+  let valueColorClass = "text-foreground"; // Changed text-black to text-foreground
   
   // Keep the conditional styling for Revenue Forecast if it's specifically about red color for negative trend,
   // but the request is to make it black regardless. So, I'll simplify this.
@@ -32,7 +32,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, change, 
       bgColorClass // Apply the specific background color
     )}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-black">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle> {/* Changed text-black to text-muted-foreground */}
         {/* Removed the Icon component from here */}
       </CardHeader>
       <CardContent>

@@ -35,16 +35,13 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const launcherButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { selectedPrimaryColorKey, previewPrimaryColorHex, themeColors } = useTheme();
+  const { selectedPrimaryColor, previewPrimaryColorHex, themeColors } = useTheme();
 
   // Determine the current primary color in hex format
   const getPrimaryColorHex = () => {
     if (previewPrimaryColorHex) return previewPrimaryColorHex;
-    if (selectedPrimaryColorKey) {
-      const selectedColor = themeColors.find(c => c.name === selectedPrimaryColorKey);
-      return selectedColor ? selectedColor.hex : themeColors[0].hex; // Fallback to default if key not found
-    }
-    return themeColors[0].hex; // Default 'Default' color
+    if (selectedPrimaryColor) return selectedPrimaryColor; // Use selectedPrimaryColor directly
+    return themeColors[0].hex; // Fallback to default 'Default' color hex
   };
 
   const primaryColorHex = getPrimaryColorHex();
@@ -113,7 +110,7 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
       {/* Chatbot Popup Panel */}
       {isOpen && (
         <div
-          className="fixed z-[101] w-[360px] h-[500px] flex flex-col rounded-2xl bg-white"
+          className="fixed z-[101] w-[360px] h-[500px] flex flex-col rounded-2xl bg-card" // Changed bg-white to bg-card
           style={{
             bottom: '96px', // 24px (bottom edge) + 56px (launcher height) + 16px (gap) = 96px
             right: '24px',
