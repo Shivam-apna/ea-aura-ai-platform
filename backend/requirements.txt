@@ -17,3 +17,4 @@ dateparser==1.2.1
 pandas==2.2.2
 python-multipart==0.0.20
 openpyxl==3.1.5
+pydantic-settings>=2.0.0

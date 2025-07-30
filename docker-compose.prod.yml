@@ -1,0 +1,160 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: backend-prod
+    volumes:
+      - ./backend/app/logs:/app/app/logs
+    working_dir: /app
+    expose:
+      - "8081"
+    environment:
+      - ENVIRONMENT=production
+    env_file:
+      - ./backend/env.production
+    networks:
+      - ea-aura-prod
+    depends_on:
+      - elasticsearch
+      - kafka
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
+    container_name: elasticsearch-prod
+    environment:
+      discovery.type: "single-node"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: "your-elasticsearch-password"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata_prod:/usr/share/elasticsearch/data
+    networks:
+      - ea-aura-prod
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.0.2
+    container_name: kibana-prod
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: "your-kibana-password"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.0.0
+    container_name: filebeat-prod
+    user: root
+    command: filebeat -e --strict.perms=false
+    volumes:
+      - ./filebeat/filebeat.prod.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./backend/app/logs:/backend/app/logs
+    networks:
+      - ea-aura-prod
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka-prod
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://host.docker.internal:9092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_KRAFT_CLUSTER_ID=ea-aura-prod-cluster-id-001
+    volumes:
+      - ./kafka/prod-data:/bitnami/kafka
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+
+  vault:
+    image: vault:1.13.3
+    container_name: vault-prod
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "your-production-vault-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: minio-prod
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "your-minio-username"
+      MINIO_ROOT_PASSWORD: "your-minio-password"
+    volumes:
+      - minio_data_prod:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - ea-aura-prod
+
+volumes:
+  esdata_prod:
+  filebeat-data_prod:
+  minio_data_prod:
+
+networks:
+  ea-aura-prod:
+    driver: bridge 

@@ -2,7 +2,7 @@
     "metric_groups": {
         "Mission_Alignment": [
             {
-                "key": "Alignment Score (%)",
+                "key": "Alignment_Score_(%)",
                 "label": "Alignment Score"
             },
             {
