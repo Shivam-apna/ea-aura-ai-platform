@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const MarketingSEO: React.FC = () => {
   return (
-    <Card className="neumorphic-card rounded-2xl shadow-neumorphic-light border-none col-span-full">
+    <Card className="neumorphic-card rounded-2xl shadow-neumorphic-light border-none bg-card"> {/* Added bg-card */}
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           <LineChart className="h-5 w-5 text-green-600" /> Marketing & SEO

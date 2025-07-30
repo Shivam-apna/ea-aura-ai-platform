@@ -61,7 +61,7 @@ const SalesPromptBar: React.FC<SalesPromptBarProps> = () => {
   };
 
   return (
-    <Card className="p-4 flex flex-col gap-4 h-full neumorphic-card">
+    <Card className="p-4 flex flex-col gap-4 h-full neumorphic-card bg-card"> {/* Added bg-card */}
       <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
         <MessageSquare className="h-5 w-5 text-blue-400" /> Sales AI Assistant
       </CardTitle>
@@ -74,7 +74,7 @@ const SalesPromptBar: React.FC<SalesPromptBarProps> = () => {
           className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
           // The 'disabled' prop is intentionally NOT present here to ensure editability.
         />
-        <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
+        <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Send className="h-5 w-5" />
         </Button>
       </div>

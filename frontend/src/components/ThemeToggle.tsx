@@ -21,8 +21,8 @@ const ThemeToggle: React.FC = () => {
       onClick={handleToggleTheme}
       className={cn(
         "relative flex items-center h-8 w-[70px] rounded-full cursor-pointer transition-colors duration-300", // Adjusted height and width
-        "bg-white border border-gray-200", // Light mode background and border
-        "dark:bg-black dark:border-gray-700", // Dark mode background and border
+        "bg-secondary border border-border", // Light mode background and border - changed bg-white to bg-secondary, border-gray-200 to border-border
+        "dark:bg-secondary dark:border-border", // Dark mode background and border - changed bg-black to bg-secondary, border-gray-700 to border-border
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       )}
     >
@@ -30,7 +30,7 @@ const ThemeToggle: React.FC = () => {
       <Sun
         className={cn(
           "absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10", // Adjusted size
-          isLight ? "text-[#3AA7F8]" : "text-gray-500" // Vibrant blue for active, gray for inactive
+          isLight ? "text-primary" : "text-muted-foreground" // Vibrant blue for active, gray for inactive - changed text-[#3AA7F8] to text-primary, text-gray-500 to text-muted-foreground
         )}
       />
 
@@ -38,7 +38,7 @@ const ThemeToggle: React.FC = () => {
       <Moon
         className={cn(
           "absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10", // Adjusted size
-          !isLight ? "text-[#3AA7F8]" : "text-gray-500" // Vibrant blue for active, gray for inactive
+          !isLight ? "text-primary" : "text-muted-foreground" // Vibrant blue for active, gray for inactive - changed text-[#3AA7F8] to text-primary, text-gray-500 to text-muted-foreground
         )}
       />
 
@@ -47,7 +47,7 @@ const ThemeToggle: React.FC = () => {
         className={cn(
           "absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full shadow-lg transition-all duration-300 ease-in-out", // Adjusted size
           isLight ? "left-[calc(100%-theme('width.7')-theme('spacing.1'))]" : "left-[2px]", // Dynamic left positioning
-          "bg-[#3AA7F8]" // Vibrant blue knob color
+          "bg-primary" // Vibrant blue knob color - changed bg-[#3AA7F8] to bg-primary
         )}
       />
     </button>

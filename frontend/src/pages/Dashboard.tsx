@@ -22,6 +22,9 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "sonner";
+import PagePromptBar from "@/components/PagePromptBar"; // Import PagePromptBar
+import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHeaderActions
+
 // Type definitions
 interface KpiItem {
   key: string;
@@ -39,12 +42,18 @@ interface MetricGroups {
   [groupName: string]: MetricItem[];
 }
 
+// Add props interface for Dashboard
+interface DashboardProps {
+  activeAgent: string;
+  onSelectAgent: (agent: string) => void;
+}
+
 // HolographicCard Component - Adjusted for light background and subtle glassmorphism
 export const HolographicCard = ({ children, className, ...props }: React.ComponentProps<typeof Card>) => {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden bg-neumorphic-background border border-border/50 shadow-neumorphic-light rounded-2xl", // Softer background, subtle border, neumorphic shadow
+        "relative overflow-hidden bg-card border border-border/50 shadow-neumorphic-light rounded-2xl", // Changed bg-neumorphic-background to bg-card
         "text-foreground", // Ensure text color is foreground
         className
       )}
@@ -102,9 +111,9 @@ const LOCAL_STORAGE_KEY = "dashboard_alignment_charts_cache";
 const KPI_KEYS_STORAGE_KEY = "dashboard_alignment_kpi_keys_cache";
 const METRIC_GROUPS_STORAGE_KEY = "dashboard_alignment_metric_groups_cache";
 
-const Dashboard = () => {
+const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(""); // Keep input state for fetchData logic
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(new Set());
@@ -241,13 +250,14 @@ const Dashboard = () => {
     setHiddenCharts(new Set());
   };
 
-  const fetchData = async () => {
+  // Modified fetchData to accept prompt from PagePromptBar
+  const handlePromptSubmit = async (prompt: string) => {
     setLoading(true);
     try {
       const res = await fetch("http://localhost:8081/api/v1/run-autogen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, tenant_id: "tenant_123ffff" }),
+        body: JSON.stringify({ input: prompt, tenant_id: "tenant_123ffff" }), // Use the prompt from the argument
       });
 
       const data = await res.json();
@@ -301,7 +311,7 @@ const Dashboard = () => {
         ...chartMap
       }));
       // Save charts and input to localStorage (keeping existing functionality)
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input, charts: chartMap }));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input: prompt, charts: chartMap })); // Save the submitted prompt
     } catch (err) {
       console.error("Error fetching charts:", err);
     } finally {
@@ -309,8 +319,11 @@ const Dashboard = () => {
     }
   };
 
+  // Flatten all metrics from all groups for direct display
+  const allMetrics = Object.values(dynamicMetricGroups).flat();
+
   return (
-    <div className="p-6 space-y-6 relative min-h-screen">
+    <div className="p-6 relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
@@ -320,21 +333,17 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      {/* Prompt Section - match Brand/Matrices */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 border border-blue-100 w-full">
-        <Input
-          type="text"
-          placeholder="Ask about brand, index, or any metric..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="w-full text-base px-4 py-3 rounded-lg border-2 border-blue-100 focus:border-blue-400 transition"
-        />
-        <Button onClick={fetchData} disabled={loading} className="w-full lg:w-auto text-base px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow hover:bg-blue-700 transition">
-          {loading ? "Generating..." : "Generate"}
-        </Button>
-      </div>
+      {/* Prompt Section - using PagePromptBar */}
+      <PagePromptBar
+        placeholder="Ask about brand, index, or any metric..."
+        onSubmit={handlePromptSubmit}
+        onLoadingChange={setLoading}
+        className="mb-2"
+      />
+      {/* New Page Header Actions Row */}
+      <PageHeaderActions title="Overview" className="mb-2" />
       {/* KPI Tiles - match Brand/Matrices  */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full"> {/* Adjusted mb-0 to mb-2 for slight separation */}
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
           const icons = [BarChart2, LineChart];
@@ -374,206 +383,188 @@ const Dashboard = () => {
           );
         })}
       </div>
-      {/* Tabs - match Brand/Matrices  */}
-      <Tabs defaultValue={Object.keys(dynamicMetricGroups)[0]} className="space-y-4 w-full">
-        <TabsList className="flex gap-2 bg-white rounded-full shadow border border-blue-100 p-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
-          {Object.keys(dynamicMetricGroups).map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="rounded-full px-3 py-1 text-base font-semibold transition-all data-[state=active]:bg-[#0070E2] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 focus-visible:ring-2 focus-visible:ring-blue-200">
-              {tab}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {Object.entries(dynamicMetricGroups).map(([tab, metrics]) => (
-          <TabsContent key={tab} value={tab}>
-            <div className="flex justify-end mb-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setHiddenCharts((prev) => {
-                    const newSet = new Set(prev);
-                    metrics.forEach((metric) => newSet.delete(metric.key));
-                    return newSet;
-                  });
-                }}
-                disabled={metrics.every((metric) => !hiddenCharts.has(metric.key))}
-              >
-                Restore Graphs
-              </Button>
-            </div>
-            {/* Graph cards - match Brand/Matrices  */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full">
-              {metrics.map((metric, idx) => {
-                if (hiddenCharts.has(metric.key)) return null;
-                const chart = charts[metric.key];
-                return (
-                  <Card key={idx} className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-white/70 transition-shadow hover:shadow-2xl border border-gray-200 overflow-hidden animate-fade-in">
-                    <CardContent className="flex flex-col h-full p-0">
-                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
-                        <h3 className="text-base font-semibold text-gray-800">{metric.label}</h3>
-                        <div className="flex items-center gap-2">
-                          {chart ? (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
-                                  <Settings2 className="w-5 h-5" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
-                                <div className="flex gap-2 mb-2">
-                                  <Button
-                                    variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'bar' }))}
-                                    title="Bar Chart"
-                                  >
-                                    <BarChart2 className="w-5 h-5" />
-                                  </Button>
-                                  <Button
-                                    variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'line' }))}
-                                    title="Line Chart"
-                                  >
-                                    <LineChart className="w-5 h-5" />
-                                  </Button>
-                                  <Button
-                                    variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'scatter' }))}
-                                    title="Scatter Plot"
-                                  >
-                                    <ScatterChart className="w-5 h-5" />
-                                  </Button>
-                                  <input
-                                    type="color"
-                                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
-                                    value={chartColors[metric.key] || chart.marker?.color || "#3b82f6"}
-                                    onChange={e => setChartColors(colors => ({ ...colors, [metric.key]: e.target.value }))}
-                                    title="Pick graph color"
-                                  />
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          ) : null}
-                          <button
-                            className="rounded-full p-1 bg-white/80 hover:bg-red-100 text-gray-400 hover:text-red-500 z-10 transition"
-                            onClick={() => handleCloseChart(metric.key)}
-                            aria-label={`Hide ${metric.label} graph`}
-                            type="button"
-                            title="Hide this chart"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex-1 w-full h-full" style={{ minHeight: 340, overflow: 'hidden' }}>
-                        {chart ? (
-                          <Plot
-                            data={(() => {
-                              const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
-                              if (isBar && Array.isArray(chart.y[0])) {
-                                return chart.y.map((series, i) => ({
-                                  x: chart.x,
-                                  y: series,
-                                  type: 'bar',
-                                  marker: chartColors[metric.key]
-                                    ? { color: Array(series.length).fill(chartColors[metric.key]) }
-                                    : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
-                                }));
-                              } else if (isBar) {
-                                return [{
-                                  x: chart.x,
-                                  y: chart.y,
-                                  type: 'bar',
-                                  marker: chartColors[metric.key]
-                                    ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
-                                    : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) },
-                                }];
-                              } else {
-                                const type = chartTypes[metric.key] || chart.plotType;
-                                return [{
-                                  x: chart.x,
-                                  y: chart.y,
-                                  type,
-                                  ...(type === 'scatter' ? { mode: 'markers' } : {}),
-                                  marker: { color: chartColors[metric.key] || chart.marker?.color || COLORS[0], size: 10, line: { width: 2, color: '#fff' } },
-                                }];
-                              }
-                            })()}
-                            layout={{
-                              width: undefined,
-                              height: undefined,
-                              autosize: true,
-                              title: '',
-                              plot_bgcolor: "#f9fafb",
-                              paper_bgcolor: "#fff",
-                              font: {
-                                family: 'Inter, sans-serif',
-                                size: 16,
-                                color: '#222'
-                              },
-                              margin: { l: 50, r: 30, t: 60, b: 50 },
-                              xaxis: {
-                                title: chart.xLabel,
-                                gridcolor: '#e5e7eb',
-                                zeroline: false,
-                                linecolor: '#d1d5db',
-                                tickfont: { size: 15, color: '#555' },
-                                titlefont: { size: 17, color: '#333', family: 'Inter, sans-serif' },
-                              },
-                              yaxis: {
-                                title: chart.yLabel,
-                                gridcolor: '#e5e7eb',
-                                zeroline: false,
-                                linecolor: '#d1d5db',
-                                tickfont: { size: 15, color: '#555' },
-                                titlefont: { size: 17, color: '#333', family: 'Inter, sans-serif' },
-                              },
-                              legend: {
-                                orientation: "h",
-                                y: -0.2,
-                                font: { size: 15 }
-                              },
-                              hoverlabel: {
-                                bgcolor: "#fff",
-                                bordercolor: "#d1d5db",
-                                font: { color: "#222", size: 15 }
-                              },
-                              transition: { duration: 500, easing: 'cubic-in-out' },
-                            }}
-                            style={{ width: '100%', height: '100%' }}
-                            config={{
-                              displayModeBar: true,
-                              displaylogo: false,
-                              modeBarButtonsToRemove: [
-                                'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
-                                'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'sendDataToCloud', 'editInChartStudio',
-                                'drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape',
-                                'orbitRotation', 'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
-                                'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover', 'resetViews', 'toggleHover', 'resetViews',
-                                'zoom3d', 'pan3d', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
-                                'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo',
-                                'toImage'
-                              ].filter(btn => btn !== 'toImage' && btn !== 'fullscreen'),
-                              responsive: true,
-                            }}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
-                            <BarChart2 className="w-12 h-12 mb-2 text-blue-300 animate-bounce" />
-                            <span className="text-base font-semibold">No data available</span>
-                            <span className="text-xs text-gray-400 mt-1">Try a different prompt or check your data source.</span>
+      {/* Restore Graphs Button (now outside of tabs) */}
+      <div className="flex justify-end mb-2">
+        <Button
+          variant="outline"
+          onClick={handleRestoreCharts}
+          disabled={allMetrics.every((metric) => !hiddenCharts.has(metric.key))}
+        >
+          Restore Graphs
+        </Button>
+      </div>
+      {/* Graph cards (now directly displayed) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mt-4 w-full"> {/* Adjusted mt-4 for spacing */}
+        {allMetrics.map((metric, idx) => {
+          if (hiddenCharts.has(metric.key)) return null;
+          const chart = charts[metric.key];
+          return (
+            <Card key={idx} className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl border border-gray-200 overflow-hidden animate-fade-in">
+              <CardContent className="flex flex-col h-full p-0">
+                <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
+                  <h3 className="text-base font-semibold text-foreground">{metric.label}</h3>
+                  <div className="flex items-center gap-2">
+                    {chart ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
+                            <Settings2 className="w-5 h-5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
+                          <div className="flex gap-2 mb-2">
+                            <Button
+                              variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
+                              size="icon"
+                              onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'bar' }))}
+                              title="Bar Chart"
+                            >
+                              <BarChart2 className="w-5 h-5" />
+                            </Button>
+                            <Button
+                              variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
+                              size="icon"
+                              onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'line' }))}
+                              title="Line Chart"
+                            >
+                              <LineChart className="w-5 h-5" />
+                            </Button>
+                            <Button
+                              variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
+                              size="icon"
+                              onClick={() => setChartTypes(types => ({ ...types, [metric.key]: 'scatter' }))}
+                              title="Scatter Plot"
+                            >
+                              <ScatterChart className="w-5 h-5" />
+                            </Button>
+                            <input
+                              type="color"
+                              className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
+                              value={chartColors[metric.key] || chart.marker?.color || "#3b82f6"}
+                              onChange={e => setChartColors(colors => ({ ...colors, [metric.key]: e.target.value }))}
+                              title="Pick graph color"
+                            />
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+                        </PopoverContent>
+                      </Popover>
+                    ) : null}
+                    <button
+                      className="rounded-full p-1 bg-white/80 hover:bg-red-100 text-gray-400 hover:text-red-500 z-10 transition"
+                      onClick={() => handleCloseChart(metric.key)}
+                      aria-label={`Hide ${metric.label} graph`}
+                      type="button"
+                      title="Hide this chart"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 w-full h-full" style={{ minHeight: 340, overflow: 'hidden' }}>
+                  {chart ? (
+                    <Plot
+                      data={(() => {
+                        const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
+                        if (isBar && Array.isArray(chart.y[0])) {
+                          return chart.y.map((series, i) => ({
+                            x: chart.x,
+                            y: series,
+                            type: 'bar',
+                            marker: chartColors[metric.key]
+                              ? { color: Array(series.length).fill(chartColors[metric.key]) }
+                              : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
+                          }));
+                        } else if (isBar) {
+                          return [{
+                            x: chart.x,
+                            y: chart.y,
+                            type: 'bar',
+                            marker: chartColors[metric.key]
+                              ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
+                              : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) },
+                          }];
+                        } else {
+                          const type = chartTypes[metric.key] || chart.plotType;
+                          return [{
+                            x: chart.x,
+                            y: chart.y,
+                            type,
+                            ...(type === 'scatter' ? { mode: 'markers' } : {}),
+                            marker: { color: chartColors[metric.key] || chart.marker?.color || COLORS[0], size: 10, line: { width: 2, color: '#fff' } },
+                          }];
+                        }
+                      })()}
+                      layout={{
+                        width: undefined,
+                        height: undefined,
+                        autosize: true,
+                        title: '',
+                        plot_bgcolor: "hsl(var(--card))", // Use card background for plot area
+                        paper_bgcolor: "hsl(var(--card))", // Use card background for paper
+                        font: {
+                          family: 'Inter, sans-serif',
+                          size: 16,
+                          color: 'hsl(var(--foreground))' // Use foreground for plot text
+                        },
+                        margin: { l: 50, r: 30, t: 60, b: 50 },
+                        xaxis: {
+                          title: chart.xLabel,
+                          gridcolor: 'hsl(var(--border))', // Use border for grid lines
+                          zeroline: false,
+                          linecolor: 'hsl(var(--border))', // Use border for axis lines
+                          tickfont: { size: 15, color: 'hsl(var(--muted-foreground))' }, // Use muted-foreground for tick labels
+                          titlefont: { size: 17, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' }, // Use foreground for axis titles
+                        },
+                        yaxis: {
+                          title: chart.yLabel,
+                          gridcolor: 'hsl(var(--border))',
+                          zeroline: false,
+                          linecolor: 'hsl(var(--border))',
+                          tickfont: { size: 15, color: 'hsl(var(--muted-foreground))' },
+                          titlefont: { size: 17, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' },
+                        },
+                        legend: {
+                          orientation: "h",
+                          y: -0.2,
+                          font: { size: 15, color: 'hsl(var(--foreground))' } // Use foreground for legend text
+                        },
+                        hoverlabel: {
+                          bgcolor: "hsl(var(--popover))", // Use popover background for hover label
+                          bordercolor: "hsl(var(--border))",
+                          font: { color: "hsl(var(--popover-foreground))", size: 15 } // Use popover-foreground for hover label text
+                        },
+                        transition: { duration: 500, easing: 'cubic-in-out' },
+                        modebar: modebarOptions[metric.key] || DEFAULT_MODEBAR,
+                      }}
+                      style={{ width: '100%', height: '100%' }}
+                      config={{
+                        displayModeBar: true,
+                        displaylogo: false,
+                        modeBarButtonsToRemove: [
+                          'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
+                          'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'sendDataToCloud', 'editInChartStudio',
+                          'drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape',
+                          'orbitRotation', 'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
+                          'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover', 'resetViews', 'toggleHover', 'resetViews',
+                          'zoom3d', 'pan3d', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
+                          'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo',
+                          'toImage'
+                        ].filter(btn => btn !== 'toImage' && btn !== 'fullscreen'),
+                        responsive: true,
+                      }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
+                      <BarChart2 className="w-12 h-12 mb-2 text-blue-300 animate-bounce" />
+                      <span className="text-base font-semibold">No data available</span>
+                      <span className="text-xs text-gray-400 mt-1">Try a different prompt or check your data source.</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };

@@ -22,8 +22,8 @@ const deviceData: DeviceTraffic[] = [
 const TrafficByDevice: React.FC = () => {
   const { theme } = useTheme();
 
-  const axisColor = theme === 'dark' ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))';
-  const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+  const axisColor = 'hsl(var(--foreground))'; // Use foreground for axis text
+  const gridColor = 'hsl(var(--border))'; // Use border for grid lines
 
   const commonAxisProps = {
     stroke: axisColor,

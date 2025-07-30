@@ -105,18 +105,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
       {/* Right: Header Actions (Date/Time, Theme Toggle, Refresh, Bell) */}
       <div className="flex items-center gap-3"> {/* Adjusted gap to ml-3 */}
         {/* Date and Time Display */}
-        <div className="text-sm text-primary font-normal mr-1 h-8 flex items-center"> {/* Adjusted h-10 to h-8 */}
+        <div className="text-sm text-foreground font-normal mr-1 h-8 flex items-center"> {/* Changed text-primary to text-foreground */}
           {formattedTime}, {formattedDate} {timezone}
         </div>
 
         <ThemeToggle />
 
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors">
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"> {/* Changed text-primary to text-foreground */}
           <RefreshCw className="h-5 w-5" />
           <span className="sr-only">Refresh Data</span>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"> {/* Changed text-primary to text-foreground */}
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notifications</span>
           <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />

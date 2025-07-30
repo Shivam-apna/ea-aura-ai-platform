@@ -82,38 +82,40 @@ const EnhancedPromptBar: React.FC = () => {
 
   return (
     <div className={cn(
-      "flex items-center h-10 rounded-prompt-bar bg-white border border-gray-200 shadow-sm transition-all duration-200", // Changed rounded-full to rounded-prompt-bar
+      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200", // Changed bg-input to bg-white
       "focus-within:border-blue-500 focus-within:shadow-md", // Apply focus styles to container
       "hover:border-gray-300 hover:shadow-md", // Apply hover styles to container
-      "w-full max-w-[1500px] mx-auto" // Full width, centered, max-width
+      "w-full max-w-[1500px] mx-auto pr-1" // Full width, centered, max-width, adjusted right padding
     )}>
-      <Input
-        ref={inputRef}
-        placeholder="Ask-Aura"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyPress={(e) => e.key === "Enter" && handleSend()}
-        className={cn(
-          "flex-grow h-full border-none bg-transparent text-sm font-normal text-gray-800 placeholder:text-gray-500",
-          "px-4 focus-visible:ring-0 focus-visible:ring-offset-0" // Remove default input focus ring
-        )}
-        disabled={isLoading}
-      />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 rounded-full text-gray-600 hover:text-gray-800 transition-colors flex-shrink-0"
-        onClick={handleVoiceInput}
-        aria-label="Voice Input"
-        disabled={isLoading}
-      >
-        <Mic className="h-4 w-4" />
-      </Button>
+      <div className="relative flex-grow"> {/* Container for input and mic icon */}
+        <Input
+          ref={inputRef}
+          placeholder="Ask-Aura"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleSend()}
+          className={cn(
+            "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
+            "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0" // Padding for text and mic icon
+          )}
+          disabled={isLoading}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+          onClick={handleVoiceInput}
+          aria-label="Voice Input"
+          disabled={isLoading}
+        >
+          <Mic className="h-4 w-4" />
+        </Button>
+      </div>
       <Button
         onClick={handleSend}
         disabled={isLoading || !input.trim()}
         variant="default"
-        className="h-8 px-4 rounded-prompt-bar mr-1 flex-shrink-0 disabled:opacity-100 text-white" // Changed rounded-full to rounded-prompt-bar
+        className="h-8 px-4 py-1.5 rounded-full flex-shrink-0 disabled:opacity-100 text-white bg-[#3b82f6] hover:bg-[#3b82f6]/90 shadow hover:shadow-md" // Generate button styling
       >
         Generate
       </Button>

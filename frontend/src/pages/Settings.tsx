@@ -17,16 +17,16 @@ import { HexColorPicker } from "react-colorful"; // Import HexColorPicker
 
 const Settings = () => {
   const { 
-    availableFonts, // Now FONT_THEMES
+    availableFonts,
     themeColors, 
-    selectedPrimaryColorKey, 
-    setSelectedPrimaryColorKey,
+    selectedPrimaryColor, // Changed from selectedPrimaryColorKey
+    setSelectedPrimaryColor, // Changed from setSelectedPrimaryColorKey
     previewPrimaryColorHex,
     setPreviewPrimaryColorHex,
-    selectedFontThemeKey, // New
-    setSelectedFontThemeKey, // New
-    previewFontThemeKey, // New
-    setPreviewFontThemeKey, // New
+    selectedFontThemeKey,
+    setSelectedFontThemeKey,
+    previewFontThemeKey,
+    setPreviewFontThemeKey,
   } = useTheme();
 
   const defaultFontThemeName = availableFonts[0].name; // 'Professional'
@@ -45,10 +45,10 @@ const Settings = () => {
 
   // Determine the currently displayed color for the swatch and input field
   const currentDisplayColorHex = previewPrimaryColorHex || 
-                                 (selectedPrimaryColorKey ? themeColors.find(c => c.name === selectedPrimaryColorKey)?.hex : null) ||
+                                 selectedPrimaryColor || // Use selectedPrimaryColor directly
                                  themeColors[0].hex; // Fallback to default theme color hex
 
-  // Update color input field when previewPrimaryColorHex or selectedPrimaryColorKey changes
+  // Update color input field when previewPrimaryColorHex or selectedPrimaryColor changes
   useEffect(() => {
     setColorInput(currentDisplayColorHex || '');
   }, [currentDisplayColorHex]);
@@ -73,15 +73,12 @@ const Settings = () => {
   };
 
   const handleConfirmColor = () => {
-    // Find the name of the color that matches the current preview hex
-    // If the hex doesn't match a predefined name, we'll store it as null for the key
-    const confirmedColorName = themeColors.find(color => color.hex.toLowerCase() === (previewPrimaryColorHex || '').toLowerCase())?.name || null;
-    setSelectedPrimaryColorKey(confirmedColorName);
+    setSelectedPrimaryColor(previewPrimaryColorHex); // Set the preview hex as the selected hex
     setPreviewPrimaryColorHex(null); // Clear preview after confirming
   };
 
   const handleResetColor = () => {
-    setSelectedPrimaryColorKey(null); // Set to null to use CSS defaults
+    setSelectedPrimaryColor(null); // Set to null to use CSS defaults
     setPreviewPrimaryColorHex(null); // Also reset preview
   };
 
@@ -125,7 +122,7 @@ const Settings = () => {
                     Choose Color
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 neumorphic-card text-popover-foreground border border-border">
+                <PopoverContent className="w-auto p-4 neumorphic-card text-popover-foreground border border-border bg-card"> {/* Added bg-card */}
                   <HexColorPicker color={colorInput} onChange={handleColorPickerChange} className="w-full h-48 mb-4" />
                   <div className="space-y-2">
                     <Label htmlFor="color-input" className="text-muted-foreground">Enter Hex or RGB:</Label>
@@ -143,7 +140,7 @@ const Settings = () => {
                 variant="default"
                 onClick={handleConfirmColor}
                 className="flex-grow"
-                disabled={!previewPrimaryColorHex || (previewPrimaryColorHex === (selectedPrimaryColorKey ? themeColors.find(c => c.name === selectedPrimaryColorKey)?.hex : null))}
+                disabled={!previewPrimaryColorHex || (previewPrimaryColorHex === selectedPrimaryColor)} // Compare with selectedPrimaryColor
               >
                 Confirm Color
               </Button>
@@ -151,7 +148,7 @@ const Settings = () => {
                 variant="outline"
                 onClick={handleResetColor}
                 className="flex-grow bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                disabled={selectedPrimaryColorKey === null && previewPrimaryColorHex === null}
+                disabled={selectedPrimaryColor === null && previewPrimaryColorHex === null}
               >
                 Reset to Default
               </Button>
@@ -173,7 +170,7 @@ const Settings = () => {
               <SelectTrigger className="w-full bg-input border-border text-foreground">
                 <SelectValue placeholder="Select font theme" />
               </SelectTrigger>
-              <SelectContent className="neumorphic-card text-popover-foreground border border-border">
+              <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card"> {/* Added bg-card */}
                 {availableFonts.map((fontTheme) => (
                   <SelectItem
                     key={fontTheme.name}
@@ -201,7 +198,7 @@ const Settings = () => {
             >
               <RotateCcw className="h-4 w-4" /> Reset to Default Fonts
             </Button>
-            <div className="p-4 border border-border rounded-lg">
+            <div className="p-4 border border-border rounded-lg bg-muted"> {/* Added bg-muted */}
               <p className="text-muted-foreground mb-2">Preview:</p>
               <h3 className="text-xl font-bold mb-2" style={{ fontFamily: previewTheme.primary }}>
                 Heading Example: The quick brown fox
@@ -280,7 +277,7 @@ const Settings = () => {
               <SelectTrigger className="w-full bg-input border-border text-foreground">
                 <SelectValue placeholder="Select default view" />
               </SelectTrigger>
-              <SelectContent className="neumorphic-card text-popover-foreground border border-border">
+              <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card"> {/* Added bg-card */}
                 <SelectItem value="table">Table View</SelectItem>
                 <SelectItem value="chart">Chart View</SelectItem>
                 <SelectItem value="summary">Summary View</SelectItem>
@@ -297,7 +294,7 @@ const Settings = () => {
               <SelectTrigger className="w-full bg-input border-border text-foreground">
                 <SelectValue placeholder="Select interval" />
               </SelectTrigger>
-              <SelectContent className="neumorphic-card text-popover-foreground border border-border">
+              <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card"> {/* Added bg-card */}
                 <SelectItem value="5s">5 Seconds</SelectItem>
                 <SelectItem value="15s">15 Seconds</SelectItem>
                 <SelectItem value="30s">30 Seconds</SelectItem>
