@@ -444,7 +444,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                             layout={{
                                               width: undefined,
                                               height: 280,
-                                              autosize: false,
+                                              autosize: true,
                                               title: '',
                                               plot_bgcolor: "hsl(var(--card))",
                                               paper_bgcolor: "hsl(var(--card))",
@@ -482,7 +482,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                               },
                                               transition: { duration: 500, easing: 'cubic-in-out' },
                                             }}
-                                            style={{ width: '100%', height: '280px' }}
+                                            style={{ width: '100%', height: '100%' }}
                                             config={{
                                               displayModeBar: true,
                                               displaylogo: false,
