@@ -120,6 +120,46 @@ services:
       - ea-aura-prod
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15
+    container_name: postgres-prod
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: your-production-postgres-password
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak-prod
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=your-production-keycloak-password
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=your-production-postgres-password
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+    command: start
+    expose:
+      - "8080"
+    networks:
+      - ea-aura-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   vault:
     image: vault:1.13.3
     container_name: vault-prod
@@ -150,10 +190,28 @@ services:
     networks:
       - ea-aura-prod
 
+  dbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: dbeaver-prod
+    ports:
+      - "8980:8978"
+    environment:
+      - CB_DATABASE=./data/cloudbeaver.db
+      - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+    volumes:
+      - dbeaver_data_prod:/opt/cloudbeaver/workspace
+      - dbeaver_logs_prod:/opt/cloudbeaver/logs
+    networks:
+      - ea-aura-prod
+    restart: unless-stopped
+
 volumes:
   esdata_prod:
   filebeat-data_prod:
   minio_data_prod:
+  postgres_data_prod:
+  dbeaver_data_prod:
+  dbeaver_logs_prod:
 
 networks:
   ea-aura-prod:
