@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,15 +16,17 @@ import config from "@/config/mission_dashboard.json";
 // Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
 const METRIC_GROUPS = config.metric_groups;;
-import { BarChart2, LineChart, ScatterChart, Settings2, X } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import PagePromptBar from "@/components/PagePromptBar"; // Import PagePromptBar
 import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHeaderActions
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
+import { generatePDF } from "@/utils/generatePDF";
 
 // Type definitions
 interface KpiItem {
@@ -99,6 +101,11 @@ const MissionAlignment = () => {
   const [chartColors, setChartColors] = useState<Record<string, string>>({});
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Refs for PDF generation
+  const kpiSectionRef = useRef<HTMLDivElement>(null);
+  const chartsSectionRef = useRef<HTMLDivElement>(null);
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
@@ -236,13 +243,35 @@ const MissionAlignment = () => {
     setChartColors(prev => ({ ...prev, [key]: color }));
   };
 
+  const handleDownloadPDF = async () => {
+    if (!kpiSectionRef.current && !chartsSectionRef.current) {
+      toast.error("No data available to generate PDF");
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+      toast.info("Generating PDF... This may take a moment");
+
+      await generatePDF(kpiSectionRef, chartsSectionRef, "Mission Alignment", "mission_parsed_summary");
+
+
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
     setLoading(true);
     try {
       const res = await fetch(getApiEndpoint("/api/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "tenant_123ffff" }), // Use the prompt from the argument
+        body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
       });
 
       const data = await res.json();
@@ -253,6 +282,8 @@ const MissionAlignment = () => {
       }
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
+
+      localStorage.setItem("mission_parsed_summary", JSON.stringify(parsed));
 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(key =>
@@ -316,7 +347,7 @@ const MissionAlignment = () => {
           </div>
         </div>
       )}
-      
+
       {/* Prompt Section - using PagePromptBar */}
       <PagePromptBar
         placeholder="Ask about mission alignment, goals, or any metric..."
@@ -324,24 +355,32 @@ const MissionAlignment = () => {
         onLoadingChange={setLoading}
         className="mb-2"
       />
-      
-      {/* Page Header Actions Row */}
-      <PageHeaderActions title="Mission Alignment" className="mb-2" />
-      
-      {/* Advanced Dashboard Layout Component */}
-      <AdvancedDashboardLayout
-        charts={charts}
-        dynamicKpiKeys={dynamicKpiKeys}
-        dynamicMetricGroups={dynamicMetricGroups}
-        storagePrefix="mission_alignment"
-        onChartClose={handleCloseChart}
-        onRestoreCharts={handleRestoreCharts}
-        onChartTypeChange={handleChartTypeChange}
-        onChartColorChange={handleChartColorChange}
-        chartTypes={chartTypes}
-        chartColors={chartColors}
-        loading={loading}
+
+      {/* Page Header Actions Row - Updated with PDF props */}
+      <PageHeaderActions
+        title="Mission Alignment"
+        className="mb-2"
+        onDownloadPDF={handleDownloadPDF}
+        downloadingPdf={downloadingPdf}
+        hasChartsData={Object.keys(charts).length > 0}
       />
+
+      {/* Advanced Dashboard Layout Component with Refs */}
+      <div ref={kpiSectionRef}>
+        <AdvancedDashboardLayout
+          charts={charts}
+          dynamicKpiKeys={dynamicKpiKeys}
+          dynamicMetricGroups={dynamicMetricGroups}
+          storagePrefix="mission_alignment"
+          onChartClose={handleCloseChart}
+          onRestoreCharts={handleRestoreCharts}
+          onChartTypeChange={handleChartTypeChange}
+          onChartColorChange={handleChartColorChange}
+          chartTypes={chartTypes}
+          chartColors={chartColors}
+          loading={loading}
+        />
+      </div>
     </div>
   );
 };

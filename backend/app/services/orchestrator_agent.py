@@ -102,14 +102,14 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
     groq_config = get_groq_config()
     
     # Get enhanced data for the agent
-    enhanced_data = get_enhanced_data_for_agent(agent_name, input_text)
+    enhanced_data = get_enhanced_data_for_agent(agent_name, input_text, tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
     
     # Create cache key based on user input + agent + data context
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
     
     # Check cache with the cache key
-    cached_response = search_cache(cache_key)
+    cached_response = search_cache(cache_key, tenant_id)
     if cached_response:
         print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
         logger.info(f"✅ Cache hit for agent {agent_name}. Skipping LLM call.")
@@ -139,7 +139,7 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
         response = group_chat.messages[-1]["content"]
 
         # Save response to cache with the cache key
-        save_to_cache(cache_key, response)
+        save_to_cache(cache_key, response, tenant_id)
         
         # Track tokens for this agent
         token_usage = token_tracker.track_agent_tokens(
@@ -188,14 +188,14 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
                      input_text: str, job_id: str, tenant_id: str):
     """Execute a sub-agent with token tracking"""
     groq_config = get_groq_config()
-    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text)
+    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text,tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
     
     # Create cache key for sub-agent
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
     
     # Check cache with the cache key
-    cached_response = search_cache(cache_key)
+    cached_response = search_cache(cache_key,tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for sub-agent {agent_name}. Skipping LLM call.")
         return cached_response, None
@@ -221,7 +221,7 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         subagent_response = sub_group_chat.messages[-1]["content"]
 
         # Save response to cache with the cache key
-        save_to_cache(cache_key, subagent_response)
+        save_to_cache(cache_key, subagent_response,tenant_id)
         
         # Track tokens for sub-agent
         token_usage = token_tracker.track_agent_tokens(
@@ -414,7 +414,7 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
     cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash)
     
     # Check cache first
-    cached_response = search_cache(cache_key)
+    cached_response = search_cache(cache_key,tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for parent agent {parent_agent_name}. Skipping LLM call.")
         return cached_response, None
@@ -437,7 +437,7 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
         parent_response = parent_group_chat.messages[-1]["content"]
         
         # Save to cache
-        save_to_cache(cache_key, parent_response)
+        save_to_cache(cache_key, parent_response,tenant_id)
         
         # Track tokens
         parent_token_usage = token_tracker.track_agent_tokens(
@@ -489,7 +489,7 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
     workflow_cache_key = create_cache_key(input_text, "full_orchestration")
     
     # Check if we have a cached result for the entire workflow
-    cached_workflow = search_cache(workflow_cache_key)
+    cached_workflow = search_cache(workflow_cache_key,tenant_id)
     if cached_workflow:
         logger.info("✅ Full orchestration cache HIT - returning complete cached workflow")
         try:
@@ -707,7 +707,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         
         # Cache the entire workflow result
         workflow_cache_key = create_cache_key(input_text, "full_orchestration")
-        save_to_cache(workflow_cache_key, json.dumps(final_result))
+        save_to_cache(workflow_cache_key, json.dumps(final_result),tenant_id)
         
         logger.info("✅ Agent orchestration completed", extra={
             "job_id": job_id,
