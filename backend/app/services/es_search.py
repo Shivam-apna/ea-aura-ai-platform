@@ -38,8 +38,10 @@ def build_dynamic_filters(query_text: str, sample_doc: dict):
 """ Business Vitality Subagents Dataset"""
 def query_sales_data(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "sales_dataset",
+    
     size: int = 10
 ) -> str:
     try:
@@ -55,7 +57,8 @@ def query_sales_data(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        print("tenant_id4444444444444444444444444",sub_index,tenant_id)
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -100,6 +103,7 @@ def query_sales_data(
 
 def query_marketing_dataset(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "marketing_dataset",
     size: int = 10
@@ -117,7 +121,8 @@ def query_marketing_dataset(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -163,6 +168,7 @@ def query_marketing_dataset(
 """ Customer Analyzer Agent Dataset"""
 def query_customer_survey_data(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "customer_survey_dataset",
     size: int = 10
@@ -180,7 +186,10 @@ def query_customer_survey_data(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+
+        
+        
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -224,6 +233,7 @@ def query_customer_survey_data(
 
 def query_support_tickets_dataset(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "support_tickets_dataset",
     size: int = 10
@@ -241,7 +251,7 @@ def query_support_tickets_dataset(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -286,6 +296,7 @@ def query_support_tickets_dataset(
 
 def query_social_media_dataset(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "social_media_dataset",
     size: int = 10
@@ -303,7 +314,7 @@ def query_social_media_dataset(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -348,6 +359,7 @@ def query_social_media_dataset(
 """Strategic Alignment Agent Dataset"""
 def query_mission_alignment_data(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "mission_alignment_dataset",
     size: int = 10
@@ -365,7 +377,7 @@ def query_mission_alignment_data(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -410,6 +422,7 @@ def query_mission_alignment_data(
 """ Brand Index Agent Dataset """
 def query_brand_audit_data(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "brand_audit_dataset",
     size: int = 10
@@ -427,7 +440,7 @@ def query_brand_audit_data(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -472,6 +485,7 @@ def query_brand_audit_data(
   
 def query_social_media_engagement_dataset(
     query_text: str,
+    tenant_id: str,
     index_name: str = "agent_dataset",
     sub_index: str = "social_media_engagement_dataset",
     size: int = 10
@@ -489,7 +503,7 @@ def query_social_media_engagement_dataset(
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
         # Always include sub_index match
-        filters = [{"match": {"sub_index": sub_index}}]
+        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))

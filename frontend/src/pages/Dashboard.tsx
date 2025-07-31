@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import PagePromptBar from "@/components/PagePromptBar"; // Import PagePromptBar
 import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHeaderActions
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
+import { generatePDF } from "@/utils/generatePDF";
 
 // Type definitions
 interface KpiItem {
@@ -122,6 +123,11 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const [chartColors, setChartColors] = useState<Record<string, string>>({});
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Refs for PDF generation
+  const kpiSectionRef = useRef<HTMLDivElement>(null);
+  const chartsSectionRef = useRef<HTMLDivElement>(null);
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
@@ -259,6 +265,28 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
     setChartColors(prev => ({ ...prev, [key]: color }));
   };
 
+  const handleDownloadPDF = async () => {
+    if (!kpiSectionRef.current && !chartsSectionRef.current) {
+      toast.error("No data available to generate PDF");
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+      toast.info("Generating PDF... This may take a moment");
+
+      await generatePDF(kpiSectionRef, chartsSectionRef, "Overview ", "overview_parsed_summary");
+
+
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   // Modified fetchData to accept prompt from PagePromptBar
   const handlePromptSubmit = async (prompt: string) => {
     setLoading(true);
@@ -266,7 +294,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       const res = await fetch(getApiEndpoint("/api/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "tenant_123ffff" }), // Use the prompt from the argument
+        body: JSON.stringify({ input, tenant_id: "demo232" }),
       });
 
       const data = await res.json();
@@ -277,6 +305,8 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       // }
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
+
+      localStorage.setItem("overview_parsed_summary", JSON.stringify(parsed));
 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(key =>
@@ -350,22 +380,27 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
         className="mb-2"
       />
       {/* Page Header Actions Row */}
-      <PageHeaderActions title="Overview" className="mb-2" />
-      
+      <PageHeaderActions title="Overview" className="mb-2"
+        onDownloadPDF={handleDownloadPDF}
+        downloadingPdf={downloadingPdf}
+        hasChartsData={Object.keys(charts).length > 0} />
+
       {/* Advanced Dashboard Layout Component */}
-      <AdvancedDashboardLayout
-        charts={charts}
-        dynamicKpiKeys={dynamicKpiKeys}
-        dynamicMetricGroups={dynamicMetricGroups}
-        storagePrefix="dashboard"
-        onChartClose={handleCloseChart}
-        onRestoreCharts={handleRestoreCharts}
-        onChartTypeChange={handleChartTypeChange}
-        onChartColorChange={handleChartColorChange}
-        chartTypes={chartTypes}
-        chartColors={chartColors}
-        loading={loading}
-      />
+      <div ref={kpiSectionRef}>
+        <AdvancedDashboardLayout
+          charts={charts}
+          dynamicKpiKeys={dynamicKpiKeys}
+          dynamicMetricGroups={dynamicMetricGroups}
+          storagePrefix="dashboard"
+          onChartClose={handleCloseChart}
+          onRestoreCharts={handleRestoreCharts}
+          onChartTypeChange={handleChartTypeChange}
+          onChartColorChange={handleChartColorChange}
+          chartTypes={chartTypes}
+          chartColors={chartColors}
+          loading={loading}
+        />
+      </div>
     </div>
   );
 };

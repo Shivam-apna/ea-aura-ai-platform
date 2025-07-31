@@ -30,7 +30,7 @@ class ExcelToElasticsearch:
         self.embedding_dims = len(test_vector)
 
         # Generate tenant ID
-        self.tenant_id = tenant_id if tenant_id else str(uuid.uuid4())
+        self.tenant_id = tenant_id.strip('"') if tenant_id else str(uuid.uuid4())
 
         logger.info(f"Initialized with embedding model: {embedding_model}")
         logger.info(f"Embedding dimension: {self.embedding_dims}")
