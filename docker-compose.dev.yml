@@ -27,17 +27,45 @@ services:
     networks:
       - ea-aura-dev
 
+  postgres:
+    image: postgres:15
+    container_name: postgres-dev
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - ea-aura-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-dev
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak123
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
     command: start-dev
     ports:
       - "8080:8080"
     networks:
       - ea-aura-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
@@ -147,10 +175,28 @@ services:
     networks:
       - ea-aura-dev
 
+  dbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: dbeaver-dev
+    ports:
+      - "8978:8978"
+    environment:
+      - CB_DATABASE=./data/cloudbeaver.db
+      - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+    volumes:
+      - dbeaver_data_dev:/opt/cloudbeaver/workspace
+      - dbeaver_logs_dev:/opt/cloudbeaver/logs
+    networks:
+      - ea-aura-dev
+    restart: unless-stopped
+
 volumes:
   esdata_dev:
   filebeat-data_dev:
   minio_data_dev:
+  postgres_data_dev:
+  dbeaver_data_dev:
+  dbeaver_logs_dev:
 
 networks:
   ea-aura-dev:
