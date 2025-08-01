@@ -48,9 +48,9 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME: staging.ea-aura.ai
       KC_HOSTNAME_ADMIN: staging.ea-aura.ai
-      KC_HOSTNAME_STRICT: true
-      KC_HOSTNAME_STRICT_HTTPS: true
-      KC_HTTP_ENABLED: false
+      KC_HOSTNAME_STRICT: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "true"
+      KC_HTTP_ENABLED: "false"
       KC_HTTPS_PROTOCOLS: TLSv1.2,TLSv1.3
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/server.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/server.key
