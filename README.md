@@ -17,8 +17,43 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://git.aapnainfotech.com/Shivam-Ks/ea-aura-ai-platform.git
+git remote add origin https://github.com/Shivam-apna/ea-aura-ai-platform/tree/main
 git branch -M main
 git push -uf origin main
 ```
+
+## ⚡ Getting Started (Local)
+
+1️⃣ **Clone the repository**
+
+```bash
+git clone https://github.com/Shivam-apna/ea-aura-ai-platform/tree/main
+cd ea-aura-ai-platform
+
+```
+# Run the App
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## ⚡ Getting Started (Docker)
+
+
+# Run the script
+
+```bash
+./start.ps1
+
+```
+
+# Set API Key on Vault
+
+```bash
+
+1.Go to "http://localhost:8200/"
+
+2.Login in vault using password 'demo'
+
+3.Set path and your api key 
 

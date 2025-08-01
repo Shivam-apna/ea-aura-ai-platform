@@ -1,0 +1,134 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-test
+    ports:
+      - "8082:80"
+    volumes:
+      - ./nginx/nginx.test.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - ea-aura-test
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
+    container_name: elasticsearch-test
+    environment:
+      discovery.type: "single-node"
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+      xpack.security.enabled: "false"
+    ports:
+      - "9201:9200"
+    volumes:
+      - esdata_test:/usr/share/elasticsearch/data
+    networks:
+      - ea-aura-test
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: backend-test
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    expose:
+      - "8081"
+    environment:
+      - ENVIRONMENT=testing
+      - VAULT_TOKEN=demo
+      - VAULT_ADDR=http://vault:8200
+    env_file:
+      - ./backend/env.testing
+    networks:
+      - ea-aura-test
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka-test
+    ports:
+      - "9094:9092"
+      - "9095:9093"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://host.docker.internal:9094
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_KRAFT_CLUSTER_ID=ea-aura-test-cluster-id-001
+    volumes:
+      - ./kafka/test-data:/bitnami/kafka
+    networks:
+      - ea-aura-test
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-test
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+    networks:
+      - ea-aura-test
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  vault:
+    image: vault:1.13.3
+    container_name: vault-test
+    ports:
+      - "8201:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "demo"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - ea-aura-test
+
+  dbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: dbeaver-test
+    ports:
+      - "8979:8978"
+    environment:
+      - CB_DATABASE=./data/cloudbeaver.db
+      - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+    volumes:
+      - dbeaver_data_test:/opt/cloudbeaver/workspace
+      - dbeaver_logs_test:/opt/cloudbeaver/logs
+    networks:
+      - ea-aura-test
+    restart: unless-stopped
+
+volumes:
+  esdata_test:
+  postgres_data_test:
+  dbeaver_data_test:
+  dbeaver_logs_test:
+
+networks:
+  ea-aura-test:
+    driver: bridge 

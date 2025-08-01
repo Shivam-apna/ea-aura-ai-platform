@@ -1,0 +1,203 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-dev
+    ports:
+      - "8081:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - ea-aura-dev
+    restart: unless-stopped
+
+  vault:
+    image: vault:1.13.3
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "demo"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - ea-aura-dev
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-dev
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - ea-aura-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak-dev
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak123
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+    command: start-dev
+    ports:
+      - "8080:8080"
+    networks:
+      - ea-aura-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
+    container_name: elasticsearch-dev
+    environment:
+      discovery.type: "single-node"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      xpack.security.enabled: "false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata_dev:/usr/share/elasticsearch/data
+    networks:
+      - ea-aura-dev
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.0.2
+    container_name: kibana-dev
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - ea-aura-dev
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.0.0
+    container_name: filebeat-dev
+    user: root
+    command: filebeat -e --strict.perms=false
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./backend/app/logs:/backend/app/logs
+    networks:
+      - ea-aura-dev
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  backend:
+    build: ./backend
+    container_name: backend-dev
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    expose:
+      - "8081"
+    environment:
+      - ENVIRONMENT=development
+      - VAULT_TOKEN=demo
+      - VAULT_ADDR=http://vault:8200
+    env_file:
+      - ./backend/env.development
+    networks:
+      - ea-aura-dev
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka-dev
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://host.docker.internal:9092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_KRAFT_CLUSTER_ID=ea-aura-dev-cluster-id-001
+    volumes:
+      - ./kafka/data:/bitnami/kafka
+    networks:
+      - ea-aura-dev
+
+  minio:
+    image: minio/minio
+    container_name: minio-dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data_dev:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - ea-aura-dev
+
+  dbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: dbeaver-dev
+    ports:
+      - "8978:8978"
+    environment:
+      - CB_DATABASE=./data/cloudbeaver.db
+      - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+    volumes:
+      - dbeaver_data_dev:/opt/cloudbeaver/workspace
+      - dbeaver_logs_dev:/opt/cloudbeaver/logs
+    networks:
+      - ea-aura-dev
+    restart: unless-stopped
+
+volumes:
+  esdata_dev:
+  filebeat-data_dev:
+  minio_data_dev:
+  postgres_data_dev:
+  dbeaver_data_dev:
+  dbeaver_logs_dev:
+
+networks:
+  ea-aura-dev:
+    driver: bridge 

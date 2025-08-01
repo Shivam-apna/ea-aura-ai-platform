@@ -1,0 +1,40 @@
+{
+    "metric_groups": {
+        "Mission_Alignment": [
+            {
+                "key": "Alignment_Score_(%)",
+                "label": "Alignment Score"
+            },
+            {
+                "key": "Resource_Allocation",
+                "label": "Resource Allocation"
+            },
+            {
+                "key": "Impact Metrics",
+                "label": "Impact Metrics"
+            },
+            {
+                "key": "Risks Identified",
+                "label": "Risks Identified"
+            }
+        ]
+    },
+    "kpi_keys": [
+        {
+            "key": "Alignment Score (%)",
+            "bgColor": "#E4F8C2"
+        },
+        {
+            "key": "Resource Allocation",
+            "bgColor": "#E6F1FD"
+        },
+        {
+            "key": "Impact Metrics",
+            "bgColor": "#E4F8C2"
+        },
+        {
+            "key": "Risks Identified",
+            "bgColor": "#E6F1FD"
+        }
+    ]
+}

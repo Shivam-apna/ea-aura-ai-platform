@@ -1,0 +1,58 @@
+{
+  "kpi_keys": [
+    {
+      "key": "Gross Margin",
+      "bgColor": "#E4F8C2"
+    },
+    {
+      "key": "Net Profit Margin",
+      "bgColor": "#E6F1FD"
+    },
+    {
+      "key": "Conversion Rate",
+      "bgColor": "#E4F8C2"
+    },
+    {
+      "key": "ROI",
+      "bgColor": "#E6F1FD"
+    }
+  ],
+  "metric_groups": {
+    "Sales": [
+      {
+        "key": "Net Sale",
+        "label": "Net Sales"
+      },
+      {
+        "key": "COGS",
+        "label": "COGS"
+      },
+      {
+        "key": "Gross Profit Margin (%)",
+        "label": "Gross Profit Margin"
+      },
+      {
+        "key": "GMROI",
+        "label": "GMROI"
+      }
+    ],
+    "Marketing": [
+      {
+        "key": "CTR",
+        "label": "CTR (%)"
+      },
+      {
+        "key": "Conversion Rate",
+        "label": "Conversion Rate (%)"
+      },
+      {
+        "key": "ROI",
+        "label": "ROI (%)"
+      },
+      {
+        "key": "CPL",
+        "label": "CPL"
+      }
+    ]
+  }
+}
