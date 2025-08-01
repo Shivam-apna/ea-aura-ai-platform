@@ -83,35 +83,68 @@ services:
 
   # Elasticsearch
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
     container_name: ea-aura-elasticsearch-staging
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "cluster.name=ea-aura-staging"
+      - "node.name=ea-aura-node-1"
+      - "bootstrap.memory_lock=true"
+      - "network.host=0.0.0.0"
+      - "http.port=9200"
+      - "cluster.routing.allocation.disk.threshold_enabled=false"
     volumes:
       - esdata_staging:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
     networks:
       - ea-aura-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     expose:
       - "9200"
 
   # Kibana
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+    image: docker.elastic.co/kibana/kibana:9.0.2
     container_name: ea-aura-kibana-staging
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
     networks:
       - ea-aura-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     expose:
       - "5601"
 
   # Vault
   vault:
-    image: vault:latest
+    image: 1.13.3
     container_name: ea-aura-vault-staging
     environment:
       - VAULT_DEV_ROOT_TOKEN_ID=demo
