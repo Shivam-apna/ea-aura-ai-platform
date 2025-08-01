@@ -2,6 +2,10 @@
 
 # EA Aura AI Platform - Staging Environment Startup Script
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 echo "🚀 Starting EA Aura AI Platform - Staging Environment..."
 
 # Check if Docker is running
@@ -15,6 +19,9 @@ if ! command -v docker-compose &> /dev/null; then
     echo "❌ docker-compose is not installed. Please install it and try again."
     exit 1
 fi
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
 
 # Create necessary directories
 echo "📁 Creating necessary directories..."
