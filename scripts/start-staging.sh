@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# EA Aura AI Platform - Staging Environment Startup Script (Azure)
+# EA Aura AI Platform - Staging Environment Startup Script
 
-echo "🚀 Starting EA Aura AI Platform - Staging Environment on Azure..."
+echo "🚀 Starting EA Aura AI Platform - Staging Environment..."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -18,18 +18,8 @@ fi
 
 # Create necessary directories
 echo "📁 Creating necessary directories..."
-mkdir -p ssl
 mkdir -p kafka/staging-data
 mkdir -p backend/app/logs
-
-# Check if SSL certificates exist
-if [ ! -f "ssl/staging.ea-aura.ai.crt" ] || [ ! -f "ssl/staging.ea-aura.ai.key" ]; then
-    echo "⚠️  SSL certificates not found. Please place your SSL certificates in the ssl/ directory:"
-    echo "   - ssl/staging.ea-aura.ai.crt"
-    echo "   - ssl/staging.ea-aura.ai.key"
-    echo "   You can generate self-signed certificates for testing with:"
-    echo "   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/staging.ea-aura.ai.key -out ssl/staging.ea-aura.ai.crt"
-fi
 
 # Create .htpasswd file for basic authentication
 if [ ! -f "nginx/.htpasswd" ]; then
@@ -55,8 +45,8 @@ echo "🏥 Checking service health..."
 docker-compose -f docker-compose.staging.yml ps
 
 echo "✅ Staging environment is starting up!"
-echo "🌐 Access your application at: http://localhost (HTTP) or https://staging.ea-aura.ai (HTTPS)"
-echo "🔑 Keycloak Admin: http://localhost:8080 (HTTP) or https://staging.ea-aura.ai/auth (HTTPS)"
+echo "🌐 Access your application at: http://localhost"
+echo "🔑 Keycloak Admin: http://localhost:8080"
 echo "📊 Kibana: http://localhost:5601"
 echo "🗄️  DBeaver: http://localhost:8978"
 echo "📦 MinIO Console: http://localhost:9001"
