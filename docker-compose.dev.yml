@@ -5,8 +5,8 @@ services:
     image: nginx:latest
     container_name: nginx-dev
     ports:
-      - "8081:80"
-      - "8443:443"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -105,7 +105,7 @@ services:
     user: root
     command: filebeat -e --strict.perms=false
     volumes:
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/filebeat.dev.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./backend/app/logs:/backend/app/logs
     networks:
       - ea-aura-dev
@@ -155,7 +155,7 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
       - KAFKA_KRAFT_CLUSTER_ID=ea-aura-dev-cluster-id-001
     volumes:
-      - ./kafka/data:/bitnami/kafka
+      - ./kafka/dev-data:/bitnami/kafka
     networks:
       - ea-aura-dev
 
@@ -167,7 +167,7 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data_dev:/data
     command: server /data --console-address ":9001"
