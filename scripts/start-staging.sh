@@ -21,13 +21,6 @@ echo "📁 Creating necessary directories..."
 mkdir -p kafka/staging-data
 mkdir -p backend/app/logs
 
-# Create .htpasswd file for basic authentication
-if [ ! -f "nginx/.htpasswd" ]; then
-    echo "🔐 Creating basic authentication file..."
-    echo "admin:\$2y\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi" > nginx/.htpasswd
-    echo "   Default credentials: admin/password"
-fi
-
 # Stop any existing containers
 echo "🛑 Stopping any existing containers..."
 docker-compose -f docker-compose.staging.yml down
