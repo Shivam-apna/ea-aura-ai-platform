@@ -7,7 +7,7 @@ ENVIRONMENT=${1:-dev}
 case $ENVIRONMENT in
     "dev"|"development")
         echo "🚀 Starting Development Environment with Docker..."
-        docker-compose -f docker-compose.dev.yml up --build -d
+        docker compose -f docker-compose.dev.yml up --build -d
         echo "✅ Development environment started!"
         echo "📊 Services:"
         echo "   - Backend: http://localhost:8000"
@@ -19,7 +19,7 @@ case $ENVIRONMENT in
         ;;
     "test"|"testing")
         echo "🧪 Starting Testing Environment with Docker..."
-        docker-compose -f docker-compose.test.yml up --build -d
+        docker compose -f docker-compose.test.yml up --build -d
         echo "✅ Testing environment started!"
         echo "📊 Services:"
         echo "   - Backend: http://localhost:8001"
@@ -28,7 +28,7 @@ case $ENVIRONMENT in
         ;;
     "prod"|"production")
         echo "🏭 Starting Production Environment with Docker..."
-        docker-compose -f docker-compose.prod.yml up --build -d
+        docker compose -f docker-compose.prod.yml up --build -d
         echo "✅ Production environment started!"
         echo "📊 Services:"
         echo "   - Backend: http://localhost:8000"
