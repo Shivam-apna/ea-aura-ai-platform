@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   # Nginx Reverse Proxy
@@ -6,17 +6,22 @@ services:
     image: nginx:alpine
     container_name: ea-aura-nginx-staging
     ports:
-      - "80:80"
-      - "443:443"
+      - "8081:80"
+      - "8443:443"
     volumes:
       - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - backend
-      - keycloak
-      - elasticsearch
-      - vault
-      - dbeaver
+      backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_started
+      dbeaver:
+        condition: service_started
     networks:
       - ea-aura-network
     restart: unless-stopped
@@ -34,6 +39,12 @@ services:
     networks:
       - ea-aura-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # Keycloak Identity Provider
   keycloak:
@@ -78,6 +89,12 @@ services:
     networks:
       - ea-aura-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     expose:
       - "8081"
 
