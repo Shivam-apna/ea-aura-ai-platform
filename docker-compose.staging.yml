@@ -144,7 +144,7 @@ services:
 
   # Vault
   vault:
-    image: 1.13.3
+    image: vault:1.13.3
     container_name: ea-aura-vault-staging
     environment:
       - VAULT_DEV_ROOT_TOKEN_ID=demo
