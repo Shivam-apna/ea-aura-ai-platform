@@ -8,6 +8,8 @@ class Environment(str, Enum):
     DEVELOPMENT = "development"
     TESTING = "testing"
     PRODUCTION = "production"
+    STAGING = "staging"
+    
 
 class Settings(BaseSettings):
     # Environment Configuration
