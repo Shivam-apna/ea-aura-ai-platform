@@ -3,7 +3,7 @@ version: '3.9'
 services:
   # Nginx Reverse Proxy
   nginx:
-    image: nginx:alpine
+    image: nginx:latest
     container_name: ea-aura-nginx-staging
     ports:
       - "8081:80"
