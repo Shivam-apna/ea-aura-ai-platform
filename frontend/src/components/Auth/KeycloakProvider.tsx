@@ -23,7 +23,7 @@ export const KeycloakProvider: React.FC<{ children: ReactNode }> = ({ children }
           onLoad: 'check-sso',
           checkLoginIframe: false, // Completely disable iframe checks
           enableLogging: process.env.NODE_ENV === 'development',
-          pkceMethod: 'S256',
+          // Remove pkceMethod to avoid Web Crypto API requirement
         });
 
         console.log('Keycloak initialized. Authenticated:', auth);
