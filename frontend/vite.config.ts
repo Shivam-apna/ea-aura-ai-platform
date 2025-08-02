@@ -7,6 +7,20 @@ export default defineConfig(({ command, mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
   
+  // Define environment variables for staging
+  const defineEnv = {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  };
+  
+  // Add staging-specific environment variables
+  if (mode === 'staging') {
+    Object.assign(defineEnv, {
+      'process.env.VITE_API_BASE_URL': JSON.stringify('https://staging.ea-aura.ai/api'),
+      'process.env.VITE_KEYCLOAK_URL': JSON.stringify('https://staging.ea-aura.ai/auth'),
+      'process.env.VITE_ENVIRONMENT': JSON.stringify('staging'),
+    });
+  }
+  
   return {
     server: {
       host: "::",
@@ -18,9 +32,7 @@ export default defineConfig(({ command, mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-    },
+    define: defineEnv,
     build: {
       outDir: 'dist',
       sourcemap: mode === 'development',

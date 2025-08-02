@@ -11,6 +11,7 @@ services:
       - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
+      - frontend
     networks:
       - ea-aura-staging
     restart: unless-stopped
@@ -191,6 +192,19 @@ services:
     volumes:
       - dbeaver_data_staging:/opt/cloudbeaver/workspace
       - dbeaver_logs_staging:/opt/cloudbeaver/logs
+    networks:
+      - ea-aura-staging
+    restart: unless-stopped
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.staging
+    container_name: frontend-staging
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
+      - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
     networks:
       - ea-aura-staging
     restart: unless-stopped

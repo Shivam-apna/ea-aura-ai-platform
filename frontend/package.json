@@ -9,9 +9,11 @@
     "build:dev": "vite build --mode development",
     "build:test": "vite build --mode testing",
     "build:prod": "vite build --mode production",
+    "build:staging": "vite build --mode staging",
     "preview": "vite preview",
     "preview:dev": "vite preview --mode development",
     "preview:test": "vite preview --mode testing",
+    "preview:staging": "vite preview --mode staging",
     "preview:prod": "vite preview --mode production",
     "lint": "eslint ."
   },
