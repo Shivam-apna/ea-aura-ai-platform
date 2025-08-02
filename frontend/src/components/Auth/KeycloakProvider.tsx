@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
-import keycloak from '@/keycloak'; // Import the initialized keycloak instance
+import keycloak from '@/keycloak';
 
 interface KeycloakContextType {
   keycloak: Keycloak | null;
@@ -16,52 +16,71 @@ export const KeycloakProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     const initKeycloak = async () => {
-      // Guard against re-initialization if Keycloak is already authenticated
-      if (keycloak.authenticated) {
-        console.log('Keycloak already authenticated. Skipping init().');
-        setAuthenticated(true); // It's already authenticated
-        setLoading(false);
-        return;
-      }
-
       try {
+        console.log('Initializing Keycloak...');
+        
         const auth = await keycloak.init({
-          onLoad: 'login-required', // Force login if not authenticated
-          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html', // Required for silent SSO
-          pkceMethod: 'S256', // Recommended PKCE method
+          onLoad: 'check-sso',
+          checkLoginIframe: false, // Completely disable iframe checks
+          enableLogging: process.env.NODE_ENV === 'development',
+          pkceMethod: 'S256',
         });
+
+        console.log('Keycloak initialized. Authenticated:', auth);
         setAuthenticated(auth);
+
       } catch (error) {
-        console.error('Failed to initialize Keycloak:', error);
-        setAuthenticated(false); // Treat as not authenticated on error
+        console.error('Keycloak initialization failed:', error);
+        // Instead of setting to false, you might want to retry or handle differently
+        setAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
 
     initKeycloak();
-  }, []); // Empty dependency array ensures it runs once on mount
+  }, []);
 
-  // Render loading state
+  const handleLogin = () => {
+    keycloak.login({
+      redirectUri: window.location.origin
+    });
+  };
+
+  const handleLogout = () => {
+    keycloak.logout({
+      redirectUri: window.location.origin
+    });
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <p>Loading authentication...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Initializing authentication...</p>
+        </div>
       </div>
     );
   }
 
-  // If not authenticated after loading, Keycloak's 'login-required' will handle redirection.
-  // We can return null or a simple message here, as the browser will likely redirect quickly.
-  if (!authenticated) {
+  if (authenticated === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <p>Authentication failed or not logged in. Redirecting...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Authentication Required</h2>
+          <p className="mb-6 text-gray-600">Please log in to access the application.</p>
+          <button 
+            onClick={handleLogin}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Log In
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Render children only when authenticated
   return (
     <KeycloakContext.Provider value={{ keycloak, authenticated, loading }}>
       {children}
