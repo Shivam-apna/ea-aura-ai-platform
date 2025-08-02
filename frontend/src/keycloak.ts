@@ -28,4 +28,12 @@ const getKeycloakConfig = () => {
 
 const keycloak = new Keycloak(getKeycloakConfig());
 
+// Initialize Keycloak with proper settings to avoid timeout
+keycloak.init({
+  onLoad: 'login-required',
+  checkLoginIframe: false, // This prevents the timeout issue
+  enableLogging: true,
+  silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+});
+
 export default keycloak;
