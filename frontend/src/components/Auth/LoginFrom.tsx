@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff, Lock, User } from 'lucide-react';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginFormProps {
   onLoginSuccess?: () => void;
@@ -18,6 +18,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   redirectTo = '/dashboard' 
 }) => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -48,7 +49,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setError(null);
 
     try {
-      await authService.login(formData.username, formData.password);
+      await login(formData.username, formData.password);
       
       // Call success callback if provided
       if (onLoginSuccess) {

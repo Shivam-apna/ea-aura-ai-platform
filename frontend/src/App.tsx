@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
-import { KeycloakProvider, useKeycloak } from "./components/Auth/KeycloakProvider";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import React from "react";
 import AppHeader from "./components/AppHeader"; // Import AppHeader
 import Sidebar from "./components/Sidebar"; // Import Sidebar
@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import DataAnalysis from "./pages/DataAnalysis";
 import Security from "./pages/Security";
+import LoginPage from "./pages/Login";
 import ChatbotLauncher from "./components/ChatbotLauncher"; // Import ChatbotLauncher
 import { cn } from "@/lib/utils"; // Import cn for conditional classes
 
@@ -27,7 +28,7 @@ const queryClient = new QueryClient();
 
 // ProtectedRoute component to guard routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { authenticated, loading } = useKeycloak();
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -37,8 +38,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
 
-  if (!authenticated) {
-    return null;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -59,7 +60,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <KeycloakProvider>
+          <AuthProvider>
             <div className="flex flex-col w-full h-screen bg-background text-foreground"> {/* Added w-full and h-screen */}
               <AppHeader companyName="EA AURA" onSelectAgent={setActiveAgent} />
               <div className="flex flex-grow overflow-hidden relative"> {/* Added overflow-hidden and relative for positioning toggle */}
@@ -98,6 +99,7 @@ const App = () => {
                     <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
                     <Route path="/data-analysis" element={<ProtectedRoute><DataAnalysis /></ProtectedRoute>} />
                     <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+                    <Route path="/login" element={<LoginPage />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
@@ -114,7 +116,7 @@ const App = () => {
                 // iconColor="#000000"
               />
             </div>
-          </KeycloakProvider>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
