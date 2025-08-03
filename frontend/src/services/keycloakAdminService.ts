@@ -87,21 +87,21 @@ class KeycloakAdminService {
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      const groupData = {
-        name: data.name,
-        attributes: {
-          alias: [data.alias || ''],
-          domain: [data.domain],
-          redirectUrl: [data.redirectUrl || ''],
-          description: [data.description || ''],
-          type: ['organization']
-        }
-      };
+      // const groupData = {
+      //   name: data.name,
+      //   attributes: {
+      //     alias: [data.alias || ''],
+      //     domain: [data.domain],
+      //     redirectUrl: [data.redirectUrl || ''],
+      //     description: [data.description || ''],
+      //     type: ['organization']
+      //   }
+      // };
 
-      return await this.makeRequest('/groups', {
-        method: 'POST',
-        body: JSON.stringify(groupData)
-      });
+      // return await this.makeRequest('/groups', {
+      //   method: 'POST',
+      //   body: JSON.stringify(groupData)
+      // });
     }
   }
 
@@ -120,17 +120,17 @@ class KeycloakAdminService {
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      const groups = await this.makeRequest('/groups');
-      return groups.filter((group: any) => 
-        group.attributes?.type?.[0] === 'organization'
-      ).map((group: any) => ({
-        id: group.id,
-        name: group.name,
-        alias: group.attributes?.alias?.[0] || '',
-        domain: group.attributes?.domain?.[0] || '',
-        redirectUrl: group.attributes?.redirectUrl?.[0] || '',
-        description: group.attributes?.description?.[0] || ''
-      }));
+      // const groups = await this.makeRequest('/groups');
+      // return groups.filter((group: any) => 
+      //   group.attributes?.type?.[0] === 'organization'
+      // ).map((group: any) => ({
+      //   id: group.id,
+      //   name: group.name,
+      //   alias: group.attributes?.alias?.[0] || '',
+      //   domain: group.attributes?.domain?.[0] || '',
+      //   redirectUrl: group.attributes?.redirectUrl?.[0] || '',
+      //   description: group.attributes?.description?.[0] || ''
+      // }));
     }
   }
 

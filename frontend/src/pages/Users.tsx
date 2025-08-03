@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Users as UsersIcon, Building } from 'lucide-react';
+import { Plus, Users as UsersIcon, Building, RefreshCw } from 'lucide-react';
 import { HolographicCard } from './Dashboard';
 import OrganizationForm from '@/components/OrganizationForm';
 import UserForm from '@/components/UserForm';
@@ -15,7 +15,16 @@ const Users = () => {
   const [isOrganizationFormOpen, setIsOrganizationFormOpen] = useState(false);
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [organizations, setOrganizations] = useState<Array<{ 
+    id: string; 
+    name: string; 
+    alias?: string; 
+    domain?: string; 
+    description?: string; 
+    redirectUrl?: string; 
+  }>>([]);
+  const [users, setUsers] = useState<Array<any>>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [permissions, setPermissions] = useState<{ canManageOrganizations: boolean; canManageUsers: boolean }>({
     canManageOrganizations: false,
     canManageUsers: false
@@ -39,6 +48,50 @@ const Users = () => {
     checkPermissions();
   }, []);
 
+  // Load organizations and users
+  React.useEffect(() => {
+    const loadData = async () => {
+      setIsLoadingData(true);
+      try {
+        // Load organizations
+        const orgs = await keycloakAdminService.getOrganizations();
+        setOrganizations(orgs);
+        console.log('Loaded organizations:', orgs);
+
+        // Load users
+        const userList = await keycloakAdminService.getUsers();
+        setUsers(userList);
+        console.log('Loaded users:', userList);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast.error('Failed to load organizations and users. Please try again.');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const refreshData = async () => {
+    setIsLoadingData(true);
+    try {
+      // Load organizations
+      const orgs = await keycloakAdminService.getOrganizations();
+      setOrganizations(orgs);
+
+      // Load users
+      const userList = await keycloakAdminService.getUsers();
+      setUsers(userList);
+      
+      toast.success('Data refreshed successfully!');
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast.error('Failed to refresh data. Please try again.');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   const handleAddOrganization = async (data: any) => {
     setIsLoading(true);
     try {
@@ -57,8 +110,9 @@ const Users = () => {
       toast.success('Organization created successfully!');
       setIsOrganizationFormOpen(false);
       
-      // TODO: Refresh organizations list
-      // await loadOrganizations();
+      // Refresh organizations list
+      const orgs = await keycloakAdminService.getOrganizations();
+      setOrganizations(orgs);
       
     } catch (error: any) {
       console.error('Failed to create organization:', error);
@@ -93,8 +147,9 @@ const Users = () => {
       toast.success('User created successfully!');
       setIsUserFormOpen(false);
       
-      // TODO: Refresh users list
-      // await loadUsers();
+      // Refresh users list
+      const userList = await keycloakAdminService.getUsers();
+      setUsers(userList);
       
     } catch (error: any) {
       console.error('Failed to create user:', error);
@@ -117,6 +172,15 @@ const Users = () => {
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
             <UsersIcon className="h-5 w-5 text-blue-400" /> User Management
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={refreshData} 
+              disabled={isLoadingData}
+              className="ml-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -155,23 +219,60 @@ const Users = () => {
                         Add Organization
                       </Button>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-8 text-center">
-                      <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h4 className="text-lg font-medium mb-2">No Organizations</h4>
-                      <p className="text-muted-foreground mb-4">
-                        {permissions.canManageOrganizations 
-                          ? 'Create your first organization to get started'
-                          : 'You do not have permission to manage organizations'
-                        }
-                      </p>
-                      <Button 
-                        onClick={() => setIsOrganizationFormOpen(true)}
-                        disabled={!permissions.canManageOrganizations}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Organization
-                      </Button>
-                    </div>
+                    
+                    {organizations.length > 0 ? (
+                      <div className="grid gap-4">
+                        {organizations.map((org) => (
+                          <Card key={org.id} className="p-4">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h4 className="font-medium">{org.name}</h4>
+                                {org.alias && org.alias !== org.name && (
+                                  <p className="text-sm text-muted-foreground">Alias: {org.alias}</p>
+                                )}
+                                {org.domain && (
+                                  <p className="text-sm text-muted-foreground">Domain: {org.domain}</p>
+                                )}
+                                {org.description && (
+                                  <p className="text-sm text-muted-foreground">{org.description}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  Edit
+                                </Button>
+                                <Button variant="outline" size="sm" className="text-destructive">
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : isLoadingData ? (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading organizations...</p>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h4 className="text-lg font-medium mb-2">No Organizations</h4>
+                        <p className="text-muted-foreground mb-4">
+                          {permissions.canManageOrganizations 
+                            ? 'Create your first organization to get started'
+                            : 'You do not have permission to manage organizations'
+                          }
+                        </p>
+                        <Button 
+                          onClick={() => setIsOrganizationFormOpen(true)}
+                          disabled={!permissions.canManageOrganizations}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Organization
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -188,23 +289,58 @@ const Users = () => {
                         Add User
                       </Button>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-8 text-center">
-                      <UsersIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h4 className="text-lg font-medium mb-2">No Users</h4>
-                      <p className="text-muted-foreground mb-4">
-                        {permissions.canManageUsers 
-                          ? 'Add users to your organizations'
-                          : 'You do not have permission to manage users'
-                        }
-                      </p>
-                      <Button 
-                        onClick={() => setIsUserFormOpen(true)}
-                        disabled={!permissions.canManageUsers}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add User
-                      </Button>
-                    </div>
+                    
+                    {users.length > 0 ? (
+                      <div className="grid gap-4">
+                        {users.map((user) => (
+                          <Card key={user.id} className="p-4">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h4 className="font-medium">{user.username}</h4>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {user.firstName} {user.lastName}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Status: {user.enabled ? 'Active' : 'Inactive'}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  Edit
+                                </Button>
+                                <Button variant="outline" size="sm" className="text-destructive">
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : isLoadingData ? (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading users...</p>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <UsersIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h4 className="text-lg font-medium mb-2">No Users</h4>
+                        <p className="text-muted-foreground mb-4">
+                          {permissions.canManageUsers 
+                            ? 'Add users to your organizations'
+                            : 'You do not have permission to manage users'
+                          }
+                        </p>
+                        <Button 
+                          onClick={() => setIsUserFormOpen(true)}
+                          disabled={!permissions.canManageUsers}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add User
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </div>
