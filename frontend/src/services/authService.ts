@@ -17,7 +17,7 @@ interface UserInfo {
 }
 
 class AuthService {
-  private baseUrl = 'https://staging.ea-aura.ai/auth/realms/ea_aura/protocol/openid-connect';
+  private baseUrl = 'http://staging.ea-aura.ai/auth/realms/ea_aura/protocol/openid-connect';
   private clientId = 'ea_aura';
   private clientSecret = ''; // For confidential client, if needed
 
