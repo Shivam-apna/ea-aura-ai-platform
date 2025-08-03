@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User as UserIcon, Mail, Briefcase, Fingerprint, Building, Home } from 'lucide-react';
 import { HolographicCard } from './Dashboard';
-import { useKeycloak } from '@/components/Auth/KeycloakProvider';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
-  const { keycloak } = useKeycloak();
-  const userProfile = keycloak?.tokenParsed;
+  const { user } = useAuth();
+  const userProfile = user;
 
   // Log all token parsed details to the console for verification
   useEffect(() => {

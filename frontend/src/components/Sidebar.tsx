@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, DollarSign, Users2, Target, Award, Settings, LogOut, ChevronLeft, User as UserIcon, Users, BarChart, Shield, FileText } from 'lucide-react'; // Added missing icons
-import { useKeycloak } from '@/components/Auth/KeycloakProvider';
+import { useAuth } from '@/contexts/AuthContext';
 import ProfileDisplay from './ProfileDisplay';
-import { useKeycloakRoles } from '@/hooks/useKeycloakRoles'; // Import the new hook
 
 interface SidebarProps {
   activeAgent: string;
@@ -28,30 +27,26 @@ const allAgents = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollapsed, onToggleCollapse }) => {
-  const { keycloak, authenticated, loading } = useKeycloak();
-  const { clientRoles } = useKeycloakRoles(); // Use the new hook
+  const { isAuthenticated, loading, logout } = useAuth();
 
-  // Debugging log for clientRoles and authentication status
+  // Debugging log for authentication status
   useEffect(() => {
-    console.log("Sidebar - Current clientRoles:", clientRoles);
-    console.log("Sidebar - Authenticated:", authenticated);
-    console.log("Sidebar Roles Received:", clientRoles); // New log as requested
-  }, [clientRoles, authenticated]);
+    console.log("Sidebar - Authenticated:", isAuthenticated);
+  }, [isAuthenticated]);
 
   // Function to check if user has any of the required roles
   const hasRequiredRole = (required: string[]) => {
-    if (!authenticated) return false; // If not authenticated, hide all
+    if (!isAuthenticated) return false; // If not authenticated, hide all
 
-    // If no specific roles are required for the tab, show it if authenticated.
-    if (!required || required.length === 0) return true;
-
-    // Check if the user has *any* of the required roles.
-    return required.some(role => clientRoles.includes(role));
+    // For now, show all tabs if authenticated (we can add role checking later)
+    return true;
   };
 
-  const handleLogout = () => {
-    if (keycloak) {
-      keycloak.logout({ redirectUri: window.location.origin });
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
