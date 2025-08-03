@@ -25,9 +25,8 @@ export const KeycloakProvider: React.FC<{ children: ReactNode }> = ({ children }
           onLoad: 'check-sso',
           checkLoginIframe: false,
           enableLogging: true,
-          // Force standard flow without PKCE
-          flow: 'standard',
-          responseMode: 'fragment',
+          // Force implicit flow - this should prevent PKCE entirely
+          flow: 'implicit',
         });
 
         console.log('Keycloak initialized successfully. Authenticated:', auth);
