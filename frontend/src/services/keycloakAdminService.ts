@@ -23,7 +23,7 @@ class KeycloakAdminService {
   private async getAdminToken(): Promise<string> {
     // For now, we'll use the current user's token
     // In production, you might want to use a service account
-    const token = authService.getToken();
+    const token = authService.getAccessToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
