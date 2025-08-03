@@ -8,6 +8,7 @@ import OrganizationForm from '@/components/OrganizationForm';
 import UserForm from '@/components/UserForm';
 import { keycloakAdminService } from '@/services/keycloakAdminService';
 import { toast } from 'sonner';
+import { authService } from '@/services/authService';
 
 const Users = () => {
   const [activeTab, setActiveTab] = useState("organizations");
@@ -15,11 +16,39 @@ const Users = () => {
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [permissions, setPermissions] = useState<{ canManageOrganizations: boolean; canManageUsers: boolean }>({
+    canManageOrganizations: false,
+    canManageUsers: false
+  });
+
+  // Check user permissions on component mount
+  React.useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const userPermissions = await keycloakAdminService.checkUserPermissions();
+        setPermissions(userPermissions);
+        
+        // Debug: Log current user info
+        const userInfo = await authService.getUserInfo();
+        console.log('Current user:', userInfo);
+        console.log('User permissions:', userPermissions);
+      } catch (error) {
+        console.error('Failed to check permissions:', error);
+      }
+    };
+    checkPermissions();
+  }, []);
 
   const handleAddOrganization = async (data: any) => {
     setIsLoading(true);
     try {
       console.log('Creating organization:', data);
+      
+      // Check permissions first
+      if (!permissions.canManageOrganizations) {
+        toast.error('You do not have permission to create organizations. Please contact your administrator.');
+        return;
+      }
       
       // Call Keycloak Admin API to create organization
       await keycloakAdminService.createOrganization(data);
@@ -31,9 +60,16 @@ const Users = () => {
       // TODO: Refresh organizations list
       // await loadOrganizations();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create organization:', error);
-      toast.error('Failed to create organization. Please try again.');
+      
+      if (error.message?.includes('403')) {
+        toast.error('Access denied. You do not have permission to create organizations. Please contact your administrator.');
+      } else if (error.message?.includes('401')) {
+        toast.error('Authentication failed. Please log in again.');
+      } else {
+        toast.error('Failed to create organization. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -43,6 +79,12 @@ const Users = () => {
     setIsLoading(true);
     try {
       console.log('Creating user:', data);
+      
+      // Check permissions first
+      if (!permissions.canManageUsers) {
+        toast.error('You do not have permission to create users. Please contact your administrator.');
+        return;
+      }
       
       // Call Keycloak Admin API to create user
       await keycloakAdminService.createUser(data);
@@ -54,9 +96,16 @@ const Users = () => {
       // TODO: Refresh users list
       // await loadUsers();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create user:', error);
-      toast.error('Failed to create user. Please try again.');
+      
+      if (error.message?.includes('403')) {
+        toast.error('Access denied. You do not have permission to create users. Please contact your administrator.');
+      } else if (error.message?.includes('401')) {
+        toast.error('Authentication failed. Please log in again.');
+      } else {
+        toast.error('Failed to create user. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +149,7 @@ const Users = () => {
                       <Button 
                         className="flex items-center gap-2"
                         onClick={() => setIsOrganizationFormOpen(true)}
+                        disabled={!permissions.canManageOrganizations}
                       >
                         <Plus className="h-4 w-4" />
                         Add Organization
@@ -109,9 +159,15 @@ const Users = () => {
                       <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <h4 className="text-lg font-medium mb-2">No Organizations</h4>
                       <p className="text-muted-foreground mb-4">
-                        Create your first organization to get started
+                        {permissions.canManageOrganizations 
+                          ? 'Create your first organization to get started'
+                          : 'You do not have permission to manage organizations'
+                        }
                       </p>
-                      <Button onClick={() => setIsOrganizationFormOpen(true)}>
+                      <Button 
+                        onClick={() => setIsOrganizationFormOpen(true)}
+                        disabled={!permissions.canManageOrganizations}
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Organization
                       </Button>
@@ -126,6 +182,7 @@ const Users = () => {
                       <Button 
                         className="flex items-center gap-2"
                         onClick={() => setIsUserFormOpen(true)}
+                        disabled={!permissions.canManageUsers}
                       >
                         <Plus className="h-4 w-4" />
                         Add User
@@ -135,9 +192,15 @@ const Users = () => {
                       <UsersIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <h4 className="text-lg font-medium mb-2">No Users</h4>
                       <p className="text-muted-foreground mb-4">
-                        Add users to your organizations
+                        {permissions.canManageUsers 
+                          ? 'Add users to your organizations'
+                          : 'You do not have permission to manage users'
+                        }
                       </p>
-                      <Button onClick={() => setIsUserFormOpen(true)}>
+                      <Button 
+                        onClick={() => setIsUserFormOpen(true)}
+                        disabled={!permissions.canManageUsers}
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Add User
                       </Button>

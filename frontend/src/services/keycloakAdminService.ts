@@ -302,6 +302,40 @@ class KeycloakAdminService {
     return await this.makeRequest('/roles');
   }
 
+  async getUserRoles(userId: string): Promise<any[]> {
+    return await this.makeRequest(`/users/${userId}/role-mappings/realm`);
+  }
+
+  async getCurrentUserRoles(): Promise<any[]> {
+    try {
+      const userInfo = await authService.getUserInfo();
+      return await this.getUserRoles(userInfo.sub);
+    } catch (error) {
+      console.error('Failed to get current user roles:', error);
+      return [];
+    }
+  }
+
+  async checkUserPermissions(): Promise<{ canManageOrganizations: boolean; canManageUsers: boolean }> {
+    try {
+      const roles = await this.getCurrentUserRoles();
+      const roleNames = roles.map((role: any) => role.name);
+      
+      console.log('Current user roles:', roleNames);
+      
+      return {
+        canManageOrganizations: roleNames.includes('admin') || roleNames.includes('organization-admin'),
+        canManageUsers: roleNames.includes('admin') || roleNames.includes('user-admin')
+      };
+    } catch (error) {
+      console.error('Failed to check user permissions:', error);
+      return {
+        canManageOrganizations: false,
+        canManageUsers: false
+      };
+    }
+  }
+
   async assignRoleToUser(userId: string, roleName: string): Promise<void> {
     const roles = await this.getRoles();
     const role = roles.find((r: any) => r.name === roleName);
