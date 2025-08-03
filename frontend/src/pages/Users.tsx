@@ -22,6 +22,7 @@ const Users = () => {
     domain?: string; 
     description?: string; 
     redirectUrl?: string; 
+    memberCount?: number;
   }>>([]);
   const [users, setUsers] = useState<Array<any>>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -55,8 +56,22 @@ const Users = () => {
       try {
         // Load organizations
         const orgs = await keycloakAdminService.getOrganizations();
-        setOrganizations(orgs);
-        console.log('Loaded organizations:', orgs);
+        
+        // Load member counts for each organization
+        const orgsWithMemberCounts = await Promise.all(
+          orgs.map(async (org) => {
+            try {
+              const memberCount = await keycloakAdminService.getOrganizationMembersCount(org.id);
+              return { ...org, memberCount };
+            } catch (error) {
+              console.error(`Failed to get member count for org ${org.id}:`, error);
+              return { ...org, memberCount: 0 };
+            }
+          })
+        );
+        
+        setOrganizations(orgsWithMemberCounts);
+        console.log('Loaded organizations with member counts:', orgsWithMemberCounts);
 
         // Load users
         const userList = await keycloakAdminService.getUsers();
@@ -77,7 +92,21 @@ const Users = () => {
     try {
       // Load organizations
       const orgs = await keycloakAdminService.getOrganizations();
-      setOrganizations(orgs);
+      
+      // Load member counts for each organization
+      const orgsWithMemberCounts = await Promise.all(
+        orgs.map(async (org) => {
+          try {
+            const memberCount = await keycloakAdminService.getOrganizationMembersCount(org.id);
+            return { ...org, memberCount };
+          } catch (error) {
+            console.error(`Failed to get member count for org ${org.id}:`, error);
+            return { ...org, memberCount: 0 };
+          }
+        })
+      );
+      
+      setOrganizations(orgsWithMemberCounts);
 
       // Load users
       const userList = await keycloakAdminService.getUsers();
@@ -104,15 +133,29 @@ const Users = () => {
       }
       
       // Call Keycloak Admin API to create organization
-      await keycloakAdminService.createOrganization(data);
+      const result = await keycloakAdminService.createOrganization(data);
       
-      console.log('Organization created successfully');
-      toast.success('Organization created successfully!');
+      console.log('Organization created successfully:', result);
+      toast.success(`Organization "${data.name}" created successfully!`);
       setIsOrganizationFormOpen(false);
       
       // Refresh organizations list
       const orgs = await keycloakAdminService.getOrganizations();
-      setOrganizations(orgs);
+      
+      // Load member counts for each organization
+      const orgsWithMemberCounts = await Promise.all(
+        orgs.map(async (org) => {
+          try {
+            const memberCount = await keycloakAdminService.getOrganizationMembersCount(org.id);
+            return { ...org, memberCount };
+          } catch (error) {
+            console.error(`Failed to get member count for org ${org.id}:`, error);
+            return { ...org, memberCount: 0 };
+          }
+        })
+      );
+      
+      setOrganizations(orgsWithMemberCounts);
       
     } catch (error: any) {
       console.error('Failed to create organization:', error);
@@ -141,10 +184,16 @@ const Users = () => {
       }
       
       // Call Keycloak Admin API to create user
-      await keycloakAdminService.createUser(data);
+      const result = await keycloakAdminService.createUser(data);
       
-      console.log('User created successfully');
-      toast.success('User created successfully!');
+      console.log('User created successfully:', result);
+      
+      if (data.organizationId) {
+        toast.success(`User "${data.username}" created successfully and added to organization!`);
+      } else {
+        toast.success(`User "${data.username}" created successfully!`);
+      }
+      
       setIsUserFormOpen(false);
       
       // Refresh users list
@@ -227,6 +276,7 @@ const Users = () => {
                             <div className="flex justify-between items-center">
                               <div>
                                 <h4 className="font-medium">{org.name}</h4>
+                                <p className="text-xs text-muted-foreground">ID: {org.id}</p>
                                 {org.alias && org.alias !== org.name && (
                                   <p className="text-sm text-muted-foreground">Alias: {org.alias}</p>
                                 )}
@@ -236,6 +286,9 @@ const Users = () => {
                                 {org.description && (
                                   <p className="text-sm text-muted-foreground">{org.description}</p>
                                 )}
+                                <p className="text-sm text-blue-600 font-medium">
+                                  Members: {org.memberCount || 0}
+                                </p>
                               </div>
                               <div className="flex gap-2">
                                 <Button variant="outline" size="sm">

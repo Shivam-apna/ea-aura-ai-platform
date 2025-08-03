@@ -80,28 +80,32 @@ class KeycloakAdminService {
 
     try {
       // Try Organizations API first
-      return await this.makeRequest('/organizations', {
+      const result = await this.makeRequest('/organizations', {
         method: 'POST',
         body: JSON.stringify(organizationData)
       });
+      console.log('Organization created via Organizations API:', result);
+      return result;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      // const groupData = {
-      //   name: data.name,
-      //   attributes: {
-      //     alias: [data.alias || ''],
-      //     domain: [data.domain],
-      //     redirectUrl: [data.redirectUrl || ''],
-      //     description: [data.description || ''],
-      //     type: ['organization']
-      //   }
-      // };
+      const groupData = {
+        name: data.name,
+        attributes: {
+          alias: [data.alias || ''],
+          domain: [data.domain],
+          redirectUrl: [data.redirectUrl || ''],
+          description: [data.description || ''],
+          type: ['organization']
+        }
+      };
 
-      // return await this.makeRequest('/groups', {
-      //   method: 'POST',
-      //   body: JSON.stringify(groupData)
-      // });
+      const result = await this.makeRequest('/groups', {
+        method: 'POST',
+        body: JSON.stringify(groupData)
+      });
+      console.log('Organization created via Groups API:', result);
+      return result;
     }
   }
 
@@ -120,28 +124,43 @@ class KeycloakAdminService {
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      // const groups = await this.makeRequest('/groups');
-      // return groups.filter((group: any) => 
-      //   group.attributes?.type?.[0] === 'organization'
-      // ).map((group: any) => ({
-      //   id: group.id,
-      //   name: group.name,
-      //   alias: group.attributes?.alias?.[0] || '',
-      //   domain: group.attributes?.domain?.[0] || '',
-      //   redirectUrl: group.attributes?.redirectUrl?.[0] || '',
-      //   description: group.attributes?.description?.[0] || ''
-      // }));
+      const groups = await this.makeRequest('/groups');
+      return groups.filter((group: any) => 
+        group.attributes?.type?.[0] === 'organization'
+      ).map((group: any) => ({
+        id: group.id,
+        name: group.name,
+        alias: group.attributes?.alias?.[0] || '',
+        domain: group.attributes?.domain?.[0] || '',
+        redirectUrl: group.attributes?.redirectUrl?.[0] || '',
+        description: group.attributes?.description?.[0] || ''
+      }));
     }
   }
 
   async getOrganizationMembers(organizationId: string): Promise<any[]> {
     try {
+      console.log('Getting organization members via Organizations API for org:', organizationId);
       // Try Organizations API first
-      return await this.makeRequest(`/organizations/${organizationId}/members`);
+      const members = await this.makeRequest(`/organizations/${organizationId}/members`);
+      console.log('Organization members via Organizations API:', members);
+      return members;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      return await this.makeRequest(`/groups/${organizationId}/members`);
+      const members = await this.makeRequest(`/groups/${organizationId}/members`);
+      console.log('Organization members via Groups API:', members);
+      return members;
+    }
+  }
+
+  async getOrganizationMembersCount(organizationId: string): Promise<number> {
+    try {
+      const members = await this.getOrganizationMembers(organizationId);
+      return members.length;
+    } catch (error) {
+      console.error('Failed to get organization members count:', error);
+      return 0;
     }
   }
 
@@ -224,18 +243,28 @@ class KeycloakAdminService {
       emailVerified: false
     };
 
+    console.log('Creating user with data:', userData);
+
     const result = await this.makeRequest('/users', {
       method: 'POST',
       body: JSON.stringify(userData)
     });
 
+    console.log('User created successfully:', result);
+
     // If user was created and has an organization, add them to the organization
-    if (result && data.organizationId) {
+    if (result && data.organizationId && data.organizationId.trim() !== '') {
       try {
+        console.log('Adding user to organization:', { userId: result.id, organizationId: data.organizationId });
         await this.addUserToOrganization(result.id, data.organizationId);
+        console.log('User successfully added to organization');
       } catch (error) {
-        console.warn('Failed to add user to organization:', error);
+        console.error('Failed to add user to organization:', error);
+        // Don't throw error here, just log it
+        // The user was created successfully, just not added to organization
       }
+    } else {
+      console.log('No organization specified for user or organizationId is empty');
     }
 
     return result;
@@ -269,6 +298,7 @@ class KeycloakAdminService {
 
   async addUserToOrganization(userId: string, organizationId: string): Promise<void> {
     try {
+      console.log('Attempting to add user to organization via Organizations API');
       // Try Organizations API first
       return await this.makeRequest(`/organizations/${organizationId}/members/${userId}`, {
         method: 'PUT'
