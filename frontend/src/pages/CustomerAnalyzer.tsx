@@ -267,7 +267,7 @@ const CustomerAnalyzer = () => {
   const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
     setLoading(true);
     try {
-      const res = await fetch(getApiEndpoint("/api/v1/run-autogen"), {
+      const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument

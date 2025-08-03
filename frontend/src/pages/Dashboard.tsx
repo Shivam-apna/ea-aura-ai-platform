@@ -291,7 +291,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const handlePromptSubmit = async (prompt: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiEndpoint("/api/v1/run-autogen"), {
+      const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input, tenant_id: "demo232" }),
