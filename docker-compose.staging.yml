@@ -3,16 +3,17 @@ version: '3.9'
 services:
   nginx:
     image: nginx:latest
-    container_name: nginx-dev
+    container_name: nginx-staging
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
+      - frontend
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     restart: unless-stopped
 
   vault:
@@ -20,24 +21,24 @@ services:
     ports:
       - "8200:8200"
     environment:
-      VAULT_DEV_ROOT_TOKEN_ID: "demo"
+      VAULT_DEV_ROOT_TOKEN_ID: "staging-vault-token"
       VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
     cap_add:
       - IPC_LOCK
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
 
   postgres:
     image: postgres:15
-    container_name: postgres-dev
+    container_name: postgres-staging
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak123
+      POSTGRES_PASSWORD: staging-postgres-password
     volumes:
-      - postgres_data_dev:/var/lib/postgresql/data
+      - postgres_data_staging:/var/lib/postgresql/data
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak"]
@@ -47,21 +48,24 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak-dev
+    container_name: keycloak-staging
     environment:
       - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KEYCLOAK_ADMIN_PASSWORD=staging-keycloak-password
       - KC_DB=postgres
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
       - KC_DB_USERNAME=keycloak
-      - KC_DB_PASSWORD=keycloak123
+      - KC_DB_PASSWORD=staging-postgres-password
+      - KC_HOSTNAME=staging.ea-aura.ai
       - KC_HOSTNAME_STRICT=false
       - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge
     command: start-dev
     ports:
       - "8080:8080"
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,7 +73,7 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
-    container_name: elasticsearch-dev
+    container_name: elasticsearch-staging
     environment:
       discovery.type: "single-node"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
@@ -77,9 +81,9 @@ services:
     ports:
       - "9200:9200"
     volumes:
-      - esdata_dev:/usr/share/elasticsearch/data
+      - esdata_staging:/usr/share/elasticsearch/data
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
       interval: 10s
@@ -88,7 +92,7 @@ services:
   
   kibana:
     image: docker.elastic.co/kibana/kibana:9.0.2
-    container_name: kibana-dev
+    container_name: kibana-staging
     ports:
       - "5601:5601"
     environment:
@@ -97,18 +101,18 @@ services:
       elasticsearch:
         condition: service_healthy
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.0.0
-    container_name: filebeat-dev
+    container_name: filebeat-staging
     user: root
     command: filebeat -e --strict.perms=false
     volumes:
-      - ./filebeat/filebeat.dev.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/filebeat.staging.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./backend/app/logs:/backend/app/logs
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -117,20 +121,20 @@ services:
 
   backend:
     build: ./backend
-    container_name: backend-dev
+    container_name: backend-staging
     volumes:
       - ./backend:/app
     working_dir: /app
     expose:
       - "8081"
     environment:
-      - ENVIRONMENT=development
-      - VAULT_TOKEN=demo
+      - ENVIRONMENT=staging
+      - VAULT_TOKEN=staging-vault-token
       - VAULT_ADDR=http://vault:8200
     env_file:
-      - ./backend/env.development
+      - ./backend/env.staging
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -140,7 +144,7 @@ services:
 
   kafka:
     image: bitnami/kafka:latest
-    container_name: kafka-dev
+    container_name: kafka-staging
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -153,51 +157,66 @@ services:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://host.docker.internal:9092
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_KRAFT_CLUSTER_ID=ea-aura-dev-cluster-id-001
+      - KAFKA_KRAFT_CLUSTER_ID=ea-aura-staging-cluster-id-001
     volumes:
-      - ./kafka/dev-data:/bitnami/kafka
+      - ./kafka/staging-data:/bitnami/kafka
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
 
   minio:
     image: minio/minio
-    container_name: minio-dev
+    container_name: minio-staging
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: staging-minio-user
+      MINIO_ROOT_PASSWORD: staging-minio-password
     volumes:
-      - minio_data_dev:/data
+      - minio_data_staging:/data
     command: server /data --console-address ":9001"
     restart: unless-stopped
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
 
   dbeaver:
     image: dbeaver/cloudbeaver:latest
-    container_name: dbeaver-dev
+    container_name: dbeaver-staging
     ports:
       - "8978:8978"
     environment:
       - CB_DATABASE=./data/cloudbeaver.db
       - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+      - CB_SERVER_URL=http://staging.ea-aura.ai/dbeaver
+      - CB_ROOT_URI=/dbeaver
     volumes:
-      - dbeaver_data_dev:/opt/cloudbeaver/workspace
-      - dbeaver_logs_dev:/opt/cloudbeaver/logs
+      - dbeaver_data_staging:/opt/cloudbeaver/workspace
+      - dbeaver_logs_staging:/opt/cloudbeaver/logs
     networks:
-      - ea-aura-dev
+      - ea-aura-staging
+    restart: unless-stopped
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.staging
+    container_name: frontend-staging
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
+      - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
+    networks:
+      - ea-aura-staging
     restart: unless-stopped
 
 volumes:
-  esdata_dev:
-  filebeat-data_dev:
-  minio_data_dev:
-  postgres_data_dev:
-  dbeaver_data_dev:
-  dbeaver_logs_dev:
+  esdata_staging:
+  filebeat-data_staging:
+  minio_data_staging:
+  postgres_data_staging:
+  dbeaver_data_staging:
+  dbeaver_logs_staging:
 
 networks:
-  ea-aura-dev:
+  ea-aura-staging:
     driver: bridge 

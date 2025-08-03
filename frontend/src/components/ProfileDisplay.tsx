@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useKeycloak } from '@/components/Auth/KeycloakProvider';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom'; // Import Link
 
@@ -9,8 +9,8 @@ interface ProfileDisplayProps {
 }
 
 const ProfileDisplay: React.FC<ProfileDisplayProps> = ({ isCollapsed }) => {
-  const { keycloak } = useKeycloak();
-  const userProfile = keycloak?.tokenParsed;
+  const { user } = useAuth();
+  const userProfile = user;
 
   const userName = userProfile?.preferred_username || userProfile?.name || "Guest";
   // Removed userEmail as per previous request

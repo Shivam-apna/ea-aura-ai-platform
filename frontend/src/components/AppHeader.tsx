@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Bell } from 'lucide-react';
-import { useKeycloak } from '@/components/Auth/KeycloakProvider';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/components/ThemeProvider';
@@ -19,7 +19,7 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => {
   const [mounted, setMounted] = useState(false);
-  const { keycloak, authenticated } = useKeycloak();
+  const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
 
   // State for current date and time

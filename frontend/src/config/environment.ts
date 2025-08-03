@@ -10,9 +10,45 @@ interface EnvironmentConfig {
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig => {
-  const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
+  // Try to detect environment from URL if not set
+  let environment = import.meta.env.VITE_ENVIRONMENT;
+  
+  if (!environment) {
+    // Fallback detection based on hostname
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname.includes('staging')) {
+        environment = 'staging';
+      } else if (window.location.hostname.includes('localhost')) {
+        environment = 'development';
+      } else {
+        environment = 'production';
+      }
+    } else {
+      environment = 'development';
+    }
+  }
+  
+  // Debug logging
+  console.log('Environment detection:', {
+    VITE_ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT,
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    VITE_KEYCLOAK_URL: import.meta.env.VITE_KEYCLOAK_URL,
+    detectedEnvironment: environment,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+  });
   
   switch (environment) {
+    case 'staging':
+      return {
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://staging.ea-aura.ai/api',
+        environment: 'staging',
+        debugMode: true,
+        logLevel: 'debug',
+        keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://staging.ea-aura.ai/auth',
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+      };
+    
     case 'production':
       return {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.ea-aura.ai',

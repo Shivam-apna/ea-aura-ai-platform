@@ -1,6 +1,6 @@
 // Development environment configuration
 export const developmentConfig = {
-  apiBaseUrl: 'http://localhost:8081',
+  apiBaseUrl: 'http://localhost/api',
   environment: 'development',
   debugMode: true,
   logLevel: 'debug',
