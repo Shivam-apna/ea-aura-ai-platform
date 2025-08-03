@@ -1,4 +1,6 @@
 // Authentication Service for direct Keycloak API calls
+import { config } from '@/config/environment';
+
 interface AuthTokens {
   access_token: string;
   refresh_token: string;
@@ -17,8 +19,8 @@ interface UserInfo {
 }
 
 class AuthService {
-  private baseUrl = 'http://staging.ea-aura.ai/auth/realms/ea_aura/protocol/openid-connect';
-  private clientId = 'ea_aura';
+  private baseUrl = `${config.keycloakUrl}/realms/${config.keycloakRealm}/protocol/openid-connect`;
+  private clientId = config.keycloakClientId;
   private clientSecret = ''; // For confidential client, if needed
 
   // Login with username and password

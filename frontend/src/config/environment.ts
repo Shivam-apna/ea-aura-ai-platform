@@ -13,6 +13,17 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
   const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
   
   switch (environment) {
+    case 'staging':
+      return {
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://staging.ea-aura.ai/api',
+        environment: 'staging',
+        debugMode: true,
+        logLevel: 'debug',
+        keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://staging.ea-aura.ai/auth',
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+      };
+    
     case 'production':
       return {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.ea-aura.ai',

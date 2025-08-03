@@ -1,11 +1,11 @@
 // Staging environment configuration
 export const stagingConfig = {
-  apiBaseUrl: 'https://staging.ea-aura.ai/api', // HTTPS for production
+  apiBaseUrl: 'http://staging.ea-aura.ai/api', // HTTP for staging
   // apiBaseUrl: 'http://localhost/api', // HTTP for local development
   environment: 'staging',
-  debugMode: false,
-  logLevel: 'info',
-  keycloakUrl: 'https://staging.ea-aura.ai/auth', // HTTPS for production
+  debugMode: true,
+  logLevel: 'debug',
+  keycloakUrl: 'http://staging.ea-aura.ai/auth', // HTTP for staging
   // keycloakUrl: 'http://localhost:8080', // HTTP for local development
   keycloakRealm: 'ea_aura',
   keycloakClientId: 'ea_aura',
