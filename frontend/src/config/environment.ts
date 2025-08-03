@@ -10,7 +10,32 @@ interface EnvironmentConfig {
 }
 
 const getEnvironmentConfig = (): EnvironmentConfig => {
-  const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
+  // Try to detect environment from URL if not set
+  let environment = import.meta.env.VITE_ENVIRONMENT;
+  
+  if (!environment) {
+    // Fallback detection based on hostname
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname.includes('staging')) {
+        environment = 'staging';
+      } else if (window.location.hostname.includes('localhost')) {
+        environment = 'development';
+      } else {
+        environment = 'production';
+      }
+    } else {
+      environment = 'development';
+    }
+  }
+  
+  // Debug logging
+  console.log('Environment detection:', {
+    VITE_ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT,
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    VITE_KEYCLOAK_URL: import.meta.env.VITE_KEYCLOAK_URL,
+    detectedEnvironment: environment,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+  });
   
   switch (environment) {
     case 'staging':
