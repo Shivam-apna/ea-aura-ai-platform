@@ -62,58 +62,119 @@ class KeycloakAdminService {
     return null;
   }
 
-  // Organization Management (using Keycloak Groups)
+  // Organization Management (using Keycloak Organizations API with fallback to groups)
   async createOrganization(data: OrganizationData): Promise<any> {
-    const groupData = {
+    const organizationData = {
       name: data.name,
-      attributes: {
-        alias: [data.alias || ''],
-        domain: [data.domain],
-        redirectUrl: [data.redirectUrl || ''],
-        description: [data.description || ''],
-        type: ['organization']
-      }
+      alias: data.alias || '',
+      domain: data.domain,
+      redirectUrl: data.redirectUrl || '',
+      description: data.description || '',
+      enabled: true
     };
 
-    return await this.makeRequest('/groups', {
-      method: 'POST',
-      body: JSON.stringify(groupData)
-    });
+    try {
+      // Try Organizations API first
+      return await this.makeRequest('/organizations', {
+        method: 'POST',
+        body: JSON.stringify(organizationData)
+      });
+    } catch (error) {
+      console.log('Organizations API not available, falling back to groups');
+      // Fallback to groups
+      const groupData = {
+        name: data.name,
+        attributes: {
+          alias: [data.alias || ''],
+          domain: [data.domain],
+          redirectUrl: [data.redirectUrl || ''],
+          description: [data.description || ''],
+          type: ['organization']
+        }
+      };
+
+      return await this.makeRequest('/groups', {
+        method: 'POST',
+        body: JSON.stringify(groupData)
+      });
+    }
   }
 
   async getOrganizations(): Promise<any[]> {
-    const groups = await this.makeRequest('/groups');
-    return groups.filter((group: any) => 
-      group.attributes?.type?.[0] === 'organization'
-    );
+    try {
+      // Try Organizations API first
+      return await this.makeRequest('/organizations');
+    } catch (error) {
+      console.log('Organizations API not available, falling back to groups');
+      // Fallback to groups
+      const groups = await this.makeRequest('/groups');
+      return groups.filter((group: any) => 
+        group.attributes?.type?.[0] === 'organization'
+      );
+    }
   }
 
   async getOrganization(id: string): Promise<any> {
-    return await this.makeRequest(`/groups/${id}`);
+    try {
+      // Try Organizations API first
+      return await this.makeRequest(`/organizations/${id}`);
+    } catch (error) {
+      console.log('Organizations API not available, falling back to groups');
+      // Fallback to groups
+      return await this.makeRequest(`/groups/${id}`);
+    }
   }
 
   async updateOrganization(id: string, data: OrganizationData): Promise<any> {
-    const groupData = {
+    const organizationData = {
       name: data.name,
-      attributes: {
-        alias: [data.alias || ''],
-        domain: [data.domain],
-        redirectUrl: [data.redirectUrl || ''],
-        description: [data.description || ''],
-        type: ['organization']
-      }
+      alias: data.alias || '',
+      domain: data.domain,
+      redirectUrl: data.redirectUrl || '',
+      description: data.description || '',
+      enabled: true
     };
 
-    return await this.makeRequest(`/groups/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(groupData)
-    });
+    try {
+      // Try Organizations API first
+      return await this.makeRequest(`/organizations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(organizationData)
+      });
+    } catch (error) {
+      console.log('Organizations API not available, falling back to groups');
+      // Fallback to groups
+      const groupData = {
+        name: data.name,
+        attributes: {
+          alias: [data.alias || ''],
+          domain: [data.domain],
+          redirectUrl: [data.redirectUrl || ''],
+          description: [data.description || ''],
+          type: ['organization']
+        }
+      };
+
+      return await this.makeRequest(`/groups/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(groupData)
+      });
+    }
   }
 
   async deleteOrganization(id: string): Promise<void> {
-    return await this.makeRequest(`/groups/${id}`, {
-      method: 'DELETE'
-    });
+    try {
+      // Try Organizations API first
+      return await this.makeRequest(`/organizations/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.log('Organizations API not available, falling back to groups');
+      // Fallback to groups
+      return await this.makeRequest(`/groups/${id}`, {
+        method: 'DELETE'
+      });
+    }
   }
 
   // User Management
@@ -125,7 +186,7 @@ class KeycloakAdminService {
       lastName: data.lastName,
       enabled: true,
       emailVerified: false,
-      groups: data.organizationId ? [data.organizationId] : []
+      organizationId: data.organizationId
     };
 
     return await this.makeRequest('/users', {
@@ -161,13 +222,13 @@ class KeycloakAdminService {
   }
 
   async addUserToOrganization(userId: string, organizationId: string): Promise<void> {
-    return await this.makeRequest(`/users/${userId}/groups/${organizationId}`, {
+    return await this.makeRequest(`/users/${userId}/organizations/${organizationId}`, {
       method: 'PUT'
     });
   }
 
   async removeUserFromOrganization(userId: string, organizationId: string): Promise<void> {
-    return await this.makeRequest(`/users/${userId}/groups/${organizationId}`, {
+    return await this.makeRequest(`/users/${userId}/organizations/${organizationId}`, {
       method: 'DELETE'
     });
   }
