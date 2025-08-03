@@ -3,26 +3,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Users as UsersIcon, Building } from 'lucide-react';
+import { HolographicCard } from './Dashboard';
+import OrganizationForm from '@/components/OrganizationForm';
+import UserForm from '@/components/UserForm';
+import { keycloakAdminService } from '@/services/keycloakAdminService';
+import { toast } from 'sonner';
 
 const Users = () => {
   const [activeTab, setActiveTab] = useState("organizations");
   const [isOrganizationFormOpen, setIsOrganizationFormOpen] = useState(false);
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
 
   const handleAddOrganization = async (data: any) => {
     setIsLoading(true);
     try {
       console.log('Creating organization:', data);
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call Keycloak Admin API to create organization
+      await keycloakAdminService.createOrganization(data);
       
       console.log('Organization created successfully');
+      toast.success('Organization created successfully!');
       setIsOrganizationFormOpen(false);
+      
+      // TODO: Refresh organizations list
+      // await loadOrganizations();
       
     } catch (error) {
       console.error('Failed to create organization:', error);
+      toast.error('Failed to create organization. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -33,14 +44,19 @@ const Users = () => {
     try {
       console.log('Creating user:', data);
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call Keycloak Admin API to create user
+      await keycloakAdminService.createUser(data);
       
       console.log('User created successfully');
+      toast.success('User created successfully!');
       setIsUserFormOpen(false);
+      
+      // TODO: Refresh users list
+      // await loadUsers();
       
     } catch (error) {
       console.error('Failed to create user:', error);
+      toast.error('Failed to create user. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +64,7 @@ const Users = () => {
 
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background">
-      <Card className="col-span-full">
+      <HolographicCard className="col-span-full neumorphic-card">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
             <UsersIcon className="h-5 w-5 text-blue-400" /> User Management
@@ -132,52 +148,24 @@ const Users = () => {
             </div>
           </Tabs>
         </CardContent>
-      </Card>
+      </HolographicCard>
       
-      {/* Simple Modal Placeholder */}
-      {isOrganizationFormOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Add Organization</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Organization form will be implemented here.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsOrganizationFormOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={() => setIsOrganizationFormOpen(false)}>
-                Create
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+             {/* Organization Form Modal */}
+       <OrganizationForm
+         isOpen={isOrganizationFormOpen}
+         onClose={() => setIsOrganizationFormOpen(false)}
+         onSubmit={handleAddOrganization}
+         isLoading={isLoading}
+       />
 
-      {isUserFormOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Add User</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              User form will be implemented here.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsUserFormOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={() => setIsUserFormOpen(false)}>
-                Create
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+             {/* User Form Modal */}
+       <UserForm
+         isOpen={isUserFormOpen}
+         onClose={() => setIsUserFormOpen(false)}
+         onSubmit={handleAddUser}
+         isLoading={isLoading}
+         organizations={organizations}
+       />
     </div>
   );
 };
