@@ -38,8 +38,15 @@ class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error_description || 'Login failed');
+      let errorMessage = 'Login failed';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error_description || errorData.error || 'Login failed';
+      } catch (e) {
+        // If we can't parse the error response, use the status text
+        errorMessage = response.statusText || 'Login failed';
+      }
+      throw new Error(errorMessage);
     }
 
     const tokens: AuthTokens = await response.json();
@@ -54,18 +61,44 @@ class AuthService {
       throw new Error('No access token available');
     }
 
-    const response = await fetch(`${this.baseUrl}/userinfo`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/userinfo`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to get user info');
+      if (!response.ok) {
+        // If userinfo fails, try to extract user info from the token itself
+        console.warn('Userinfo endpoint failed, extracting from token');
+        const tokenData = this.parseJwt(token);
+        return {
+          sub: tokenData.sub || 'unknown',
+          email_verified: tokenData.email_verified || false,
+          name: tokenData.name || tokenData.preferred_username || 'Unknown User',
+          preferred_username: tokenData.preferred_username || 'unknown',
+          given_name: tokenData.given_name || '',
+          family_name: tokenData.family_name || '',
+          email: tokenData.email || 'unknown@example.com',
+        };
+      }
+
+      return response.json();
+    } catch (error) {
+      console.warn('Userinfo request failed, extracting from token:', error);
+      // Fallback to extracting user info from the token
+      const tokenData = this.parseJwt(token);
+      return {
+        sub: tokenData.sub || 'unknown',
+        email_verified: tokenData.email_verified || false,
+        name: tokenData.name || tokenData.preferred_username || 'Unknown User',
+        preferred_username: tokenData.preferred_username || 'unknown',
+        given_name: tokenData.given_name || '',
+        family_name: tokenData.family_name || '',
+        email: tokenData.email || 'unknown@example.com',
+      };
     }
-
-    return response.json();
   }
 
   // Refresh access token
@@ -161,8 +194,11 @@ class AuthService {
   // Parse JWT token (basic implementation)
   private parseJwt(token: string): any {
     try {
-      return JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('Token payload:', payload);
+      return payload;
     } catch (e) {
+      console.error('Failed to parse JWT token:', e);
       return {};
     }
   }
