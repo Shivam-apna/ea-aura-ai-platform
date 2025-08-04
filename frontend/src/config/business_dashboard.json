@@ -13,14 +13,14 @@
       "bgColor": "#E4F8C2"
     },
     {
-      "key": "ROI",
+      "key": "GMROI",
       "bgColor": "#E6F1FD"
     }
   ],
   "metric_groups": {
     "Sales": [
       {
-        "key": "Net Sale",
+        "key": "Net Sales",
         "label": "Net Sales"
       },
       {
@@ -46,8 +46,8 @@
         "label": "Conversion Rate (%)"
       },
       {
-        "key": "ROI",
-        "label": "ROI (%)"
+        "key": "Revenue_Generated",
+        "label": "Revenue Generated"
       },
       {
         "key": "CPL",

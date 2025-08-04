@@ -5,83 +5,88 @@ export const generatePDF = async (
     kpiSectionRef: React.RefObject<HTMLDivElement>,
     chartsSectionRef: React.RefObject<HTMLDivElement>,
     pageTitle: string,
-    summaryKey: string
+    summaryKey: string,
+    activeTab?: string
 ): Promise<void> => {
-    const parsedSummary = localStorage.getItem(summaryKey);
+    const tabSpecificSummaryKey = activeTab ? `${summaryKey}_${activeTab}` : summaryKey;
+    const parsedSummary = localStorage.getItem(tabSpecificSummaryKey);
     const parsed = parsedSummary ? JSON.parse(parsedSummary) : null;
 
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 20;
 
-    // Title Page
-    pdf.setFontSize(20);
-    pdf.setTextColor(40, 40, 40);
-    pdf.text(`${pageTitle} Report`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
+    // ====== Centered Title Page ======
+    const titleFontSize = 30;
+    const subFontSize = 20;
+    const lineSpacing = 5;
 
-    pdf.setFontSize(12);
-    pdf.setTextColor(100, 100, 100);
-    const currentDate = new Date().toLocaleDateString();
-    pdf.text(`Generated on: ${currentDate}`, pageWidth / 2, yPosition, { align: 'center' });
-    // pdf.addPage();
+    const lines = [
+        { text: activeTab ? `${pageTitle} Report - ${activeTab}` : `${pageTitle} Report`, fontSize: titleFontSize },
+        { text: `Generated on: ${new Date().toLocaleDateString()}`, fontSize: subFontSize },
+    ];
 
-    // KPI section (optional)
-    // if (kpiSectionRef.current) {
-    //     const kpiChildren = Array.from(kpiSectionRef.current.children);
-    //     for (const [index, child] of kpiChildren.entries()) {
-    //         const canvas = await html2canvas(child as HTMLElement, {
-    //             scale: 2,
-    //             useCORS: true,
-    //             allowTaint: true,
-    //             backgroundColor: '#ffffff',
-    //         });
+    if (activeTab) {
+        lines.push({ text: `Tab: ${activeTab}`, fontSize: subFontSize });
+    }
 
-    //         const imgData = canvas.toDataURL('image/png');
-    //         const imgWidth = pageWidth - 20;
-    //         const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const totalHeight =
+        lines.reduce((sum, line) => sum + line.fontSize, 0) + (lines.length - 1) * lineSpacing;
 
-    //         pdf.setFontSize(14);
-    //         pdf.setTextColor(40, 40, 40);
-    //         pdf.text(`KPI ${index + 1}`, 10, 20);
-    //         pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
-    //         pdf.addPage();
-    //     }
-    // }
+    let currentY = (pageHeight - totalHeight) / 2;
 
-    // Charts section from active tab
+    for (const line of lines) {
+        pdf.setFontSize(line.fontSize);
+        pdf.setTextColor(40, 40, 40);
+        pdf.text(line.text, pageWidth / 2, currentY, { align: 'center' });
+        currentY += line.fontSize + lineSpacing;
+    }
+
+    let chartsAdded = false;
     const tabElements = document.querySelectorAll('[role="tabpanel"]');
+
     for (const tabElement of Array.from(tabElements)) {
         if (tabElement.getAttribute('data-state') === 'active') {
             const chartCards = tabElement.querySelectorAll('.grid > div');
 
             for (const [index, card] of Array.from(chartCards).entries()) {
                 if (card instanceof HTMLElement && !card.style.display?.includes('none')) {
-                    const canvas = await html2canvas(card, {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff',
-                        width: card.offsetWidth,
-                        height: card.offsetHeight,
-                    });
+                    try {
+                        const canvas = await html2canvas(card, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: '#ffffff',
+                            width: card.offsetWidth,
+                            height: card.offsetHeight,
+                        });
 
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = pageWidth - 20;
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        const imgData = canvas.toDataURL('image/png');
+                        const imgWidth = pageWidth - 20;
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-                    pdf.setFontSize(14);
-                    pdf.setTextColor(40, 40, 40);
-                    pdf.text(`Chart ${index + 1}`, 10, 20);
-                    pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
-                    pdf.addPage();
+                        // Add page before first chart
+                        pdf.addPage();
+
+                        pdf.setFontSize(14);
+                        pdf.setTextColor(40, 40, 40);
+                        pdf.text(`Chart ${index + 1}`, 10, 20);
+
+                        const maxHeight = pageHeight - 40;
+                        const adjustedHeight = Math.min(imgHeight, maxHeight);
+                        const marginTop = 40;
+
+                        pdf.addImage(imgData, 'PNG', 0, marginTop, imgWidth, adjustedHeight);
+                        chartsAdded = true;
+                    } catch (error) {
+                        console.error(`Error generating chart ${index + 1}:`, error);
+                    }
                 }
             }
+            break;
         }
     }
 
-    // Summary page at the end
     if (parsed) {
         const summaryEntries = Object.entries(parsed)
             .filter(([_, value]) => typeof value === 'object' && value !== null && 'summary' in value)
@@ -91,11 +96,14 @@ export const generatePDF = async (
             });
 
         if (summaryEntries.length > 0) {
+            pdf.addPage();
             let y = 20;
+
             pdf.setFontSize(16);
             pdf.setTextColor(40, 40, 40);
-            pdf.text("Summary", 10, y);
-            y += 10;
+            const summaryTitle = activeTab ? `${activeTab} Summary` : "Summary";
+            pdf.text(summaryTitle, 10, y);
+            y += 15;
 
             pdf.setFontSize(12);
             pdf.setTextColor(60, 60, 60);
@@ -107,13 +115,13 @@ export const generatePDF = async (
                     y = 20;
                 }
                 pdf.text(wrapped, 10, y);
-                y += wrapped.length * 7 + 3;
+                y += wrapped.length * 7 + 5;
             }
         }
     }
 
-    // Save the PDF
     const safeTitle = pageTitle.toLowerCase().replace(/\s+/g, '-');
-    const fileName = `${safeTitle}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const tabSuffix = activeTab ? `-${activeTab.toLowerCase().replace(/\s+/g, '-')}` : '';
+    const fileName = `${safeTitle}${tabSuffix}-${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
 };

@@ -110,9 +110,12 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const LOCAL_STORAGE_KEY = "dashboard_alignment_charts_cache";
-const KPI_KEYS_STORAGE_KEY = "dashboard_alignment_kpi_keys_cache";
-const METRIC_GROUPS_STORAGE_KEY = "dashboard_alignment_metric_groups_cache";
+const getTabSpecificStorageKey = (baseKey, tab) => `${baseKey}_${tab}`;
+
+// Update storage key functions
+const LOCAL_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_metric_groups_cache", tab);
 
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
@@ -124,6 +127,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // Add this near the top with other imports/constants
+  const TAB_NAMES = Object.keys(METRIC_GROUPS); // ["Sales", "Marketing"]
+  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]); // Default to first tab ("Sales")
 
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
@@ -131,36 +137,46 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
-    // Restore charts and input
-    const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+    // Restore charts and input for active tab
+    const cached = localStorage.getItem(LOCAL_STORAGE_KEY(activeTab));
     if (cached) {
       const { input: cachedInput, charts: cachedCharts } = JSON.parse(cached);
       if (cachedInput) setInput(cachedInput);
       if (cachedCharts) setCharts(cachedCharts);
+    } else {
+      // Clear charts if no cache for this tab
+      setCharts({});
     }
 
-    // Restore KPI keys
-    const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY);
+    // Restore KPI keys for active tab
+    const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY(activeTab));
     if (cachedKpiKeys) {
       try {
         const parsedKpiKeys = JSON.parse(cachedKpiKeys);
         setDynamicKpiKeys(parsedKpiKeys);
       } catch (error) {
         console.error("Error parsing cached KPI keys:", error);
+        setDynamicKpiKeys(KPI_KEYS); // Reset to default
       }
+    } else {
+      setDynamicKpiKeys(KPI_KEYS); // Reset to default
     }
 
-    // Restore metric groups
-    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY);
+    // Restore metric groups for active tab
+    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY(activeTab));
     if (cachedMetricGroups) {
       try {
         const parsedMetricGroups = JSON.parse(cachedMetricGroups);
         setDynamicMetricGroups(parsedMetricGroups);
       } catch (error) {
         console.error("Error parsing cached metric groups:", error);
+        setDynamicMetricGroups(METRIC_GROUPS); // Reset to default
       }
+    } else {
+      setDynamicMetricGroups(METRIC_GROUPS); // Reset to default
     }
-  }, []);
+  }, [activeTab]); // Add activeTab dependency
+
 
   // Function to create a mapping between config keys and actual API response keys
   const createKeyMapping = (apiResponseKeys: string[], configKeys: any[]) => {
@@ -208,18 +224,13 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
   // Function to update metric groups and KPI keys based on API response
   const updateDynamicKeys = (apiResponseKeys: string[]) => {
-    console.log("API Response Keys:", apiResponseKeys);
-    console.log("Original KPI Keys:", KPI_KEYS.map(k => k.key));
-    console.log("Original Metric Keys:", Object.values(METRIC_GROUPS).flat().map(m => m.key));
 
     // Create mapping for KPI keys
     const kpiKeyMapping = createKeyMapping(apiResponseKeys, KPI_KEYS);
-    console.log("KPI Key Mapping:", kpiKeyMapping);
 
     // Create mapping for metric keys (collect all metrics from all groups)
     const allMetrics = Object.values(METRIC_GROUPS).flat();
     const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
-    console.log("Metric Key Mapping:", metricKeyMapping);
 
     // Update KPI keys with mapped values
     const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
@@ -238,12 +249,10 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       }));
     });
 
-    console.log("Updated KPI Keys:", updatedKpiKeys);
-    console.log("Updated Metric Groups:", updatedMetricGroups);
 
     // Save updated keys to localStorage
-    localStorage.setItem(KPI_KEYS_STORAGE_KEY, JSON.stringify(updatedKpiKeys));
-    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY, JSON.stringify(updatedMetricGroups));
+    localStorage.setItem(KPI_KEYS_STORAGE_KEY(activeTab), JSON.stringify(updatedKpiKeys));
+    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY(activeTab), JSON.stringify(updatedMetricGroups));
 
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
@@ -265,6 +274,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
     setChartColors(prev => ({ ...prev, [key]: color }));
   };
 
+  // Updated handleDownloadPDF to include activeTab
   const handleDownloadPDF = async () => {
     if (!kpiSectionRef.current && !chartsSectionRef.current) {
       toast.error("No data available to generate PDF");
@@ -273,12 +283,18 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
     try {
       setDownloadingPdf(true);
-      toast.info("Generating PDF... This may take a moment");
+      toast.info(`Generating PDF for ${activeTab} tab... This may take a moment`);
 
-      await generatePDF(kpiSectionRef, chartsSectionRef, "Overview ", "overview_parsed_summary");
+      // Pass activeTab to generatePDF function
+      await generatePDF(
+        kpiSectionRef,
+        chartsSectionRef,
+        "Overview",
+        "overview_parsed_summary",
+        activeTab // Pass the active tab
+      );
 
-
-      toast.success("PDF downloaded successfully!");
+      toast.success(`PDF for ${activeTab} tab downloaded successfully!`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");
@@ -286,6 +302,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       setDownloadingPdf(false);
     }
   };
+
 
   // Modified fetchData to accept prompt from PagePromptBar
   const handlePromptSubmit = async (prompt: string) => {
@@ -306,7 +323,30 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
 
-      localStorage.setItem("overview_parsed_summary", JSON.stringify(parsed));
+
+
+      const summaryKey = `overview_parsed_summary${activeTab}`;
+      const existingSummary = localStorage.getItem(summaryKey);
+      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+
+      // Merge new parsed response
+      for (const key in parsed) {
+        // Avoid overwriting response/task/columns/filters if needed
+        if (!["response", "task", "columns", "filters"].includes(key)) {
+          mergedSummary[key] = parsed[key];
+        }
+      }
+
+      // Keep latest response/task/columns/filters if needed
+      ["response", "task", "columns", "filters"].forEach((metaKey) => {
+        if (parsed[metaKey]) {
+          mergedSummary[metaKey] = parsed[metaKey];
+        }
+      });
+
+      // Save merged summary
+      localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+
 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(key =>
@@ -331,8 +371,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           plotType: plot_type || "bar",
           x: values.map((d) => {
             const val = d[xKey];
-            // If value looks like a date string, format to YYYY-MM-DD
-            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}([ T]([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?(\.\d+)?(Z|[+-][01]\d:?[0-5]\d)?)?$/.test(val)) {
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
               return val.slice(0, 10);
             }
             return val;
@@ -345,12 +384,26 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
         };
       }
 
-      setCharts(prevCharts => ({
-        ...prevCharts,
-        ...chartMap
-      }));
-      // Save charts and input to localStorage (keeping existing functionality)
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ input: prompt, charts: chartMap })); // Save the submitted prompt
+      // Merge with previous charts
+      setCharts(prevCharts => {
+        const mergedCharts = { ...prevCharts, ...chartMap };
+
+        // 🔑 Get all keys from the merged charts for updateDynamicKeys
+        const mergedKeys = Object.keys(mergedCharts).filter(key =>
+          !["response", "task", "columns", "filters"].includes(key)
+        );
+
+        // ✅ Update dynamic keys using all current keys
+        updateDynamicKeys(mergedKeys);
+
+        // Save to localStorage
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY(activeTab),
+          JSON.stringify({ input: prompt, charts: mergedCharts })
+        );
+
+        return mergedCharts;
+      });
     } catch (err) {
       console.error("Error fetching charts:", err);
     } finally {
@@ -399,6 +452,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           chartTypes={chartTypes}
           chartColors={chartColors}
           loading={loading}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          tabNames={TAB_NAMES}
         />
       </div>
     </div>
