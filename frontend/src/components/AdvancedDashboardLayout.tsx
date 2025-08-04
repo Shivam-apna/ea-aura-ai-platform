@@ -50,20 +50,23 @@ interface AdvancedDashboardLayoutProps {
   charts: Record<string, ChartData>;
   dynamicKpiKeys: KpiItem[];
   dynamicMetricGroups: MetricGroups;
-  
+
   // Layout state props
   storagePrefix: string; // e.g., "mission_alignment", "customer_analyzer"
-  
+
   // Event handlers
   onChartClose: (key: string) => void;
   onRestoreCharts: () => void;
   onChartTypeChange: (key: string, type: string) => void;
   onChartColorChange: (key: string, color: string) => void;
-  
+
   // Optional props
   chartTypes?: Record<string, string>;
   chartColors?: Record<string, string>;
   loading?: boolean;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+  tabNames?: string[];
 }
 
 const COLORS = ["#A8C574", "#4CB2FF"];
@@ -79,7 +82,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   onChartColorChange,
   chartTypes = {},
   chartColors = {},
-  loading = false
+  loading = false,
+  activeTab,
+  onTabChange,
+  tabNames
 }) => {
   // Layout state management
   const CARD_ORDER_KEY = `${storagePrefix}_card_order`;
@@ -90,12 +96,12 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     const saved = localStorage.getItem(CARD_ORDER_KEY);
     return saved ? JSON.parse(saved) : {};
   });
-  
+
   const [columns, setColumns] = useState(() => {
     const saved = localStorage.getItem(COLUMNS_KEY);
     return saved ? JSON.parse(saved) : 2;
   });
-  
+
   const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(HIDDEN_CHARTS_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -105,12 +111,12 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   useEffect(() => {
     localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(cardOrder));
   }, [cardOrder, CARD_ORDER_KEY]);
-  
+
   // Persist columns
   useEffect(() => {
     localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns));
   }, [columns, COLUMNS_KEY]);
-  
+
   // Persist hiddenCharts
   useEffect(() => {
     localStorage.setItem(HIDDEN_CHARTS_KEY, JSON.stringify([...hiddenCharts]));
@@ -140,6 +146,14 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       newOrder.splice(result.destination.index, 0, removed);
       return { ...prev, [tab]: newOrder };
     });
+  };
+
+  // Also log when onTabChange is called
+  const handleTabChangeWithLog = (newTab) => {
+    // console.log("🔀 Child: onTabChange called with:", newTab);
+    if (onTabChange) {
+      onTabChange(newTab);
+    }
   };
 
   const handleChartClose = (key: string) => {
@@ -197,9 +211,13 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={Object.keys(dynamicMetricGroups)[0]} className="space-y-4 w-full mt-4">
+      <Tabs
+        value={activeTab || Object.keys(dynamicMetricGroups)[0]}  // Change from defaultValue to value
+        onValueChange={handleTabChangeWithLog}  // Use the logged handler
+        className="space-y-4 w-full mt-4"
+      >
         <TabsList className="flex gap-2 bg-transparent p-0 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
-          {Object.keys(dynamicMetricGroups).map((tab) => (
+          {(tabNames || Object.keys(dynamicMetricGroups)).map((tab) => (
             <TabsTrigger
               key={tab}
               value={tab}
@@ -212,7 +230,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             </TabsTrigger>
           ))}
         </TabsList>
-        
+
         {Object.entries(dynamicMetricGroups).map(([tab, metrics]) => (
           <TabsContent key={tab} value={tab}>
             <div className="flex justify-end mb-2 gap-4 items-center">
@@ -223,7 +241,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
               >
                 Restore Graphs
               </Button>
-              
+
               {/* Graph selector popover */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -256,7 +274,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                         const isHidden = hiddenCharts.has(metric.key);
                         const visibleCount = metrics.filter(m => !hiddenCharts.has(m.key)).length;
                         const canHide = visibleCount > 1;
-                        
+
                         return (
                           <div key={metric.key} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-50">
                             <div className="flex items-center gap-2">
@@ -296,7 +314,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   </div>
                 </PopoverContent>
               </Popover>
-              
+
               {/* Layout selector popover */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -310,16 +328,16 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 </PopoverContent>
               </Popover>
             </div>
-            
+
             {/* Graph cards with drag & drop */}
             {(() => {
               const gridColsClass = columns === 1
                 ? "grid-cols-1"
                 : "grid-cols-1 sm:grid-cols-2";
-              
+
               const visibleMetrics = (cardOrder[tab] || metrics.filter(metric => !hiddenCharts.has(metric.key)).map(m => m.key))
                 .map(key => metrics.find(m => m.key === key)).filter(Boolean);
-              
+
               return (
                 <DragDropContext onDragEnd={handleDragEnd(tab)}>
                   <Droppable droppableId={`cards-${tab}`} direction="horizontal">
@@ -333,10 +351,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                           const chart = charts[metric.key];
                           const isLast = idx === arr.length - 1;
                           const isOdd = arr.length % 2 === 1;
-                          
+
                           // Stretching logic for 2-column layout
                           const stretchClass = columns === 2 && isLast && isOdd ? 'sm:col-span-2' : '';
-                          
+
                           return (
                             <Draggable key={metric.key} draggableId={metric.key} index={idx}>
                               {(provided) => (
