@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css?family=Poppins:400,600,700&display=swap');
+ 
+.eaura-body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Poppins', Arial, sans-serif;
+  background: url('https://i.postimg.cc/XYTD244P/luke-jones-Jc-EEIM963o-M-unsplash-1.png') no-repeat center center/cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: 138%;
+  background-position: calc(70% + 400px) center;
+}
+ 
+.eaura-container {
+  width: 900px;
+  height: 500px;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,44,132,0.15);
+  display: flex;
+  background: transparent;
+}
+ 
+.eaura-left {
+  flex: 1;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 54px 48px;
+}
+ 
+.eaura-left h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+}
+ 
+.eaura-left p {
+  font-size: 1.5rem;
+  margin: 0;
+  opacity: 0.95;
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+}
+ 
+.eaura-right {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 28px;
+  padding: 54px 40px;
+}
+ 
+.eaura-login-box {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+ 
+.eaura-login-box h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #232965;
+}
+ 
+.eaura-login-box p {
+  color: #5a6474;
+  font-size: 1.05rem;
+  text-align: center;
+  margin-bottom: 30px;
+}
+ 
+.eaura-input {
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 25px;
+  border: 1px solid #e0e6f1;
+  font-size: 1rem;
+  margin-bottom: 18px;
+  outline: none;
+  background: #fdfdff;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+ 
+.eaura-input:focus {
+  border: 1px solid #32d6ea;
+  box-shadow: 0 0 0 3px rgba(32, 201, 252, 0.2);
+}
+ 
+.eaura-password-wrapper {
+  position: relative;
+  width: 100%;
+}
+ 
+.eaura-eye-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+ 
+.eaura-continue-btn {
+  width: 100%;
+  padding: 15px 0;
+  border-radius: 25px;
+  background: linear-gradient(90deg, #20a2fc 0%, #32d6ea 100%);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+ 
+.eaura-continue-btn:hover {
+  box-shadow: 0 6px 25px rgba(32, 201, 252, 0.4);
+}
+ 
+.eaura-error {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+ 
+.eaura-register-text {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #5a6474;
+  text-align: center;
+}
+ 
+.eaura-link {
+  background: none;
+  border: none;
+  color: #20a2fc;
+  font-weight: 600;
+  cursor: pointer;
+}
+ 
+@media (max-width: 900px) {
+  .eaura-container {
+    flex-direction: column;
+    width: 94vw;
+    height: auto;
+  }
+  .eaura-left, .eaura-right {
+    border-radius: 0;
+    padding: 32px 12vw;
+  }
+  .eaura-right {
+    border-radius: 28px;
+  }
+}

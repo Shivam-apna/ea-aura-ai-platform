@@ -1,12 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Silent Check SSO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Silent SSO Check</title>
 </head>
 <body>
     <script>
-        parent.postMessage(location.href, location.origin);
+        // This page is used by Keycloak for silent authentication checks
+        // It posts the current location back to the parent window
+        try {
+            if (parent && parent.postMessage) {
+                parent.postMessage(location.href, location.origin);
+            }
+        } catch (error) {
+            console.error('Error in silent check SSO:', error);
+        }
     </script>
 </body>
 </html>

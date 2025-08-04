@@ -74,7 +74,7 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
     case 'development':
     default:
       return {
-        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081',
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api',
         environment: 'development',
         debugMode: true,
         logLevel: 'debug',

@@ -42,4 +42,4 @@ case $ENVIRONMENT in
         echo "Usage: $0 [dev|test|prod]"
         exit 1
         ;;
-esac 
+esac

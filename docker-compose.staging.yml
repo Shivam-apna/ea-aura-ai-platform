@@ -188,7 +188,7 @@ services:
       - CB_DATABASE=./data/cloudbeaver.db
       - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
       - CB_SERVER_URL=http://staging.ea-aura.ai/dbeaver
-      - CB_ROOT_URI=/dbeaver
+      - CB_ROOT_URI=/
     volumes:
       - dbeaver_data_staging:/opt/cloudbeaver/workspace
       - dbeaver_logs_staging:/opt/cloudbeaver/logs

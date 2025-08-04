@@ -8,6 +8,8 @@ class Environment(str, Enum):
     DEVELOPMENT = "development"
     TESTING = "testing"
     PRODUCTION = "production"
+    STAGING = "staging"
+    
 
 class Settings(BaseSettings):
     # Environment Configuration
@@ -52,6 +54,32 @@ class Settings(BaseSettings):
     vault_token: str = Field(
         default="demo",
         env="VAULT_TOKEN"
+    )
+    
+    # Keycloak Configuration
+    keycloak_url: str = Field(
+        default="http://keycloak:8080",
+        env="KEYCLOAK_URL"
+    )
+    keycloak_realm: str = Field(
+        default="master",
+        env="KEYCLOAK_REALM"
+    )
+    keycloak_client_id: str = Field(
+        default="admin-cli",
+        env="KEYCLOAK_CLIENT_ID"
+    )
+    keycloak_client_secret: Optional[str] = Field(
+        default=None,
+        env="KEYCLOAK_CLIENT_SECRET"
+    )
+    keycloak_admin_username: str = Field(
+        default="admin",
+        env="KEYCLOAK_ADMIN_USERNAME"
+    )
+    keycloak_admin_password: str = Field(
+        default="admin",
+        env="KEYCLOAK_ADMIN_PASSWORD"
     )
     
     # AI/LLM Configuration
