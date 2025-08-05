@@ -56,8 +56,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: false,
         logLevel: 'error',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
       };
     
     case 'testing':
@@ -67,8 +67,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'warn',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://test-auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
       };
     
     case 'development':
@@ -79,8 +79,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
       };
   }
 };
@@ -91,8 +91,8 @@ export const config = getEnvironmentConfig();
 export const getApiEndpoint = (path: string, tenantId?: string): string => {
   const baseUrl = `${config.apiBaseUrl}${path}`;
   
-  if (tenantId) {
-    // Add tenant ID as a query parameter or header
+  // Only append tenant_id if it's a valid non-empty string
+  if (tenantId && tenantId !== 'undefined' && tenantId !== 'null') {
     const separator = path.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}tenant_id=${tenantId}`;
   }

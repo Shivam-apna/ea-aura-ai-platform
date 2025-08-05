@@ -109,12 +109,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
  
             <p className="eaura-register-text">
               Don't have an account?{' '}
+              <br/>
 <button
-                type="button"
-                onClick={() => navigate('/register')}
-                className="eaura-link"
+    type="button"
+    onClick={() => window.location.href = 'https://ea-aura.ai/contact-us/'}
+    className="eaura-link"
 >
-                Contact your administrator
+    Contact Us
 </button>
 </p>
 </div>
