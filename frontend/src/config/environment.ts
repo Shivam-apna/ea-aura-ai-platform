@@ -8,11 +8,10 @@ interface EnvironmentConfig {
   keycloakRealm: string;
   keycloakClientId: string;
 }
-
+ 
 const getEnvironmentConfig = (): EnvironmentConfig => {
   // Try to detect environment from URL if not set
   let environment = import.meta.env.VITE_ENVIRONMENT;
-  
   if (!environment) {
     // Fallback detection based on hostname
     if (typeof window !== 'undefined') {
@@ -27,7 +26,6 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
       environment = 'development';
     }
   }
-  
   // Debug logging
   console.log('Environment detection:', {
     VITE_ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT,
@@ -36,7 +34,6 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
     detectedEnvironment: environment,
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
   });
-  
   switch (environment) {
     case 'staging':
       return {
@@ -48,7 +45,6 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
         keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
-    
     case 'production':
       return {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.ea-aura.ai',
@@ -56,10 +52,9 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: false,
         logLevel: 'error',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
       };
-    
     case 'testing':
       return {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://test-api.ea-aura.ai',
@@ -67,10 +62,9 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'warn',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://test-auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
       };
-    
     case 'development':
     default:
       return {
@@ -79,32 +73,30 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
   }
 };
-
+ 
 export const config = getEnvironmentConfig();
-
+ 
 // Helper function to get API endpoint
 export const getApiEndpoint = (path: string, tenantId?: string): string => {
   const baseUrl = `${config.apiBaseUrl}${path}`;
-  
-  if (tenantId) {
-    // Add tenant ID as a query parameter or header
+  // Only append tenant_id if it's a valid non-empty string
+  if (tenantId && tenantId !== 'undefined' && tenantId !== 'null') {
     const separator = path.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}tenant_id=${tenantId}`;
   }
-  
   return baseUrl;
 };
-
+ 
 // Helper function to get API endpoint with tenant ID from context
 export const getApiEndpointWithTenant = (path: string, tenantId: string | null): string => {
   return getApiEndpoint(path, tenantId || undefined);
 };
-
+ 
 // Helper function for logging
 export const logger = {
   debug: (message: string, ...args: any[]) => {

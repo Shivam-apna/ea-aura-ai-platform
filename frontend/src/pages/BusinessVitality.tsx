@@ -302,6 +302,55 @@ const BusinessDashboard = () => {
         body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
       });
 
+      // Handle different HTTP status codes with user-friendly messages
+      if (!res.ok) {
+        let errorMessage = 'An error occurred while processing your request.';
+        
+        switch (res.status) {
+          case 400:
+            errorMessage = 'Invalid request. Please check your input and try again.';
+            break;
+          case 401:
+            errorMessage = 'Authentication required. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'Access denied. You do not have permission to perform this action.';
+            break;
+          case 404:
+            errorMessage = 'The requested service is not available. Please try again later.';
+            break;
+          case 429:
+            errorMessage = 'Too many requests. Please wait a moment and try again.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            break;
+          case 502:
+            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+            break;
+          case 503:
+            errorMessage = 'Service is currently under maintenance. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${res.status}. Please try again.`;
+        }
+
+        // Try to get more specific error message from response
+        try {
+          const errorData = await res.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message;
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the default message
+          console.warn('Could not parse error response:', parseError);
+        }
+
+        toast.error(errorMessage);
+        console.error(`API Error ${res.status}:`, errorMessage);
+        return;
+      }
+
       const data = await res.json();
       if (data.parent_agent !== "business_vitality_agent") {
         toast("Invalid Query: Ask a query related to business.");
@@ -393,8 +442,19 @@ const BusinessDashboard = () => {
       });
       setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
       localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching charts:", err);
+      
+      // Handle network errors and other exceptions
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
