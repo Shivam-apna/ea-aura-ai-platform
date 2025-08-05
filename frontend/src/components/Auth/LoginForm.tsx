@@ -1,64 +1,45 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-
+import './LoginForm.css';
+ 
 interface LoginFormProps {
   onLoginSuccess?: () => void;
   redirectTo?: string;
 }
-
+ 
 export const LoginForm: React.FC<LoginFormProps> = ({ 
   onLoginSuccess, 
-  redirectTo = '/dashboard' 
+  redirectTo = '/landing' // Changed default redirectTo to /landing
 }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+ 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError(null);
   };
-
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       await login(formData.username, formData.password);
-      
-      // Call success callback if provided
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
-      
-      // Navigate to redirect path
+      if (onLoginSuccess) onLoginSuccess();
       navigate(redirectTo);
-      
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
@@ -66,119 +47,81 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       setIsLoading(false);
     }
   };
-
+ 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Lock className="w-6 h-6 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            Welcome Back
-          </CardTitle>
-          <CardDescription className="text-center">
-            Sign in to your account to continue
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Error Alert */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Username Field */}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                  disabled={isLoading}
-                  autoComplete="username"
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="password"
-                  name="password"
+<div className="eaura-body">
+<div className="eaura-container">
+        {/* Left Section */}
+<div className="eaura-left">
+<h1>EA-AURA</h1>
+<p>Vision. Velocity. Value</p>
+</div>
+ 
+        {/* Right Section */}
+<div className="eaura-right">
+<div className="eaura-login-box">
+<h2>Log in</h2>
+<p>Exclusive offers, and personalized floral experiences.</p>
+ 
+            {error && <div className="eaura-error">{error}</div>}
+ 
+            <form onSubmit={handleSubmit}>
+<Input
+                className="eaura-input"
+                type="text"
+                name="username"
+                placeholder="Enter username or email"
+                value={formData.username}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                autoComplete="username"
+              />
+ 
+              <div className="eaura-password-wrapper">
+<Input
+                  className="eaura-input"
                   type={showPassword ? 'text' : 'password'}
+                  name="password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="pl-10 pr-10"
                   disabled={isLoading}
                   autoComplete="current-password"
                 />
-                <Button
+<button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="eaura-eye-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-          </form>
-
-          {/* Additional Info */}
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>
-              Don't have an account?{' '}
+>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+</button>
+</div>
+ 
               <Button
-                variant="link"
-                className="p-0 h-auto font-semibold"
-                onClick={() => navigate('/register')}
-              >
-                Contact your administrator
-              </Button>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                type="submit"
+                className="eaura-continue-btn"
+                disabled={isLoading}
+>
+                {isLoading ? 'Signing in...' : 'Continue'}
+</Button>
+</form>
+ 
+            <p className="eaura-register-text">
+              Don't have an account?{' '}
+<button
+                type="button"
+                onClick={() => window.location.href = 'https://ea-aura.ai/contact-us/'}
+                className="eaura-link"
+>
+                Contact Us
+</button>
+</p>
+</div>
+</div>
+</div>
+</div>
   );
 };
-
-export default LoginForm; 
+ 
+export default LoginForm;

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { toast } from 'sonner';
 
 interface AIPromptDialogProps {
   isOpen: boolean;
@@ -46,16 +47,73 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
 
         try {
           const response = await fetch('http://localhost:3002/api/ai-plot-data'); // Fetch plot data from API
+          
+          // Handle different HTTP status codes with user-friendly messages
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let errorMessage = 'Failed to generate plot data.';
+            
+            switch (response.status) {
+              case 400:
+                errorMessage = 'Invalid request. Please check your input and try again.';
+                break;
+              case 401:
+                errorMessage = 'Authentication required. Please log in again.';
+                break;
+              case 403:
+                errorMessage = 'Access denied. You do not have permission to perform this action.';
+                break;
+              case 404:
+                errorMessage = 'The requested service is not available. Please try again later.';
+                break;
+              case 429:
+                errorMessage = 'Too many requests. Please wait a moment and try again.';
+                break;
+              case 500:
+                errorMessage = 'Server error. Our team has been notified. Please try again later.';
+                break;
+              case 502:
+                errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+                break;
+              case 503:
+                errorMessage = 'Service is currently under maintenance. Please try again later.';
+                break;
+              default:
+                errorMessage = `Request failed with status ${response.status}. Please try again.`;
+            }
+
+            try {
+              const errorData = await response.json();
+              if (errorData.error || errorData.message) {
+                errorMessage = errorData.error || errorData.message;
+              }
+            } catch (parseError) {
+              console.warn('Could not parse error response:', parseError);
+            }
+
+            toast.error(errorMessage);
+            aiResponseText = errorMessage;
+            setMessages((prev) => [...prev.slice(0, -1), { id: prev.length, sender: "ai", text: aiResponseText }]);
+            return;
           }
+          
           const data = await response.json();
           plotData = data;
           aiResponseText = data.response || "Plot data generated successfully.";
           onPlotGenerated(plotData); // Pass the plot data to the parent
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to fetch plot data:", error);
-          aiResponseText = "Failed to generate plot data. Please try again later.";
+          
+          let errorMessage = 'Failed to generate plot data. Please try again later.';
+          
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'Network error. Please check your internet connection and try again.';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
+          toast.error(errorMessage);
+          aiResponseText = errorMessage;
+          setMessages((prev) => [...prev.slice(0, -1), { id: prev.length, sender: "ai", text: aiResponseText }]);
         }
       } else if (newUserMessage.text.toLowerCase().includes("revenue")) {
         aiResponseText = "Based on current trends, next quarter's revenue forecast is projected to increase by 8%. Key drivers include new market penetration and increased customer retention.";
@@ -121,7 +179,7 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
             className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
           />
-          <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={handleSend} className="bg-primary hover:bg-primary/90 text-primary-foreground"> {/* Changed bg-blue-600 to bg-primary and text-white to text-primary-foreground */}
             <Send className="h-5 w-5" />
           </Button>
         </div>

@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-
+ 
 import config from "@/config/brand_index_dashboard.json";
 // Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
@@ -27,24 +27,26 @@ import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHe
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
-
+import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
+import { useAuth } from "@/contexts/AuthContext";
+ 
 // Type definitions
 interface KpiItem {
   key: string;
   bgColor: string;
   originalKey?: string;
 }
-
+ 
 interface MetricItem {
   key: string;
   label: string;
   originalKey?: string;
 }
-
+ 
 interface MetricGroups {
   [groupName: string]: MetricItem[];
 }
-
+ 
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
     <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef" />
@@ -54,7 +56,7 @@ const NoDataGhost = () => (
     <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1" />
   </svg>
 );
-
+ 
 // Custom animated SVG graph loader
 const GraphLoader = () => (
   <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
@@ -76,7 +78,7 @@ const GraphLoader = () => (
     </rect>
   </svg>
 );
-
+ 
 const DEFAULT_MODEBAR = {
   toImage: true,
   zoom2d: true,
@@ -85,19 +87,24 @@ const DEFAULT_MODEBAR = {
   autoscale: true,
   fullscreen: true,
 };
-
+ 
 const COLORS = ["#A8C574", "#4CB2FF"];
-
-const getTabSpecificStorageKey = (baseKey, tab) => `${baseKey}_${tab}`;
-
+ 
+const getTabSpecificStorageKey = (baseKey: string, tab: string) => `${baseKey}_${tab}`;
+ 
 // Update storage key functions
-const LOCAL_STORAGE_KEY = (tab) => getTabSpecificStorageKey("brand_charts_cache", tab);
-const KPI_KEYS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("brand_kpi_keys_cache", tab);
-const METRIC_GROUPS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("brand_metric_groups_cache", tab);
-
+const LOCAL_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("brand_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("brand_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("brand_metric_groups_cache", tab);
+const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("brand_last_prompt", tab);
+ 
+ 
 const BrandIndex = () => {
+  const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
+  const { user } = useAuth(); // Get user from auth context
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState(""); // Keep input state for caching purposes
+  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState<string>(""); // New state for last submitted prompt
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
@@ -105,14 +112,13 @@ const BrandIndex = () => {
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  // Add this near the top with other imports/constants
-  const TAB_NAMES = Object.keys(METRIC_GROUPS); // ["Sales", "Marketing"]
-  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]); // Default to first tab ("Sales")
-
+  const TAB_NAMES = Object.keys(METRIC_GROUPS);
+  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]);
+ 
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
   const chartsSectionRef = useRef<HTMLDivElement>(null);
-
+ 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
     // Restore charts and input for active tab
@@ -125,7 +131,15 @@ const BrandIndex = () => {
       // Clear charts if no cache for this tab
       setCharts({});
     }
-
+ 
+    // Restore last submitted prompt
+    const cachedLastPrompt = localStorage.getItem(LAST_PROMPT_STORAGE_KEY(activeTab));
+    if (cachedLastPrompt) {
+      setLastSubmittedPrompt(cachedLastPrompt);
+    } else {
+      setLastSubmittedPrompt("");
+    }
+ 
     // Restore KPI keys for active tab
     const cachedKpiKeys = localStorage.getItem(KPI_KEYS_STORAGE_KEY(activeTab));
     if (cachedKpiKeys) {
@@ -139,7 +153,7 @@ const BrandIndex = () => {
     } else {
       setDynamicKpiKeys(KPI_KEYS); // Reset to default
     }
-
+ 
     // Restore metric groups for active tab
     const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY(activeTab));
     if (cachedMetricGroups) {
@@ -154,21 +168,21 @@ const BrandIndex = () => {
       setDynamicMetricGroups(METRIC_GROUPS); // Reset to default
     }
   }, [activeTab]); // Add activeTab dependency
-
-
+ 
+ 
   // Function to create a mapping between config keys and actual API response keys
   const createKeyMapping = (apiResponseKeys: string[], configKeys: any[]) => {
     const mapping: { [key: string]: string } = {};
-
+ 
     configKeys.forEach(configItem => {
       const configKey = configItem.key;
-
+ 
       // Try exact match first
       if (apiResponseKeys.includes(configKey)) {
         mapping[configKey] = configKey;
         return;
       }
-
+ 
       // Try case-insensitive match
       const exactMatch = apiResponseKeys.find(apiKey =>
         apiKey.toLowerCase() === configKey.toLowerCase()
@@ -177,29 +191,29 @@ const BrandIndex = () => {
         mapping[configKey] = exactMatch;
         return;
       }
-
+ 
       // Try partial match (remove special characters and spaces)
       const normalizeKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
       const normalizedConfigKey = normalizeKey(configKey);
-
+ 
       const partialMatch = apiResponseKeys.find(apiKey =>
         normalizeKey(apiKey) === normalizedConfigKey ||
         normalizeKey(apiKey).includes(normalizedConfigKey) ||
         normalizedConfigKey.includes(normalizeKey(apiKey))
       );
-
+ 
       if (partialMatch) {
         mapping[configKey] = partialMatch;
         return;
       }
-
+ 
       // If no match found, keep the original key (will show no data)
       mapping[configKey] = configKey;
     });
-
+ 
     return mapping;
   };
-
+ 
   // Function to update metric groups and KPI keys based on API response
   const updateDynamicKeys = (apiResponseKeys: string[]) => {
     // Create mapping for KPI keys
@@ -207,14 +221,14 @@ const BrandIndex = () => {
     // Create mapping for metric keys (collect all metrics from all groups)
     const allMetrics = Object.values(METRIC_GROUPS).flat();
     const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
-
+ 
     // Update KPI keys with mapped values
     const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
       ...kpi,
       originalKey: kpi.key,
       key: kpiKeyMapping[kpi.key] || kpi.key
     }));
-
+ 
     // Update metric groups with mapped values
     const updatedMetricGroups: MetricGroups = {};
     Object.entries(METRIC_GROUPS).forEach(([groupName, metrics]) => {
@@ -224,42 +238,42 @@ const BrandIndex = () => {
         key: metricKeyMapping[metric.key] || metric.key
       }));
     });
-
+ 
     // Save updated keys to localStorage
     localStorage.setItem(KPI_KEYS_STORAGE_KEY(activeTab), JSON.stringify(updatedKpiKeys));
     localStorage.setItem(METRIC_GROUPS_STORAGE_KEY(activeTab), JSON.stringify(updatedMetricGroups));
-
+ 
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
   };
-
+ 
   const handleCloseChart = (key: string) => {
     // This will be handled by the AdvancedDashboardLayout component
   };
-
+ 
   const handleRestoreCharts = () => {
     // This will be handled by the AdvancedDashboardLayout component
   };
-
+ 
   const handleChartTypeChange = (key: string, type: string) => {
     setChartTypes(prev => ({ ...prev, [key]: type }));
   };
-
+ 
   const handleChartColorChange = (key: string, color: string) => {
     setChartColors(prev => ({ ...prev, [key]: color }));
   };
-
+ 
   // Updated handleDownloadPDF to include activeTab
   const handleDownloadPDF = async () => {
     if (!kpiSectionRef.current && !chartsSectionRef.current) {
       toast.error("No data available to generate PDF");
       return;
     }
-
+ 
     try {
       setDownloadingPdf(true);
       toast.info(`Generating PDF for ${activeTab} tab... This may take a moment`);
-
+ 
       // Pass activeTab to generatePDF function
       await generatePDF(
         kpiSectionRef,
@@ -268,7 +282,7 @@ const BrandIndex = () => {
         "brand_parsed_summary",
         activeTab // Pass the active tab
       );
-
+ 
       toast.success(`PDF for ${activeTab} tab downloaded successfully!`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -280,12 +294,70 @@ const BrandIndex = () => {
   const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
     setLoading(true);
     try {
+      // Extract organization id from user object
+      let tenantId = "demo232";
+      if (user && user.organization && typeof user.organization === "object") {
+        // Get the first org id if present
+        const orgKeys = Object.keys(user.organization);
+        if (orgKeys.length > 0 && user.organization[orgKeys[0]]?.id) {
+          tenantId = user.organization[orgKeys[0]].id;
+        }
+      }
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
+        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the org id or fallback
       });
-
+ 
+      // Handle different HTTP status codes with user-friendly messages
+      if (!res.ok) {
+        let errorMessage = 'An error occurred while processing your request.';
+       
+        switch (res.status) {
+          case 400:
+            errorMessage = 'Invalid request. Please check your input and try again.';
+            break;
+          case 401:
+            errorMessage = 'Authentication required. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'Access denied. You do not have permission to perform this action.';
+            break;
+          case 404:
+            errorMessage = 'The requested service is not available. Please try again later.';
+            break;
+          case 429:
+            errorMessage = 'Too many requests. Please wait a moment and try again.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            break;
+          case 502:
+            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+            break;
+          case 503:
+            errorMessage = 'Service is currently under maintenance. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${res.status}. Please try again.`;
+        }
+ 
+        // Try to get more specific error message from response
+        try {
+          const errorData = await res.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message;
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the default message
+          console.warn('Could not parse error response:', parseError);
+        }
+ 
+        toast.error(errorMessage);
+        console.error(`API Error ${res.status}:`, errorMessage);
+        return;
+      }
+ 
       const data = await res.json();
       if (data.parent_agent !== "brand_index_agent") {
         toast("Invalid Query: Ask query related to brand index.");
@@ -294,13 +366,13 @@ const BrandIndex = () => {
       }
       const parsed = data.sub_agent_response;
       console.log("parsed response:", parsed);
-
+ 
       // localStorage.setItem("brand_parsed_summary", JSON.stringify(parsed));
-
+ 
       const summaryKey = `business_parsed_summary${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
       let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
-
+ 
       // Merge new parsed response
       for (const key in parsed) {
         // Avoid overwriting response/task/columns/filters if needed
@@ -308,36 +380,36 @@ const BrandIndex = () => {
           mergedSummary[key] = parsed[key];
         }
       }
-
+ 
       // Keep latest response/task/columns/filters if needed
       ["response", "task", "columns", "filters"].forEach((metaKey) => {
         if (parsed[metaKey]) {
           mergedSummary[metaKey] = parsed[metaKey];
         }
       });
-
+ 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
-
-
+ 
+ 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(key =>
         !["response", "task", "columns", "filters"].includes(key)
       );
-
+ 
       // Update dynamic keys based on API response
       updateDynamicKeys(apiResponseKeys);
-
+ 
       const chartMap: Record<string, any> = {};
-
+ 
       for (const key of apiResponseKeys) {
         const { plot_type, data: values, value, delta } = parsed[key] || {};
         if (!values || values.length === 0) continue;
-
+ 
         const xKey = Object.keys(values[0])[0];
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
-
+ 
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
@@ -355,36 +427,54 @@ const BrandIndex = () => {
           delta,
         };
       }
-
+ 
       // Merge with previous charts
       setCharts(prevCharts => {
         const mergedCharts = { ...prevCharts, ...chartMap };
-
+ 
         // 🔑 Get all keys from the merged charts for updateDynamicKeys
         const mergedKeys = Object.keys(mergedCharts).filter(key =>
           !["response", "task", "columns", "filters"].includes(key)
         );
-
+ 
         // ✅ Update dynamic keys using all current keys
         updateDynamicKeys(mergedKeys);
-
+ 
         // Save to localStorage
         localStorage.setItem(
           LOCAL_STORAGE_KEY(activeTab),
           JSON.stringify({ input: prompt, charts: mergedCharts })
         );
-
+ 
         return mergedCharts;
       });
-    } catch (err) {
+      setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
+      localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
+    } catch (err: any) {
       console.error("Error fetching charts:", err);
+     
+      // Handle network errors and other exceptions
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+     
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+     
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
+ 
+  // Register the refresh handler when the component mounts or activeTab/lastSubmittedPrompt changes
+  useEffect(() => {
+    registerRefreshHandler(fetchData, lastSubmittedPrompt);
+  }, [fetchData, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
+ 
   return (
-    <div className="p-6 relative min-h-screen">
+    <div className="relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
@@ -394,15 +484,15 @@ const BrandIndex = () => {
           </div>
         </div>
       )}
-
+ 
       {/* Prompt Section - using PagePromptBar */}
       <PagePromptBar
         placeholder="Ask about brand, index, or any metric..."
         onSubmit={fetchData}
         onLoadingChange={setLoading}
-        className="mb-2"
+        className="mt-4 mb-2"
       />
-
+ 
       {/* Page Header Actions Row - Updated with PDF props */}
       <PageHeaderActions
         title="Brand Index"
@@ -411,7 +501,7 @@ const BrandIndex = () => {
         downloadingPdf={downloadingPdf}
         hasChartsData={Object.keys(charts).length > 0}
       />
-
+ 
       {/* Advanced Dashboard Layout Component with Refs */}
       <div ref={kpiSectionRef}>
         <AdvancedDashboardLayout
@@ -434,5 +524,5 @@ const BrandIndex = () => {
     </div>
   );
 };
-
+ 
 export default BrandIndex;

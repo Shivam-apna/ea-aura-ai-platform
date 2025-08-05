@@ -57,9 +57,51 @@ const EnhancedPromptBar: React.FC = () => {
         }),
       });
 
+      // Handle different HTTP status codes with user-friendly messages
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to send prompt to backend.');
+        let errorMessage = 'Failed to send prompt to backend.';
+        
+        switch (res.status) {
+          case 400:
+            errorMessage = 'Invalid request. Please check your input and try again.';
+            break;
+          case 401:
+            errorMessage = 'Authentication required. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'Access denied. You do not have permission to perform this action.';
+            break;
+          case 404:
+            errorMessage = 'The requested service is not available. Please try again later.';
+            break;
+          case 429:
+            errorMessage = 'Too many requests. Please wait a moment and try again.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            break;
+          case 502:
+            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+            break;
+          case 503:
+            errorMessage = 'Service is currently under maintenance. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${res.status}. Please try again.`;
+        }
+
+        // Try to get more specific error message from response
+        try {
+          const errorData = await res.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message;
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the default message
+          console.warn('Could not parse error response:', parseError);
+        }
+
+        throw new Error(errorMessage);
       }
 
       const result = await res.json();
@@ -68,7 +110,17 @@ const EnhancedPromptBar: React.FC = () => {
 
     } catch (error: any) {
       console.error("Error sending prompt:", error);
-      toast.error(`Failed to send prompt: ${error.message}`);
+      
+      // Handle network errors and other exceptions
+      let errorMessage = 'Failed to send prompt.';
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -82,17 +134,18 @@ const EnhancedPromptBar: React.FC = () => {
 
   return (
     <div className={cn(
-      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200", // Changed bg-input to bg-white
+      "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
       "focus-within:border-blue-500 focus-within:shadow-md", // Apply focus styles to container
       "hover:border-gray-300 hover:shadow-md", // Apply hover styles to container
-      "w-full max-w-[1500px] mx-auto pr-1" // Full width, centered, max-width, adjusted right padding
+      "w-full max-w-[1500px] mx-auto pr-1",
+      "dark:shadow-prompt-glow" // Add this line
     )}>
       <div className="relative flex-grow"> {/* Container for input and mic icon */}
         <Input
           ref={inputRef}
           placeholder="Ask-Aura"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
           className={cn(
             "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
@@ -115,7 +168,7 @@ const EnhancedPromptBar: React.FC = () => {
         onClick={handleSend}
         disabled={isLoading || !input.trim()}
         variant="default"
-        className="h-8 px-4 py-1.5 rounded-full flex-shrink-0 disabled:opacity-100 text-white bg-[#3b82f6] hover:bg-[#3b82f6]/90 shadow hover:shadow-md" // Generate button styling
+        className="h-8 px-4 py-1.5 rounded-full flex-shrink-0 disabled:opacity-100 bg-primary text-primary-foreground hover:bg-primary/90 shadow hover:shadow-md" // Generate button styling
       >
         Generate
       </Button>

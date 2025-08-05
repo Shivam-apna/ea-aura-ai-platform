@@ -27,7 +27,8 @@ import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHe
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
-
+import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
+import { useAuth } from "@/contexts/AuthContext";
 // Type definitions
 interface KpiItem {
   key: string;
@@ -88,16 +89,20 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const getTabSpecificStorageKey = (baseKey, tab) => `${baseKey}_${tab}`;
+const getTabSpecificStorageKey = (baseKey: string, tab: string) => `${baseKey}_${tab}`;
 
 // Update storage key functions
-const LOCAL_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
-const KPI_KEYS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
-const METRIC_GROUPS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
+const LOCAL_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
+const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_last_prompt", tab);
+
 
 const CustomerAnalyzer = () => {
+  const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState(""); // Keep input state for caching purposes
+  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState<string>(""); // New state for last submitted prompt
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
@@ -105,10 +110,9 @@ const CustomerAnalyzer = () => {
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  // Add this near the top with other imports/constants
-  const TAB_NAMES = Object.keys(METRIC_GROUPS); // ["Sales", "Marketing"]
-  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]); // Default to first tab ("Sales")
-
+  const TAB_NAMES = Object.keys(METRIC_GROUPS);
+  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]);
+   const { user } = useAuth();
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
   const chartsSectionRef = useRef<HTMLDivElement>(null);
@@ -124,6 +128,14 @@ const CustomerAnalyzer = () => {
     } else {
       // Clear charts if no cache for this tab
       setCharts({});
+    }
+
+    // Restore last submitted prompt
+    const cachedLastPrompt = localStorage.getItem(LAST_PROMPT_STORAGE_KEY(activeTab));
+    if (cachedLastPrompt) {
+      setLastSubmittedPrompt(cachedLastPrompt);
+    } else {
+      setLastSubmittedPrompt("");
     }
 
     // Restore KPI keys for active tab
@@ -281,11 +293,70 @@ const CustomerAnalyzer = () => {
   const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
     setLoading(true);
     try {
+            // Extract organization id from user object
+      let tenantId = "demo232";
+      if (user && user.organization && typeof user.organization === "object") {
+        // Get the first org id if present
+        const orgKeys = Object.keys(user.organization);
+        if (orgKeys.length > 0 && user.organization[orgKeys[0]]?.id) {
+          tenantId = user.organization[orgKeys[0]].id;
+        }
+      }
+
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
+        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
       });
+
+      // Handle different HTTP status codes with user-friendly messages
+      if (!res.ok) {
+        let errorMessage = 'An error occurred while processing your request.';
+        
+        switch (res.status) {
+          case 400:
+            errorMessage = 'Invalid request. Please check your input and try again.';
+            break;
+          case 401:
+            errorMessage = 'Authentication required. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'Access denied. You do not have permission to perform this action.';
+            break;
+          case 404:
+            errorMessage = 'The requested service is not available. Please try again later.';
+            break;
+          case 429:
+            errorMessage = 'Too many requests. Please wait a moment and try again.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            break;
+          case 502:
+            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+            break;
+          case 503:
+            errorMessage = 'Service is currently under maintenance. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${res.status}. Please try again.`;
+        }
+
+        // Try to get more specific error message from response
+        try {
+          const errorData = await res.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message;
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the default message
+          console.warn('Could not parse error response:', parseError);
+        }
+
+        toast.error(errorMessage);
+        console.error(`API Error ${res.status}:`, errorMessage);
+        return;
+      }
 
       const data = await res.json();
       if (data.parent_agent !== "customer_analyzer_agent") {
@@ -375,16 +446,33 @@ const CustomerAnalyzer = () => {
 
         return mergedCharts;
       });
-      // Save the submitted prompt
-    } catch (err) {
+      setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
+      localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
+    } catch (err: any) {
       console.error("Error fetching charts:", err);
+      
+      // Handle network errors and other exceptions
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Register the refresh handler when the component mounts or activeTab/lastSubmittedPrompt changes
+  useEffect(() => {
+    registerRefreshHandler(fetchData, lastSubmittedPrompt);
+  }, [fetchData, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
+
   return (
-    <div className="p-6 relative min-h-screen">
+    <div className="relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
@@ -400,7 +488,7 @@ const CustomerAnalyzer = () => {
         placeholder="Ask about customers, behavior, or any metric..."
         onSubmit={fetchData}
         onLoadingChange={setLoading}
-        className="mb-2"
+        className="mt-4 mb-2"
       />
 
       {/* Page Header Actions Row */}

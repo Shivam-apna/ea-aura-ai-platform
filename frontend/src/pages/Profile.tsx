@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Profile = () => {
   const { user } = useAuth();
   const userProfile = user;
-
+ const orgKeys = Object.keys(user.organization)[0];
   // Log all token parsed details to the console for verification
   useEffect(() => {
     if (userProfile) {
@@ -24,7 +24,7 @@ const Profile = () => {
   const userRole = userProfile?.realm_access?.roles?.includes('admin') ? 'Admin' : 'User'; // Example role logic
   const userId = userProfile?.sub || "N/A"; // Keycloak 'sub' is typically the user ID
   const tenantId = (userProfile as any)?.tenant_id || "N/A"; // Assuming 'tenant_id' is a custom claim
-  const organizationId = (userProfile as any)?.organization_id || "N/A"; // Assuming 'organization_id' is a custom claim
+  const organizationId = orgKeys || "N/A"; // Assuming 'organization_id' is a custom claim
 
   // Mock company data - in a real app, this would come from your backend or Keycloak custom attributes
   const companyName = "Acme Corp";
@@ -32,18 +32,18 @@ const Profile = () => {
   const position = "Software Engineer";
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
-      <HolographicCard className="col-span-full neumorphic-card"> {/* Apply neumorphic styling */}
+    <div className="p-2 grid grid-cols-1 gap-4 bg-background h-full flex flex-col"> {/* Apply background, h-full, and flex-col */}
+      <HolographicCard className="col-span-full neumorphic-card flex-grow"> {/* Apply neumorphic styling and flex-grow */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-blue-400" /> User Profile
+            <UserIcon className="h-5 w-5 text-primary" /> User Profile {/* Changed text-blue-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24">
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
-              <AvatarFallback className="bg-blue-600 text-white">{userName.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">{userName.charAt(0)}</AvatarFallback> {/* Changed bg-blue-600 to bg-primary */}
             </Avatar>
             <h2 className="text-2xl font-bold text-foreground">{userName}</h2>
             <p className="text-muted-foreground">{userEmail}</p>
@@ -57,14 +57,8 @@ const Profile = () => {
               <Input id="userId" type="text" value={userId} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
-              <Label htmlFor="tenantId" className="text-muted-foreground flex items-center gap-2 mb-2">
-                <Home className="h-4 w-4" /> Tenant ID
-              </Label>
-              <Input id="tenantId" type="text" value={tenantId} readOnly className="bg-input border-border text-foreground" />
-            </div>
-            <div>
               <Label htmlFor="organizationId" className="text-muted-foreground flex items-center gap-2 mb-2">
-                <Building className="h-4 w-4" /> Organization ID
+                <Building className="h-4 w-4" /> Organization Name
               </Label>
               <Input id="organizationId" type="text" value={organizationId} readOnly className="bg-input border-border text-foreground" />
             </div>

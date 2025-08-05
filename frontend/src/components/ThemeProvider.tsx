@@ -5,7 +5,7 @@ type Theme = 'dark' | 'light' | 'system';
 
 // Predefined theme colors
 const THEME_COLORS = [
-  { name: 'Default', hex: '#222222' }, // A dark grey, close to original primary
+  { name: 'Default', hex: '#4AB1FF' }, // Updated to #4AB1FF to match globals.css default
   { name: 'Blue', hex: '#3B82F6' }, // Tailwind blue-500
   { name: 'Green', hex: '#22C55E' }, // Tailwind green-500
   { name: 'Purple', hex: '#8B5CF6' }, // Tailwind purple-500

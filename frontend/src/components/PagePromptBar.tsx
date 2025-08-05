@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, Loader2, X, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, X, Sparkles, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import VoiceVisualizer from './VoiceVisualizer';
@@ -28,6 +28,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const [transcript, setTranscript] = useState("");
   const [recognition, setRecognition] = useState<any>(null);
   const [voiceLevel, setVoiceLevel] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize speech recognition
@@ -130,9 +131,12 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
   const handleSend = async () => {
     if (input.trim() === "") {
-      toast.error("Please enter a prompt.");
+      setErrorMessage("Please enter a prompt.");
       return;
     }
+
+    // Clear any previous error message
+    setErrorMessage("");
 
     setIsLoading(true);
     onLoadingChange?.(true);
@@ -143,10 +147,10 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
     try {
       await onSubmit(promptText);
-      toast.success("Prompt submitted!");
+      // Remove success toast - let parent components handle success feedback
     } catch (error: any) {
       console.error("Error submitting prompt:", error);
-      toast.error(`Failed to submit prompt: ${error.message}`);
+      setErrorMessage(`Failed to submit prompt: ${error.message}`);
     } finally {
       setIsLoading(false);
       onLoadingChange?.(false);
@@ -155,7 +159,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
   const handleVoiceInput = () => {
     if (!recognition) {
-      toast.error("Voice input is not supported in your browser. Please use Chrome or Edge.");
+      setErrorMessage("Voice input is not supported in your browser. Please use Chrome or Edge.");
       return;
     }
 
@@ -172,91 +176,112 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const clearInput = () => {
     setInput("");
     setTranscript("");
+    setErrorMessage("");
     if (isListening && recognition) {
       recognition.stop();
     }
   };
 
   return (
-    <div className={cn(
-      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200",
-      "focus-within:border-blue-500 focus-within:shadow-md",
-      "hover:border-gray-300 hover:shadow-md",
-      "w-full max-w-[1500px] mx-auto pr-1",
-      className
-    )}>
-      <div className="relative flex-grow">
-        <Input
-          ref={inputRef}
-          placeholder={isListening ? "Listening..." : placeholder}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          className={cn(
-            "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
-            "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
-          )}
-          disabled={isLoading}
-        />
-        
-        {/* Voice Input Button with Heartbeat Animation */}
+    <div className="w-full">
+      {/* Error Message Display */}
+      {errorMessage && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span className="text-sm font-medium">{errorMessage}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-100"
+            onClick={() => setErrorMessage("")}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+      
+      {/* Prompt Bar */}
+      <div className={cn(
+        "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
+        "focus-within:border-primary focus-within:shadow-md", // Changed border-blue-500 to border-primary
+        "hover:border-gray-300 hover:shadow-md",
+        "w-full max-w-[1500px] mx-auto px-6", // Changed pr-1 to px-6
+        "dark:shadow-prompt-glow", // Add this line
+        className // Apply the passed className
+      )}>
+        <div className="relative flex-grow">
+          <Input
+            ref={inputRef}
+            placeholder={isListening ? "Listening..." : placeholder}
+            value={input}
+            onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            className={cn(
+              "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
+              "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+            )}
+            disabled={isLoading}
+          />
+          
+          {/* Voice Input Button with Heartbeat Animation */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-all duration-300 flex-shrink-0",
+              isListening 
+                ? "text-red-500 bg-red-50 hover:bg-red-100" 
+                : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+            )}
+            onClick={handleVoiceInput}
+            aria-label="Voice Input"
+            disabled={isLoading}
+          >
+            {isListening ? (
+              <div className="relative">
+                <MicOff className="h-4 w-4" />
+                {/* Professional Heartbeat Animation */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-3 h-3 bg-red-400 rounded-full animate-ping opacity-75"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-4 h-4 bg-red-300 rounded-full animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
+                </div>
+              </div>
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         <Button
-          variant="ghost"
-          size="icon"
+          onClick={handleSend}
+          disabled={isLoading || !input.trim()}
+          variant="default"
           className={cn(
-            "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-all duration-300 flex-shrink-0",
+            "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
             isListening 
-              ? "text-red-500 bg-red-50 hover:bg-red-100" 
-              : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+              ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
+              : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
           )}
-          onClick={handleVoiceInput}
-          aria-label="Voice Input"
-          disabled={isLoading}
         >
-          {isListening ? (
-            <div className="relative">
-              <MicOff className="h-4 w-4" />
-              {/* Professional Heartbeat Animation */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-3 h-3 bg-red-400 rounded-full animate-ping opacity-75"></div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 bg-red-300 rounded-full animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
-              </div>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : isListening ? (
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4" />
+              <Sparkles className="h-3 w-3 animate-pulse" />
             </div>
           ) : (
-            <Mic className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              {buttonText}
+              <Sparkles className="h-3 w-3" />
+            </div>
           )}
         </Button>
       </div>
-      <Button
-        onClick={handleSend}
-        disabled={isLoading || !input.trim()}
-        variant="default"
-        className={cn(
-          "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
-          isListening 
-            ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
-            : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
-        )}
-      >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : isListening ? (
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4" />
-            <Sparkles className="h-3 w-3 animate-pulse" />
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            {buttonText}
-            <Sparkles className="h-3 w-3" />
-          </div>
-        )}
-      </Button>
     </div>
   );
 };
