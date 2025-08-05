@@ -22,6 +22,21 @@ try {
 Write-Host "📁 Creating necessary directories..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Force -Path "kafka/staging-data" | Out-Null
 New-Item -ItemType Directory -Force -Path "backend/app/logs" | Out-Null
+New-Item -ItemType Directory -Force -Path "nginx/ssl" | Out-Null
+
+# Check and generate SSL certificates if needed
+Write-Host "🔐 Checking SSL certificates..." -ForegroundColor Yellow
+if (-not (Test-Path "nginx/ssl/staging.crt") -or -not (Test-Path "nginx/ssl/staging.key")) {
+    Write-Host "📜 Generating SSL certificates for staging..." -ForegroundColor Yellow
+    if (Test-Path "scripts/setup-staging-ssl.sh") {
+        Write-Host "⚠️  SSL certificates not found. Please run the SSL setup script manually:" -ForegroundColor Red
+        Write-Host "   bash scripts/setup-staging-ssl.sh" -ForegroundColor White
+    } else {
+        Write-Host "⚠️  SSL setup script not found. Please run: bash scripts/setup-staging-ssl.sh" -ForegroundColor Red
+    }
+} else {
+    Write-Host "✅ SSL certificates found" -ForegroundColor Green
+}
 
 # Stop any existing containers
 Write-Host "🛑 Stopping any existing containers..." -ForegroundColor Yellow
@@ -40,10 +55,10 @@ Write-Host "🏥 Checking service health..." -ForegroundColor Yellow
 docker-compose -f docker-compose.staging.yml ps
 
 Write-Host "✅ Staging environment is starting up!" -ForegroundColor Green
-Write-Host "🌐 Access your application at: http://localhost" -ForegroundColor Cyan
-Write-Host "🔑 Keycloak Admin: http://localhost:8080" -ForegroundColor Cyan
+Write-Host "🌐 Access your application at: https://localhost (HTTPS)" -ForegroundColor Cyan
+Write-Host "🔑 Keycloak Admin: https://localhost/auth" -ForegroundColor Cyan
 Write-Host "📊 Kibana: http://localhost:5601" -ForegroundColor Cyan
-Write-Host "🗄️  DBeaver: http://localhost:8978" -ForegroundColor Cyan
+Write-Host "🗄️  DBeaver: https://localhost/dbeaver" -ForegroundColor Cyan
 Write-Host "📦 MinIO Console: http://localhost:9001" -ForegroundColor Cyan
 Write-Host "🔐 Vault: http://localhost:8200" -ForegroundColor Cyan
 
