@@ -16,6 +16,10 @@ interface UserInfo {
   given_name: string;
   family_name: string;
   email: string;
+  // Add Keycloak specific claims from tokenParsed
+  realm_access?: { roles: string[] };
+  resource_access?: { [clientId: string]: { roles: string[] } };
+  [key: string]: any; // Allow for other dynamic claims
 }
 
 class AuthService {
@@ -83,10 +87,27 @@ class AuthService {
           given_name: tokenData.given_name || '',
           family_name: tokenData.family_name || '',
           email: tokenData.email || 'unknown@example.com',
+          realm_access: tokenData.realm_access,
+          resource_access: tokenData.resource_access,
+          ...tokenData // Include all other token claims
         };
       }
 
-      return response.json();
+      const userInfoFromEndpoint: UserInfo = await response.json();
+      // Merge with token claims in case userinfo endpoint doesn't return all
+      const tokenData = this.parseJwt(token);
+      return {
+        ...tokenData, // Start with all token claims
+        ...userInfoFromEndpoint, // Override with userinfo endpoint data
+        // Ensure required fields are present
+        sub: userInfoFromEndpoint.sub || tokenData.sub || 'unknown',
+        email_verified: userInfoFromEndpoint.email_verified || tokenData.email_verified || false,
+        name: userInfoFromEndpoint.name || tokenData.name || tokenData.preferred_username || 'Unknown User',
+        preferred_username: userInfoFromEndpoint.preferred_username || tokenData.preferred_username || 'unknown',
+        given_name: userInfoFromEndpoint.given_name || tokenData.given_name || '',
+        family_name: userInfoFromEndpoint.family_name || tokenData.family_name || '',
+        email: userInfoFromEndpoint.email || tokenData.email || 'unknown@example.com',
+      };
     } catch (error) {
       console.warn('Userinfo request failed, extracting from token:', error);
       // Fallback to extracting user info from the token
@@ -99,6 +120,9 @@ class AuthService {
         given_name: tokenData.given_name || '',
         family_name: tokenData.family_name || '',
         email: tokenData.email || 'unknown@example.com',
+        realm_access: tokenData.realm_access,
+        resource_access: tokenData.resource_access,
+        ...tokenData // Include all other token claims
       };
     }
   }
@@ -208,4 +232,4 @@ class AuthService {
 
 // Export singleton instance
 export const authService = new AuthService();
-export type { AuthTokens, UserInfo }; 
+export type { AuthTokens, UserInfo };

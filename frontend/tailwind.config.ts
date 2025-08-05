@@ -97,6 +97,10 @@ export default {
       boxShadow: {
         'custom-dropdown': '0px 4px 8px rgba(0, 0, 0, 0.05)',
         'neumorphic-light': '0px 4px 8px rgba(0, 0, 0, 0.2), 0px 8px 16px rgba(0, 0, 0, 0.4)', // Darker shadows for depth
+        'prompt-glow': '0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)', // New futuristic glow
+      },
+      backgroundImage: { // Added this section
+        'gradient-primary-active': 'linear-gradient(90deg, hsl(var(--primary-gradient-start)) 0%, hsl(var(--primary-gradient-end)) 100%)',
       },
     },
   },

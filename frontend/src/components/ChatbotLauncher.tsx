@@ -95,16 +95,16 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
         className={cn(
           "fixed z-[100] w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out",
           "bottom-6 right-6", // 24px from edges
-          "hover:scale-105 active:scale-95"
+          "hover:scale-105 active:scale-95",
+          "bg-primary text-primary-foreground" // Use primary background and foreground
         )}
         style={{
-          backgroundColor: primaryColorHex,
           boxShadow: `0 4px 12px ${primaryRgbaShadow}`,
         }}
         onClick={handleOpenChat}
         aria-label="Open Chatbot"
       >
-        <MessageSquare className="h-7 w-7 text-white" />
+        <MessageSquare className="h-7 w-7" />
       </Button>
 
       {/* Chatbot Popup Panel */}
@@ -119,17 +119,16 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
         >
           {/* Header */}
           <div
-            className="h-20 flex items-center p-4 rounded-t-2xl"
-            style={{ backgroundColor: primaryColorHex }}
+            className="h-20 flex items-center p-4 rounded-t-2xl bg-primary text-primary-foreground" // Use primary background and foreground
           >
             <Avatar className="h-8 w-8 mr-2">
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=MRA`} alt="MRA" />
               <AvatarFallback className="bg-white text-primary">MR</AvatarFallback>
             </Avatar>
-            <h3 className="text-white text-base font-medium flex-grow">EA-AURA Reporting Assistant</h3> {/* Updated title */}
+            <h3 className="text-base font-medium flex-grow">EA-AURA Reporting Assistant</h3> {/* Updated title */}
             <div className="flex gap-2">
               {/* Single close button */}
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={handleCloseChat} aria-label="Close Chatbot">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary/20" onClick={handleCloseChat} aria-label="Close Chatbot"> {/* Use primary-foreground */}
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -139,15 +138,13 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
           <div className="flex justify-around p-4 border-b border-gray-100">
             <Button
               variant="outline"
-              className="rounded-full px-3 py-1 text-sm"
-              style={{ borderColor: primaryColorHex, color: primaryColorHex }}
+              className="rounded-full px-3 py-1 text-sm border-primary text-primary" // Use primary for border and text
             >
               Speak to our Expert
             </Button>
             <Button
               variant="default"
-              className="rounded-full px-3 py-1 text-sm"
-              style={{ backgroundColor: primaryColorHex, color: '#FFFFFF' }}
+              className="rounded-full px-3 py-1 text-sm bg-primary text-primary-foreground" // Use primary for background and foreground
             >
               Book a Demo
             </Button>
@@ -184,8 +181,8 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
                 onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                 className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
               />
-              <Button onClick={handleSendMessage} disabled={!input.trim()} style={{ backgroundColor: primaryColorHex }}>
-                <Send className="h-5 w-5 text-white" />
+              <Button onClick={handleSendMessage} disabled={!input.trim()} className="bg-primary text-primary-foreground"> {/* Use primary for background and foreground */}
+                <Send className="h-5 w-5" />
               </Button>
             </div>
           </div>
