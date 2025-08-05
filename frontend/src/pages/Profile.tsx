@@ -32,18 +32,18 @@ const Profile = () => {
   const position = "Software Engineer";
 
   return (
-    <div className="p-2 grid grid-cols-1 gap-4 bg-background h-full flex flex-col"> {/* Apply background, h-full, and flex-col */}
-      <HolographicCard className="col-span-full neumorphic-card flex-grow"> {/* Apply neumorphic styling and flex-grow */}
+    <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background"> {/* Apply background to the page */}
+      <HolographicCard className="col-span-full neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-primary" /> User Profile {/* Changed text-blue-400 to text-primary */}
+            <UserIcon className="h-5 w-5 text-blue-400" /> User Profile
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24">
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
-              <AvatarFallback className="bg-primary text-primary-foreground">{userName.charAt(0)}</AvatarFallback> {/* Changed bg-blue-600 to bg-primary */}
+              <AvatarFallback className="bg-blue-600 text-white">{userName.charAt(0)}</AvatarFallback>
             </Avatar>
             <h2 className="text-2xl font-bold text-foreground">{userName}</h2>
             <p className="text-muted-foreground">{userEmail}</p>

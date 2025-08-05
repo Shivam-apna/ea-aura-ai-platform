@@ -27,7 +27,6 @@ import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHe
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
-import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
 
 // Type definitions
 interface KpiItem {
@@ -57,7 +56,7 @@ export const HolographicCard = ({ children, className, ...props }: React.Compone
   return (
     <Card
       className={cn(
-        "relative overflow-hidden bg-card shadow-neumorphic-light rounded-2xl", // Removed border border-border/50
+        "relative overflow-hidden bg-card border border-border/50 shadow-neumorphic-light rounded-2xl", // Changed bg-neumorphic-background to bg-card
         "text-foreground", // Ensure text color is foreground
         className
       )}
@@ -111,20 +110,16 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const getTabSpecificStorageKey = (baseKey: string, tab: string) => `${baseKey}_${tab}`;
+const getTabSpecificStorageKey = (baseKey, tab) => `${baseKey}_${tab}`;
 
 // Update storage key functions
-const LOCAL_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_alignment_charts_cache", tab);
-const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_alignment_kpi_keys_cache", tab);
-const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_alignment_metric_groups_cache", tab);
-const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_last_prompt", tab);
-
+const LOCAL_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("dashboard_alignment_metric_groups_cache", tab);
 
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
-  const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState(""); // Keep input state for fetchData logic
-  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState<string>(""); // New state for last submitted prompt
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
@@ -132,8 +127,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const TAB_NAMES = Object.keys(METRIC_GROUPS);
-  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]);
+  // Add this near the top with other imports/constants
+  const TAB_NAMES = Object.keys(METRIC_GROUPS); // ["Sales", "Marketing"]
+  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]); // Default to first tab ("Sales")
 
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
@@ -150,14 +146,6 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
     } else {
       // Clear charts if no cache for this tab
       setCharts({});
-    }
-
-    // Restore last submitted prompt
-    const cachedLastPrompt = localStorage.getItem(LAST_PROMPT_STORAGE_KEY(activeTab));
-    if (cachedLastPrompt) {
-      setLastSubmittedPrompt(cachedLastPrompt);
-    } else {
-      setLastSubmittedPrompt("");
     }
 
     // Restore KPI keys for active tab
@@ -323,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
+        body: JSON.stringify({ input, tenant_id: "demo232" }),
       });
 
       const data = await res.json();
@@ -416,8 +404,6 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
         return mergedCharts;
       });
-      setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
-      localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
     } catch (err) {
       console.error("Error fetching charts:", err);
     } finally {
@@ -425,16 +411,11 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
     }
   };
 
-  // Register the refresh handler when the component mounts or activeTab/lastSubmittedPrompt changes
-  useEffect(() => {
-    registerRefreshHandler(handlePromptSubmit, lastSubmittedPrompt);
-  }, [handlePromptSubmit, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
-
   // Flatten all metrics from all groups for direct display
   const allMetrics = Object.values(dynamicMetricGroups).flat();
 
   return (
-    <div className="relative min-h-screen">
+    <div className="p-6 relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
@@ -449,7 +430,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
         placeholder="Ask about brand, index, or any metric..."
         onSubmit={handlePromptSubmit}
         onLoadingChange={setLoading}
-        className="mt-4 mb-2"
+        className="mb-2"
       />
       {/* Page Header Actions Row */}
       <PageHeaderActions title="Overview" className="mb-2"

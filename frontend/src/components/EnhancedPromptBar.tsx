@@ -82,18 +82,17 @@ const EnhancedPromptBar: React.FC = () => {
 
   return (
     <div className={cn(
-      "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
+      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200", // Changed bg-input to bg-white
       "focus-within:border-blue-500 focus-within:shadow-md", // Apply focus styles to container
       "hover:border-gray-300 hover:shadow-md", // Apply hover styles to container
-      "w-full max-w-[1500px] mx-auto pr-1",
-      "dark:shadow-prompt-glow" // Add this line
+      "w-full max-w-[1500px] mx-auto pr-1" // Full width, centered, max-width, adjusted right padding
     )}>
       <div className="relative flex-grow"> {/* Container for input and mic icon */}
         <Input
           ref={inputRef}
           placeholder="Ask-Aura"
           value={input}
-          onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
+          onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
           className={cn(
             "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
@@ -116,7 +115,7 @@ const EnhancedPromptBar: React.FC = () => {
         onClick={handleSend}
         disabled={isLoading || !input.trim()}
         variant="default"
-        className="h-8 px-4 py-1.5 rounded-full flex-shrink-0 disabled:opacity-100 bg-primary text-primary-foreground hover:bg-primary/90 shadow hover:shadow-md" // Generate button styling
+        className="h-8 px-4 py-1.5 rounded-full flex-shrink-0 disabled:opacity-100 text-white bg-[#3b82f6] hover:bg-[#3b82f6]/90 shadow hover:shadow-md" // Generate button styling
       >
         Generate
       </Button>

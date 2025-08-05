@@ -121,7 +121,7 @@ const AIPromptDialog: React.FC<AIPromptDialogProps> = ({ isOpen, onOpenChange, o
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
             className="flex-grow bg-input border-border text-foreground placeholder:text-muted-foreground"
           />
-          <Button onClick={handleSend} className="bg-primary hover:bg-primary/90 text-primary-foreground"> {/* Changed bg-blue-600 to bg-primary and text-white to text-primary-foreground */}
+          <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Send className="h-5 w-5" />
           </Button>
         </div>

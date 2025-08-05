@@ -45,8 +45,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://staging.ea-aura.ai/auth',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
     
     case 'production':
@@ -56,8 +56,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: false,
         logLevel: 'error',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
     
     case 'testing':
@@ -67,8 +67,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'warn',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://test-auth.ea-aura.ai',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura_test',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura_test',
       };
     
     case 'development':
@@ -79,8 +79,8 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
   }
 };
@@ -107,4 +107,4 @@ export const logger = {
   error: (message: string, ...args: any[]) => {
     console.error(`[${config.environment.toUpperCase()}] ${message}`, ...args);
   }
-};
+}; 

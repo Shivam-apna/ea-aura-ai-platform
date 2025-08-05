@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ClipLoader from "react-spinners/ClipLoader";
-import { useTheme } from '@/components/ThemeProvider'; // Import useTheme
 
 interface PageHeaderActionsProps {
   title: string;
@@ -25,9 +24,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
   hasChartsData = false
 }) => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const { theme } = useTheme(); // Get the current theme
-
-  const iconColorClass = theme === 'dark' ? 'text-white' : 'text-primary'; // Conditional class
+  const [selectedDateRange, setSelectedDateRange] = useState('today');
 
   const handleDownload = (type: string) => {
     if (type === 'PDF' && onDownloadPDF) {
@@ -40,7 +37,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
 
   return (
     <>
-      <div className={cn("flex justify-between items-center py-2 w-full max-w-[1500px] mx-auto px-6", className)}>
+      <div className={cn("flex justify-between items-center py-2", className)}>
         <div>
           <h1 className="text-base font-semibold text-foreground">
             {title}
@@ -50,7 +47,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
           {/* Video Icon */}
           <ShadcnTooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => setIsVideoModalOpen(true)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors" onClick={() => setIsVideoModalOpen(true)}>
                 <Video className="h-5 w-5" />
                 <span className="sr-only">Watch Demo</span>
               </Button>
@@ -63,7 +60,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
           {/* PowerPoint Icon */}
           <ShadcnTooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => handleDownload('PPT')}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors" onClick={() => handleDownload('PPT')}>
                 <Presentation className="h-5 w-5" />
                 <span className="sr-only">Export to PowerPoint</span>
               </Button>
@@ -73,10 +70,10 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             </TooltipContent>
           </ShadcnTooltip>
 
-          {/* Excel Icon */}
+          {/* PowerPoint Icon */}
           <ShadcnTooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => handleDownload('Excel')}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors" onClick={() => handleDownload('Excel')}>
                 <FileSpreadsheet className="h-5 w-5" />
                 <span className="sr-only">Export to Excel</span>
               </Button>
@@ -93,7 +90,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)}
+                  className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors"
                   onClick={() => handleDownload('PDF')}
                   disabled={downloadingPdf}
                 >
@@ -110,6 +107,19 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
               </TooltipContent>
             </ShadcnTooltip>
           )}
+
+          {/* Date Range Filter */}
+          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
+            <SelectTrigger className="w-auto bg-transparent border-none p-0 text-primary font-normal text-sm [&>svg]:h-4 [&>svg]:w-4 [&>svg]:ml-1 hover:underline focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Select Date Range" />
+            </SelectTrigger>
+            <SelectContent className="neumorphic-card text-popover-foreground border border-border">
+              <SelectItem value="today" className="focus:bg-accent focus:text-accent-foreground">Today</SelectItem>
+              <SelectItem value="last-7-days" className="focus:bg-accent focus:text-accent-foreground">Last 7 Days</SelectItem>
+              <SelectItem value="last-30-days" className="focus:bg-accent focus:text-accent-foreground">Last 30 Days</SelectItem>
+              <SelectItem value="custom" className="focus:bg-accent focus:text-accent-foreground">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

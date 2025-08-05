@@ -27,7 +27,6 @@ import PageHeaderActions from "@/components/PageHeaderActions"; // Import PageHe
 import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
-import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
 
 // Type definitions
 interface KpiItem {
@@ -89,20 +88,16 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const getTabSpecificStorageKey = (baseKey: string, tab: string) => `${baseKey}_${tab}`;
+const getTabSpecificStorageKey = (baseKey, tab) => `${baseKey}_${tab}`;
 
 // Update storage key functions
-const LOCAL_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
-const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
-const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
-const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_last_prompt", tab);
-
+const LOCAL_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab) => getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
 
 const CustomerAnalyzer = () => {
-  const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
   const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
   const [input, setInput] = useState(""); // Keep input state for caching purposes
-  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState<string>(""); // New state for last submitted prompt
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
@@ -110,8 +105,9 @@ const CustomerAnalyzer = () => {
   const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const TAB_NAMES = Object.keys(METRIC_GROUPS);
-  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]);
+  // Add this near the top with other imports/constants
+  const TAB_NAMES = Object.keys(METRIC_GROUPS); // ["Sales", "Marketing"]
+  const [activeTab, setActiveTab] = useState(TAB_NAMES[0]); // Default to first tab ("Sales")
 
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
@@ -128,14 +124,6 @@ const CustomerAnalyzer = () => {
     } else {
       // Clear charts if no cache for this tab
       setCharts({});
-    }
-
-    // Restore last submitted prompt
-    const cachedLastPrompt = localStorage.getItem(LAST_PROMPT_STORAGE_KEY(activeTab));
-    if (cachedLastPrompt) {
-      setLastSubmittedPrompt(cachedLastPrompt);
-    } else {
-      setLastSubmittedPrompt("");
     }
 
     // Restore KPI keys for active tab
@@ -387,8 +375,7 @@ const CustomerAnalyzer = () => {
 
         return mergedCharts;
       });
-      setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
-      localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
+      // Save the submitted prompt
     } catch (err) {
       console.error("Error fetching charts:", err);
     } finally {
@@ -396,13 +383,8 @@ const CustomerAnalyzer = () => {
     }
   };
 
-  // Register the refresh handler when the component mounts or activeTab/lastSubmittedPrompt changes
-  useEffect(() => {
-    registerRefreshHandler(fetchData, lastSubmittedPrompt);
-  }, [fetchData, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
-
   return (
-    <div className="relative min-h-screen">
+    <div className="p-6 relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
@@ -418,7 +400,7 @@ const CustomerAnalyzer = () => {
         placeholder="Ask about customers, behavior, or any metric..."
         onSubmit={fetchData}
         onLoadingChange={setLoading}
-        className="mt-4 mb-2"
+        className="mb-2"
       />
 
       {/* Page Header Actions Row */}

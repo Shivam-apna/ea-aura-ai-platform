@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/components/ThemeProvider';
-import { format } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Import Popover components
-import NotificationPopup from './NotificationPopup'; // Import the new component
-import { useDashboardRefresh } from '@/contexts/DashboardRefreshContext'; // Import useDashboardRefresh
+import { format } from 'date-fns'; // Import format from date-fns
 
 // Import both logo images with correct filenames
 import logoLightImage from '../images/EA-AURA.AI.svg';
@@ -20,60 +17,34 @@ interface AppHeaderProps {
   onSelectAgent: (agent: string) => void;
 }
 
-interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean; // Changed from 'read' to 'isRead'
-}
-
 const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => {
   const [mounted, setMounted] = useState(false);
   const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
-  const location = useLocation();
-  const { triggerRefresh } = useDashboardRefresh(); // Use the hook
 
+  // State for current date and time
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: '1', message: 'New sales report available for Q3.', timestamp: '2 hours ago', isRead: false },
-    { id: '2', message: 'Your monthly performance review is due.', timestamp: 'Yesterday', isRead: false },
-    { id: '3', message: 'System update completed successfully.', timestamp: '2 days ago', isRead: true },
-    { id: '4', message: 'New feature: AI-powered insights are live!', timestamp: '3 days ago', isRead: false },
-    { id: '5', message: 'Reminder: Data backup scheduled for tonight.', timestamp: '4 days ago', isRead: true },
-  ]);
-  const unreadCount = notifications.filter(n => !n.isRead).length; // Changed from 'read' to 'isRead'
 
+  // Update date and time every minute
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentDateTime(new Date());
-    }, 60 * 1000);
+    }, 60 * 1000); // Update every minute
 
-    return () => clearInterval(intervalId);
+    return () => clearInterval(intervalId); // Clear interval on component unmount
   }, []);
 
+  // Format time and date
+  const formattedTime = format(currentDateTime, 'h:mm a').toLowerCase();
+  const formattedDate = format(currentDateTime, 'EEEE dd MMM yyyy'); // Changed 'yy' to 'yyyy' for full year
+  const timezone = '(IST)'; // Static timezone as requested
+
+  // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const formattedTime = format(currentDateTime, 'h:mm a').toLowerCase();
-  const formattedDate = format(currentDateTime, 'EEEE dd MMM yyyy');
-  const timezone = '(IST)';
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isRead: true } : n)) // Changed from 'read' to 'isRead'
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); // Changed from 'read' to 'isRead'
-  };
-
-  if (location.pathname === '/login' || location.pathname === '/landing') {
-    return null;
-  }
-
+  // Show light theme by default until mounted
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 w-full bg-background px-6 py-3 flex items-center justify-between">
@@ -87,7 +58,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
             }}
           />
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"> {/* Adjusted gap to ml-3 */}
           <ThemeToggle />
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <RefreshCw className="h-5 w-5" />
@@ -105,7 +76,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background px-6 py-3 flex items-center justify-between">
+      {/* Left: Logo with CSS fallback approach */}
       <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+        {/* Light mode logo - hidden in dark mode */}
         <img
           src={logoLightImage}
           alt="EA-AURA.AI Logo"
@@ -114,12 +87,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
             console.error('Light logo failed to load');
           }}
         />
+        {/* Dark mode logo - hidden in light mode */}
         <img
           src={logoDarkImage}
           alt="EA-AURA.AI Black Logo"
           className="h-20 w-auto object-contain hidden dark:block transition-opacity duration-300"
           onError={(e) => {
             console.error('Dark logo failed to load');
+            // Fallback to light logo if dark logo fails to load
             (e.target as HTMLImageElement).src = logoLightImage;
             (e.target as HTMLImageElement).classList.remove('hidden', 'dark:block');
             (e.target as HTMLImageElement).classList.add('block');
@@ -127,42 +102,25 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
         />
       </Link>
 
-      <div className="flex items-center gap-3">
-        <div className="text-sm text-foreground font-normal mr-1 h-8 flex items-center">
+      {/* Right: Header Actions (Date/Time, Theme Toggle, Refresh, Bell) */}
+      <div className="flex items-center gap-3"> {/* Adjusted gap to ml-3 */}
+        {/* Date and Time Display */}
+        <div className="text-sm text-foreground font-normal mr-1 h-8 flex items-center"> {/* Changed text-primary to text-foreground */}
           {formattedTime}, {formattedDate} {timezone}
         </div>
 
         <ThemeToggle />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"
-          onClick={triggerRefresh} // Call triggerRefresh on click
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"> {/* Changed text-primary to text-foreground */}
           <RefreshCw className="h-5 w-5" />
           <span className="sr-only">Refresh Data</span>
         </Button>
 
-        {/* Notification Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-[340px] max-w-[90vw] z-[100]" align="end">
-            <NotificationPopup
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-            />
-          </PopoverContent>
-        </Popover>
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"> {/* Changed text-primary to text-foreground */}
+          <Bell className="h-5 w-5" />
+          <span className="sr-only">Notifications</span>
+          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+        </Button>
       </div>
     </header>
   );

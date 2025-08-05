@@ -9,7 +9,7 @@ const Security = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" /> Threat Monitoring {/* Changed text-green-400 to text-primary */}
+            <Shield className="h-5 w-5 text-green-400" /> Threat Monitoring
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -21,7 +21,7 @@ const Security = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-primary" /> Incident Response {/* Changed text-red-400 to text-primary */}
+            <AlertTriangle className="h-5 w-5 text-red-400" /> Incident Response
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -33,7 +33,7 @@ const Security = () => {
       <HolographicCard className="md:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Lock className="h-5 w-5 text-primary" /> Access Control {/* Changed text-blue-400 to text-primary */}
+            <Lock className="h-5 w-5 text-blue-400" /> Access Control
           </CardTitle>
         </CardHeader>
         <CardContent>

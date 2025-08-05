@@ -17,29 +17,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("AuthContext: Initializing authentication check...");
+    // Check if user is already authenticated on app load
     const checkAuth = async () => {
       try {
         const authenticated = authService.isAuthenticated();
-        console.log("AuthContext: authService.isAuthenticated() returned:", authenticated);
         if (authenticated) {
           const userInfo = await authService.getUserInfo();
-          console.log("AuthContext: User info fetched:", userInfo);
           setUser(userInfo);
           setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          setUser(null);
         }
       } catch (error) {
-        console.error('AuthContext: Auth check failed:', error);
+        console.error('Auth check failed:', error);
         // Clear any invalid tokens
         authService.logout();
-        setIsAuthenticated(false);
-        setUser(null);
       } finally {
         setLoading(false);
-        console.log("AuthContext: Finished initial auth check. isAuthenticated:", isAuthenticated);
       }
     };
 
@@ -47,37 +39,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (username: string, password: string) => {
-    setLoading(true);
     try {
-      console.log("AuthContext: Attempting login...");
       await authService.login(username, password);
       const userInfo = await authService.getUserInfo();
       setUser(userInfo);
       setIsAuthenticated(true);
-      console.log("AuthContext: Login successful. isAuthenticated:", true);
     } catch (error) {
-      console.error("AuthContext: Login failed:", error);
-      setIsAuthenticated(false);
-      setUser(null);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const logout = async () => {
-    setLoading(true);
     try {
-      console.log("AuthContext: Attempting logout...");
       await authService.logout();
-      console.log("AuthContext: Logout successful.");
     } catch (error) {
-      console.error('AuthContext: Logout error:', error);
+      console.error('Logout error:', error);
     } finally {
       setUser(null);
       setIsAuthenticated(false);
-      setLoading(false);
-      console.log("AuthContext: Finished logout. isAuthenticated:", false);
     }
   };
 
@@ -94,4 +73,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}; 

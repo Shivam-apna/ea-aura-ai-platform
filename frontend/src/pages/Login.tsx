@@ -1,5 +1,5 @@
 import React from 'react';
-import LoginForm from '@/components/Auth/LoginForm'; // Corrected import path
+import LoginForm from '@/components/Auth/LoginFrom';
 
 const LoginPage: React.FC = () => {
   const handleLoginSuccess = () => {
@@ -10,9 +10,9 @@ const LoginPage: React.FC = () => {
   return (
     <LoginForm 
       onLoginSuccess={handleLoginSuccess}
-      redirectTo="/landing" // Ensure this is set to /landing
+      redirectTo="/dashboard"
     />
   );
 };
 
-export default LoginPage;
+export default LoginPage; 

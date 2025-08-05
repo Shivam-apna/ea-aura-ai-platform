@@ -7,92 +7,41 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import React from "react";
-import AppHeader from "./components/AppHeader";
-import Sidebar from "./components/Sidebar";
+import AppHeader from "./components/AppHeader"; // Import AppHeader
+import Sidebar from "./components/Sidebar"; // Import Sidebar
 import BusinessVitality from "./pages/BusinessVitality";
 import CustomerAnalyzer from "./pages/CustomerAnalyzer";
 import MissionAlignment from "./pages/MissionAlignment";
 import BrandIndex from "./pages/BrandIndex";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Users from "./pages/Users";
+import DataAnalysis from "./pages/DataAnalysis";
+import Security from "./pages/Security";
 import LoginPage from "./pages/Login";
-import ChatbotLauncher from "./components/ChatbotLauncher";
-import { cn } from "@/lib/utils";
-import { useKeycloakRoles } from "./hooks/useKeycloakRoles";
-import { KeycloakProvider, useKeycloak } from "./components/Auth/KeycloakProvider";
-import Landing from "./pages/Landing";
-import UploadData from "./pages/UploadData";
-import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext"; // Import DashboardRefreshProvider
+import ChatbotLauncher from "./components/ChatbotLauncher"; // Import ChatbotLauncher
+import { cn } from "@/lib/utils"; // Import cn for conditional classes
+
 
 const queryClient = new QueryClient();
 
 // ProtectedRoute component to guard routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
-  const { clientRoles } = useKeycloakRoles();
-  const { authenticated: keycloakAuthenticated, loading: keycloakLoading } = useKeycloak();
-  const location = useLocation();
+  const { isAuthenticated, loading } = useAuth();
 
-  console.log("ProtectedRoute Render:", {
-    location: location.pathname,
-    authLoading,
-    isAuthenticated,
-    keycloakLoading,
-    keycloakAuthenticated,
-    clientRoles,
-  });
-
-  // Add a specific check for roles loading: if authenticated but roles are empty and Keycloak isn't loading anymore
-  const rolesAreLoading = isAuthenticated && clientRoles.length === 0 && !keycloakLoading;
-
-  if (authLoading || keycloakLoading || rolesAreLoading) {
-    console.log("ProtectedRoute: Still loading authentication, Keycloak, or roles. Showing loading screen.");
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <p>Loading authentication and user roles...</p>
+        <p>Loading authentication...</p>
       </div>
     );
   }
 
-  if (!isAuthenticated || !keycloakAuthenticated) {
-    console.log("ProtectedRoute: Not authenticated. Redirecting to /login.");
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Define allowed paths based on roles
-  let allowedPaths: string[] = ['/profile', '/landing']; // Profile and Landing are always accessible if authenticated
-  let defaultRedirectPath = '/dashboard'; // Default for users
-
-  console.log("ProtectedRoute: Checking roles for path", location.pathname, "with roles:", clientRoles);
-
-  if (clientRoles.includes('admin')) {
-    console.log("ProtectedRoute: User is admin.");
-    allowedPaths = allowedPaths.concat([
-      '/settings', '/users', '/upload-data', '/dashboard', '/business-vitality',
-      '/customer-analyzer', '/mission-alignment', '/brand-index',
-    ]);
-    defaultRedirectPath = '/settings';
-  } else if (clientRoles.includes('user') && !clientRoles.includes('admin')) {
-    console.log("ProtectedRoute: User is a standard user (not admin).");
-    allowedPaths = allowedPaths.concat([
-      '/dashboard', '/business-vitality', '/customer-analyzer',
-      '/mission-alignment', '/brand-index',
-    ]);
-    defaultRedirectPath = '/dashboard';
-  } else {
-    // This block should ideally not be hit if roles are properly loaded and user has a role
-    console.warn("ProtectedRoute: User has no recognized roles. Redirecting to login. Current roles:", clientRoles);
-    return <Navigate to="/login" replace />;
-  }
-
-  // Check if the current path is allowed
-  if (!allowedPaths.includes(location.pathname)) {
-    console.warn(`ProtectedRoute: Access denied for ${location.pathname}. Redirecting to ${defaultRedirectPath}. Allowed paths:`, allowedPaths);
-    return <Navigate to={defaultRedirectPath} replace />;
-  }
-
-  console.log(`ProtectedRoute: User is authenticated and authorized for ${location.pathname}. Rendering children.`);
   return <>{children}</>;
 };
 
@@ -103,11 +52,12 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   const handleToggleCollapse = () => {
+    console.log('handleToggleCollapse called. Before:', isSidebarCollapsed, 'After:', !isSidebarCollapsed);
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Don't render header and sidebar for login or landing page
-  if (location.pathname === '/login' || location.pathname === '/landing') {
+  // Don't render header and sidebar for login page
+  if (location.pathname === '/login') {
     return <>{children}</>;
   }
 
@@ -121,14 +71,19 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleCollapse}
         />
-        <main className="flex-grow overflow-auto h-full flex flex-col">
+        <main className="flex-grow overflow-auto">
           {children}
         </main>
       </div>
+      {/* Chatbot Launcher */}
       <ChatbotLauncher
         onOpen={() => console.log('Chatbot opened!')}
         onClose={() => console.log('Chatbot closed!')}
         onMessageSend={(msg) => console.log('Message sent:', msg)}
+        // You can customize position and colors here:
+        // position="bottom-left"
+        // backgroundColor="#FF5733"
+        // iconColor="#000000"
       />
     </div>
   );
@@ -141,45 +96,41 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <KeycloakProvider>
-            <AuthProvider>
-              <DashboardRefreshProvider> {/* Wrap AppLayout with DashboardRefreshProvider */}
-                <AppLayout>
-                  <Routes>
-                    <Route
-                      path="/"
-                      element={
-                        <ProtectedRoute>
-                          {/* Redirect to landing page if authenticated */}
-                          <Navigate to="/landing" replace />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route path="/landing" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute>
-                          <Dashboard activeAgent="overview" onSelectAgent={() => {}} />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route path="/business-vitality" element={<ProtectedRoute><BusinessVitality /></ProtectedRoute>} />
-                    <Route path="/customer-analyzer" element={<ProtectedRoute><CustomerAnalyzer /></ProtectedRoute>} />
-                    <Route path="/mission-alignment" element={<ProtectedRoute><MissionAlignment /></ProtectedRoute>} />
-                    <Route path="/brand-index" element={<ProtectedRoute><BrandIndex /></ProtectedRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                    <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-                    <Route path="/upload-data" element={<ProtectedRoute><UploadData /></ProtectedRoute>} />
-                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="/login" element={<LoginPage />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </AppLayout>
-              </DashboardRefreshProvider>
-            </AuthProvider>
-          </KeycloakProvider>
+          <AuthProvider>
+            <AppLayout>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard activeAgent="overview" onSelectAgent={() => {}} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard activeAgent="overview" onSelectAgent={() => {}} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/business-vitality" element={<ProtectedRoute><BusinessVitality /></ProtectedRoute>} />
+                <Route path="/customer-analyzer" element={<ProtectedRoute><CustomerAnalyzer /></ProtectedRoute>} />
+                <Route path="/mission-alignment" element={<ProtectedRoute><MissionAlignment /></ProtectedRoute>} />
+                <Route path="/brand-index" element={<ProtectedRoute><BrandIndex /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+                <Route path="/data-analysis" element={<ProtectedRoute><DataAnalysis /></ProtectedRoute>} />
+                <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+                <Route path="/login" element={<LoginPage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
