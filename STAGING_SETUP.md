@@ -33,22 +33,27 @@ git clone <your-repo-url>
 cd ea-aura-ai-platform
 ```
 
-### 2. SSL Certificates
-Place your SSL certificates in the `ssl/` directory:
+### 2. SSL Certificates Setup
+
+#### Option A: Generate Self-Signed Certificates (Recommended for Staging)
 ```bash
-mkdir -p ssl
-# Copy your certificates:
-# - ssl/staging.ea-aura.ai.crt
-# - ssl/staging.ea-aura.ai.key
+# Run the SSL setup script
+chmod +x scripts/setup-staging-ssl.sh
+./scripts/setup-staging-ssl.sh
 ```
 
-For testing, you can generate self-signed certificates:
+This will automatically generate self-signed certificates in the `nginx/ssl/` directory.
+
+#### Option B: Use Your Own SSL Certificates
+If you have proper SSL certificates, place them in the `nginx/ssl/` directory:
 ```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ssl/staging.ea-aura.ai.key \
-  -out ssl/staging.ea-aura.ai.crt \
-  -subj "/C=US/ST=State/L=City/O=Organization/CN=staging.ea-aura.ai"
+mkdir -p nginx/ssl
+# Copy your certificates:
+# - nginx/ssl/staging.crt
+# - nginx/ssl/staging.key
 ```
+
+**Note**: The nginx configuration expects certificates named `staging.crt` and `staging.key` in the `nginx/ssl/` directory.
 
 ### 3. Environment Configuration
 
@@ -181,7 +186,13 @@ The staging environment includes the following security headers:
 1. **SSL Certificate Errors**
    ```bash
    # Check certificate validity
-   openssl x509 -in ssl/staging.ea-aura.ai.crt -text -noout
+   openssl x509 -in nginx/ssl/staging.crt -text -noout
+   
+   # Check if certificates exist
+   ls -la nginx/ssl/
+   
+   # Regenerate certificates if needed
+   ./scripts/setup-staging-ssl.sh
    ```
 
 2. **Port Conflicts**

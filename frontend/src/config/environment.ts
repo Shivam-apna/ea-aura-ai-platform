@@ -40,11 +40,11 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
   switch (environment) {
     case 'staging':
       return {
-        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://staging.ea-aura.ai/api',
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://staging.ea-aura.ai/api',
         environment: 'staging',
         debugMode: true,
         logLevel: 'debug',
-        keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://staging.ea-aura.ai/auth',
+        keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://staging.ea-aura.ai/auth',
         keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
         keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
       };
@@ -88,8 +88,21 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
 export const config = getEnvironmentConfig();
 
 // Helper function to get API endpoint
-export const getApiEndpoint = (path: string): string => {
-  return `${config.apiBaseUrl}${path}`;
+export const getApiEndpoint = (path: string, tenantId?: string): string => {
+  const baseUrl = `${config.apiBaseUrl}${path}`;
+  
+  if (tenantId) {
+    // Add tenant ID as a query parameter or header
+    const separator = path.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}tenant_id=${tenantId}`;
+  }
+  
+  return baseUrl;
+};
+
+// Helper function to get API endpoint with tenant ID from context
+export const getApiEndpointWithTenant = (path: string, tenantId: string | null): string => {
+  return getApiEndpoint(path, tenantId || undefined);
 };
 
 // Helper function for logging
