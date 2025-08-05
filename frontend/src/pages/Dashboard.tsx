@@ -28,7 +28,7 @@ import { getApiEndpoint } from "@/config/environment";
 import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
 import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
-
+import { useAuth } from "@/contexts/AuthContext";
 // Type definitions
 interface KpiItem {
   key: string;
@@ -134,7 +134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const TAB_NAMES = Object.keys(METRIC_GROUPS);
   const [activeTab, setActiveTab] = useState(TAB_NAMES[0]);
-
+  const { user } = useAuth(); // Use the auth context to get user info
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
   const chartsSectionRef = useRef<HTMLDivElement>(null);
@@ -320,10 +320,19 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   const handlePromptSubmit = async (prompt: string) => {
     setLoading(true);
     try {
+            // Extract organization id from user object
+      let tenantId = "demo232";
+      if (user && user.organization && typeof user.organization === "object") {
+        // Get the first org id if present
+        const orgKeys = Object.keys(user.organization);
+        if (orgKeys.length > 0 && user.organization[orgKeys[0]]?.id) {
+          tenantId = user.organization[orgKeys[0]].id;
+        }
+      }
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "demo232" }), // Use the prompt from the argument
+        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
       });
 
       // Handle different HTTP status codes with user-friendly messages
