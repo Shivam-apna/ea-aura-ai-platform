@@ -8,20 +8,20 @@ const getKeycloakConfig = () => {
     case 'staging':
       return {
         url: 'https://staging.ea-aura.ai/auth',
-        realm: 'ea_aura',
-        clientId: 'ea_aura',
+        realm: 'myrealm', // Updated
+        clientId: 'myclient', // Updated
       };
     case 'production':
       return {
         url: import.meta.env.VITE_KEYCLOAK_URL || 'https://ea-aura.ai/auth',
-        realm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
-        clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+        realm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
+        clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
       };
     default: // development
       return {
         url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-        realm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
-        clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+        realm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm', // Updated
+        clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient', // Updated
       };
   }
 };

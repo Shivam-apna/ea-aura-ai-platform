@@ -9,7 +9,7 @@ const Reports = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <FileText className="h-5 w-5 text-blue-400" /> Performance Reports
+            <FileText className="h-5 w-5 text-primary" /> Performance Reports {/* Changed text-blue-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -21,7 +21,7 @@ const Reports = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Download className="h-5 w-5 text-green-400" /> Export Data
+            <Download className="h-5 w-5 text-primary" /> Export Data {/* Changed text-green-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -33,7 +33,7 @@ const Reports = () => {
       <HolographicCard className="md:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-purple-400" /> Share Insights
+            <Share2 className="h-5 w-5 text-primary" /> Share Insights {/* Changed text-purple-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>

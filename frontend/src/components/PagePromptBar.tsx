@@ -75,10 +75,11 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
   return (
     <div className={cn(
-      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200", // Changed bg-input to bg-white
-      "focus-within:border-blue-500 focus-within:shadow-md",
+      "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
+      "focus-within:border-primary focus-within:shadow-md", // Changed border-blue-500 to border-primary
       "hover:border-gray-300 hover:shadow-md",
-      "w-full max-w-[1500px] mx-auto pr-1",
+      "w-full max-w-[1500px] mx-auto px-6", // Changed pr-1 to px-6
+      "dark:shadow-prompt-glow", // Add this line
       className // Apply the passed className
     )}>
       <div className="relative flex-grow">
@@ -86,7 +87,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           ref={inputRef}
           placeholder={placeholder}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
           className={cn(
             "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
@@ -109,7 +110,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
         onClick={handleSend}
         disabled={isLoading || !input.trim()}
         variant="default"
-        className="h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white bg-[#3b82f6] hover:bg-[#3b82f6]/90 shadow hover:shadow-md"
+        className="h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-primary-foreground bg-primary hover:bg-primary/90 shadow hover:shadow-md" // Changed bg-[#3b82f6] to bg-primary
       >
         {buttonText}
       </Button>
