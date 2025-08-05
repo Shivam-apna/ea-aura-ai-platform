@@ -27,6 +27,21 @@ cd "$PROJECT_ROOT"
 echo "📁 Creating necessary directories..."
 mkdir -p kafka/staging-data
 mkdir -p backend/app/logs
+mkdir -p nginx/ssl
+
+# Check and generate SSL certificates if needed
+echo "🔐 Checking SSL certificates..."
+if [ ! -f "nginx/ssl/staging.crt" ] || [ ! -f "nginx/ssl/staging.key" ]; then
+    echo "📜 Generating SSL certificates for staging..."
+    if [ -f "scripts/setup-staging-ssl.sh" ]; then
+        chmod +x scripts/setup-staging-ssl.sh
+        ./scripts/setup-staging-ssl.sh
+    else
+        echo "⚠️  SSL setup script not found. Please run: ./scripts/setup-staging-ssl.sh"
+    fi
+else
+    echo "✅ SSL certificates found"
+fi
 
 # Stop any existing containers
 echo "🛑 Stopping any existing containers..."
@@ -45,10 +60,10 @@ echo "🏥 Checking service health..."
 docker-compose -f docker-compose.staging.yml ps
 
 echo "✅ Staging environment is starting up!"
-echo "🌐 Access your application at: http://localhost"
-echo "🔑 Keycloak Admin: http://localhost:8080"
+echo "🌐 Access your application at: https://localhost (HTTPS)"
+echo "🔑 Keycloak Admin: https://localhost/auth"
 echo "📊 Kibana: http://localhost:5601"
-echo "🗄️  DBeaver: http://localhost:8978"
+echo "🗄️  DBeaver: https://localhost/dbeaver"
 echo "📦 MinIO Console: http://localhost:9001"
 echo "🔐 Vault: http://localhost:8200"
 

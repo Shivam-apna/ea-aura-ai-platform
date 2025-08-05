@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Mic } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner'; // Import toast for notifications
+import { toast } from 'sonner';
+import VoiceVisualizer from './VoiceVisualizer';
+import VoiceLevelIndicator from './VoiceLevelIndicator';
 
 interface PagePromptBarProps {
   placeholder?: string;
   buttonText?: string;
   onSubmit: (value: string) => void;
   onLoadingChange?: (loading: boolean) => void;
-  className?: string; // Added className prop
+  className?: string;
 }
 
 const PagePromptBar: React.FC<PagePromptBarProps> = ({
@@ -18,11 +20,90 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   buttonText = "Generate",
   onSubmit,
   onLoadingChange,
-  className, // Destructure className
+  className,
 }) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [recognition, setRecognition] = useState<any>(null);
+  const [voiceLevel, setVoiceLevel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check for browser support
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition();
+        recognitionInstance.continuous = true;
+        recognitionInstance.interimResults = true;
+        recognitionInstance.lang = 'en-US';
+
+        recognitionInstance.onstart = () => {
+          setIsListening(true);
+          setVoiceLevel(0);
+          toast.success("🎤 Voice input activated! Start speaking...");
+        };
+
+        recognitionInstance.onresult = (event: any) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          const fullTranscript = finalTranscript + interimTranscript;
+          setTranscript(fullTranscript);
+          setInput(fullTranscript);
+          
+          // Simulate voice level based on transcript length and confidence
+          const level = Math.min(1, fullTranscript.length / 50);
+          setVoiceLevel(level);
+        };
+
+        recognitionInstance.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          setVoiceLevel(0);
+          
+          switch (event.error) {
+            case 'no-speech':
+              toast.error("No speech detected. Please try again.");
+              break;
+            case 'audio-capture':
+              toast.error("Audio capture failed. Please check your microphone.");
+              break;
+            case 'not-allowed':
+              toast.error("Microphone access denied. Please allow microphone access.");
+              break;
+            default:
+              toast.error("Voice input error. Please try again.");
+          }
+        };
+
+        recognitionInstance.onend = () => {
+          setIsListening(false);
+          setVoiceLevel(0);
+          if (transcript.trim()) {
+            toast.success("🎤 Voice input completed!");
+          }
+        };
+
+        setRecognition(recognitionInstance);
+      } else {
+        console.warn('Speech recognition not supported in this browser');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -35,6 +116,9 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           inputRef.current.blur();
         }
         setInput('');
+        if (isListening && recognition) {
+          recognition.stop();
+        }
       }
     };
 
@@ -42,7 +126,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isListening, recognition]);
 
   const handleSend = async () => {
     if (input.trim() === "") {
@@ -55,6 +139,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
     const promptText = input.trim();
     setInput("");
+    setTranscript("");
 
     try {
       await onSubmit(promptText);
@@ -69,22 +154,41 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   };
 
   const handleVoiceInput = () => {
-    toast.info("Voice input functionality is under development.");
-    console.log("Voice input activated!");
+    if (!recognition) {
+      toast.error("Voice input is not supported in your browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+      toast.info("🎤 Voice input stopped");
+    } else {
+      setTranscript("");
+      recognition.start();
+    }
+  };
+
+  const clearInput = () => {
+    setInput("");
+    setTranscript("");
+    if (isListening && recognition) {
+      recognition.stop();
+    }
   };
 
   return (
     <div className={cn(
-      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200", // Changed bg-input to bg-white
+      "flex items-center h-10 rounded-full bg-white shadow-sm transition-all duration-200",
       "focus-within:border-blue-500 focus-within:shadow-md",
       "hover:border-gray-300 hover:shadow-md",
       "w-full max-w-[1500px] mx-auto pr-1",
-      className // Apply the passed className
+      className
     )}>
       <div className="relative flex-grow">
         <Input
           ref={inputRef}
-          placeholder={placeholder}
+          placeholder={isListening ? "Listening..." : placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
@@ -94,24 +198,64 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           )}
           disabled={isLoading}
         />
+        
+        {/* Voice Input Button with Heartbeat Animation */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+          className={cn(
+            "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-all duration-300 flex-shrink-0",
+            isListening 
+              ? "text-red-500 bg-red-50 hover:bg-red-100" 
+              : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+          )}
           onClick={handleVoiceInput}
           aria-label="Voice Input"
           disabled={isLoading}
         >
-          <Mic className="h-4 w-4" />
+          {isListening ? (
+            <div className="relative">
+              <MicOff className="h-4 w-4" />
+              {/* Professional Heartbeat Animation */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-3 h-3 bg-red-400 rounded-full animate-ping opacity-75"></div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-4 h-4 bg-red-300 rounded-full animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
+              </div>
+            </div>
+          ) : (
+            <Mic className="h-4 w-4" />
+          )}
         </Button>
       </div>
       <Button
         onClick={handleSend}
         disabled={isLoading || !input.trim()}
         variant="default"
-        className="h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white bg-[#3b82f6] hover:bg-[#3b82f6]/90 shadow hover:shadow-md"
+        className={cn(
+          "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
+          isListening 
+            ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
+            : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
+        )}
       >
-        {buttonText}
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isListening ? (
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-4 w-4" />
+            <Sparkles className="h-3 w-3 animate-pulse" />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {buttonText}
+            <Sparkles className="h-3 w-3" />
+          </div>
+        )}
       </Button>
     </div>
   );

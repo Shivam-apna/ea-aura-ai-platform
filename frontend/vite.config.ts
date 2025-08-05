@@ -15,8 +15,8 @@ export default defineConfig(({ command, mode }) => {
   // Add staging-specific environment variables
   if (mode === 'staging') {
     Object.assign(defineEnv, {
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://staging.ea-aura.ai/api'),
-      'import.meta.env.VITE_KEYCLOAK_URL': JSON.stringify('http://staging.ea-aura.ai/auth'),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://staging.ea-aura.ai/api'),
+      'import.meta.env.VITE_KEYCLOAK_URL': JSON.stringify('https://staging.ea-aura.ai/auth'),
       'import.meta.env.VITE_ENVIRONMENT': JSON.stringify('staging'),
     });
   }
