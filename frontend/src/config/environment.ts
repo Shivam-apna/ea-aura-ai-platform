@@ -88,8 +88,21 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
 export const config = getEnvironmentConfig();
 
 // Helper function to get API endpoint
-export const getApiEndpoint = (path: string): string => {
-  return `${config.apiBaseUrl}${path}`;
+export const getApiEndpoint = (path: string, tenantId?: string): string => {
+  const baseUrl = `${config.apiBaseUrl}${path}`;
+  
+  if (tenantId) {
+    // Add tenant ID as a query parameter or header
+    const separator = path.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}tenant_id=${tenantId}`;
+  }
+  
+  return baseUrl;
+};
+
+// Helper function to get API endpoint with tenant ID from context
+export const getApiEndpointWithTenant = (path: string, tenantId: string | null): string => {
+  return getApiEndpoint(path, tenantId || undefined);
 };
 
 // Helper function for logging
