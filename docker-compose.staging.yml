@@ -66,7 +66,7 @@ services:
       # Add proper frontend URL configuration
       - KC_FRONTEND_URL=https://staging.ea-aura.ai/auth
       # Ensure proper proxy headers are handled
-      - KC_PROXY_HEADERS=forwarded|xforwarded
+      - KC_PROXY_HEADERS=xforwarded
     command: start-dev
     ports:
       - "8080:8080"
@@ -216,7 +216,7 @@ services:
       - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
       - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
       # Add Keycloak realm configuration
-      - VITE_KEYCLOAK_REALM=ea-aura
+      - VITE_KEYCLOAK_REALM=ea_aura
       - VITE_KEYCLOAK_CLIENT_ID=ea_aura
     networks:
       - ea-aura-staging
