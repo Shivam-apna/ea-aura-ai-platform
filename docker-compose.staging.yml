@@ -1,5 +1,5 @@
 version: '3.9'
- 
+
 services:
   nginx:
     image: nginx:latest
@@ -16,7 +16,7 @@ services:
     networks:
       - ea-aura-staging
     restart: unless-stopped
- 
+
   vault:
     image: vault:1.13.3
     ports:
@@ -24,12 +24,11 @@ services:
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: "staging-vault-token"
       VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-      VAULT_ADDR: "https://staging.ea-aura.ai/vault"
     cap_add:
       - IPC_LOCK
     networks:
       - ea-aura-staging
- 
+
   postgres:
     image: postgres:15
     container_name: postgres-staging
@@ -47,7 +46,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
- 
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-staging
@@ -58,12 +57,16 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=staging-postgres-password
+      # Fixed Keycloak hostname and proxy configuration
       - KC_HOSTNAME=staging.ea-aura.ai
-      - KC_HOSTNAME_STRICT=false
-      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HOSTNAME_STRICT=true
+      - KC_HOSTNAME_STRICT_HTTPS=true
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
-      - KC_HOSTNAME_PORT=443
+      # Add proper frontend URL configuration
+      - KC_FRONTEND_URL=https://staging.ea-aura.ai/auth
+      # Ensure proper proxy headers are handled
+      - KC_PROXY_HEADERS=forwarded|xforwarded
     command: start-dev
     ports:
       - "8080:8080"
@@ -73,7 +76,7 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
- 
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
     container_name: elasticsearch-staging
@@ -92,7 +95,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
- 
+  
   kibana:
     image: docker.elastic.co/kibana/kibana:9.0.2
     container_name: kibana-staging
@@ -105,7 +108,7 @@ services:
         condition: service_healthy
     networks:
       - ea-aura-staging
- 
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.0.0
     container_name: filebeat-staging
@@ -121,7 +124,7 @@ services:
         condition: service_healthy
       backend:
         condition: service_started
- 
+
   backend:
     build: ./backend
     container_name: backend-staging
@@ -134,6 +137,9 @@ services:
       - ENVIRONMENT=staging
       - VAULT_TOKEN=staging-vault-token
       - VAULT_ADDR=http://vault:8200
+      # Add Keycloak configuration for backend
+      - KEYCLOAK_URL=https://staging.ea-aura.ai/auth
+      - KEYCLOAK_REALM=ea_aura
     env_file:
       - ./backend/env.staging
     networks:
@@ -144,7 +150,7 @@ services:
       kafka:
         condition: service_started
     restart: unless-stopped
- 
+
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka-staging
@@ -165,7 +171,7 @@ services:
       - ./kafka/staging-data:/bitnami/kafka
     networks:
       - ea-aura-staging
- 
+
   minio:
     image: minio/minio
     container_name: minio-staging
@@ -181,7 +187,7 @@ services:
     restart: unless-stopped
     networks:
       - ea-aura-staging
- 
+
   dbeaver:
     image: dbeaver/cloudbeaver:latest
     container_name: dbeaver-staging
@@ -190,17 +196,18 @@ services:
     environment:
       - CB_DATABASE=./data/cloudbeaver.db
       - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
+      # Fixed DBeaver URL configuration
       - CB_SERVER_URL=https://staging.ea-aura.ai/dbeaver
-      - CB_ROOT_URI=/
+      - CB_ROOT_URI=/dbeaver/
     volumes:
       - dbeaver_data_staging:/opt/cloudbeaver/workspace
       - dbeaver_logs_staging:/opt/cloudbeaver/logs
     networks:
       - ea-aura-staging
     restart: unless-stopped
- 
+
   frontend:
-    build:
+    build: 
       context: ./frontend
       dockerfile: Dockerfile.staging
     container_name: frontend-staging
@@ -208,10 +215,13 @@ services:
       - NODE_ENV=production
       - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
       - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
+      # Add Keycloak realm configuration
+      - VITE_KEYCLOAK_REALM=ea-aura
+      - VITE_KEYCLOAK_CLIENT_ID=ea_aura
     networks:
       - ea-aura-staging
     restart: unless-stopped
- 
+
 volumes:
   esdata_staging:
   filebeat-data_staging:
@@ -219,7 +229,7 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
- 
+
 networks:
   ea-aura-staging:
     driver: bridge
