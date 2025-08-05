@@ -9,7 +9,7 @@ const DataAnalysis = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <LineChart className="h-5 w-5 text-blue-400" /> Trend Analysis
+            <LineChart className="h-5 w-5 text-primary" /> Trend Analysis {/* Changed text-blue-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -21,7 +21,7 @@ const DataAnalysis = () => {
       <HolographicCard className="neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <BarChart className="h-5 w-5 text-green-400" /> Comparative Metrics
+            <BarChart className="h-5 w-5 text-primary" /> Comparative Metrics {/* Changed text-green-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -33,7 +33,7 @@ const DataAnalysis = () => {
       <HolographicCard className="md:col-span-2 neumorphic-card"> {/* Apply neumorphic styling */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <PieChart className="h-5 w-5 text-purple-400" /> Distribution Overview
+            <PieChart className="h-5 w-5 text-primary" /> Distribution Overview {/* Changed text-purple-400 to text-primary */}
           </CardTitle>
         </CardHeader>
         <CardContent>

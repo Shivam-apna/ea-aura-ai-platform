@@ -18,8 +18,8 @@
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Default primary colors for light theme - now raw HSL values */
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 204 100% 64.3%; /* Updated to HSL for #4AB1FF */
+    --primary-foreground: 222.2 47.4% 11.2%; /* Kept dark for contrast */
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -43,6 +43,13 @@
     --font-primary: 'Inter', sans-serif;
     --font-secondary: 'Roboto', sans-serif;
     --font-monospace: 'Fira Code', monospace;
+
+    /* New gradient colors for active tab */
+    --primary-gradient-start: 210 100% 50%; /* HSL for #0070E2 (a vibrant blue) */
+    --primary-gradient-end: 270 100% 50%;   /* HSL for #8A2BE2 (a vibrant purple) */
+
+    /* Header height variable */
+    --header-height: 104px; /* Based on h-20 (80px) + py-3 (2*12px) */
   }
 
   .dark {
@@ -81,6 +88,10 @@
     /* New KPI Card Colors for dark mode */
     --kpi-card-light-green: 90 80% 85.9%; /* #D4F8BE */
     --kpi-card-light-blue: 210 100% 94.1%; /* #E1F0FF */
+
+    /* New gradient colors for active tab in dark mode */
+    --primary-gradient-start: 210 100% 50%; /* HSL for #0070E2 (a vibrant blue) */
+    --primary-gradient-end: 270 100% 50%;   /* HSL for #8A2BE2 (a vibrant purple) */
   }
 
   * {
