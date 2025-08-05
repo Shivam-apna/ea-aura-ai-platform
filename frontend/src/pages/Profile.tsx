@@ -11,20 +11,20 @@ import { useAuth } from '@/contexts/AuthContext';
 const Profile = () => {
   const { user } = useAuth();
   const userProfile = user;
- const orgKeys = Object.keys(user.organization)[0];
+ const orgKeys = user && user.organization ? Object.keys(user.organization)[0] : "N/A";
   // Log all token parsed details to the console for verification
   useEffect(() => {
     if (userProfile) {
       console.log("Keycloak Token Parsed Details:", userProfile);
     }
   }, [userProfile]);
-
+  const fullName = userProfile?.name?` ${userProfile.name}` : '';
   const userName = userProfile?.preferred_username || userProfile?.name || "Guest User";
   const userEmail = userProfile?.email || "guest@example.com";
   const userRole = userProfile?.realm_access?.roles?.includes('admin') ? 'Admin' : 'User'; // Example role logic
   const userId = userProfile?.sub || "N/A"; // Keycloak 'sub' is typically the user ID
   const tenantId = (userProfile as any)?.tenant_id || "N/A"; // Assuming 'tenant_id' is a custom claim
-  const organizationId = orgKeys || "N/A"; // Assuming 'organization_id' is a custom claim
+  const organizationId = orgKeys; // Assuming 'organization_id' is a custom claim
 
   // Mock company data - in a real app, this would come from your backend or Keycloak custom attributes
   const companyName = "Acme Corp";
@@ -45,7 +45,7 @@ const Profile = () => {
               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
               <AvatarFallback className="bg-primary text-primary-foreground">{userName.charAt(0)}</AvatarFallback> {/* Changed bg-blue-600 to bg-primary */}
             </Avatar>
-            <h2 className="text-2xl font-bold text-foreground">{userName}</h2>
+            <h2 className="text-2xl font-bold text-foreground">{fullName}</h2>
             <p className="text-muted-foreground">{userEmail}</p>
           </div>
 
@@ -66,7 +66,7 @@ const Profile = () => {
               <Label htmlFor="name" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Name
               </Label>
-              <Input id="name" type="text" value={userName} readOnly className="bg-input border-border text-foreground" />
+              <Input id="name" type="text" value={fullName} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
               <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2 mb-2">
@@ -79,12 +79,6 @@ const Profile = () => {
                 <Briefcase className="h-4 w-4" /> Role
               </Label>
               <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
-            </div>
-            <div>
-              <Label htmlFor="companyName" className="text-muted-foreground flex items-center gap-2 mb-2">
-                <Building className="h-4 w-4" /> Company Name
-              </Label>
-              <Input id="companyName" type="text" value={companyName} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
               <Label htmlFor="department" className="text-muted-foreground flex items-center gap-2 mb-2">

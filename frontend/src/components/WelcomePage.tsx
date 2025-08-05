@@ -6,10 +6,11 @@ import { ArrowRight, CheckCircle } from 'lucide-react';
 
 interface WelcomePageProps {
   userName: string;
+  fullName: string;
   onGetStarted: () => void;
 }
 
-const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted }) => {
+const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullName }) => {
   const quickStartItems = [
     "Explore your personalized dashboard",
     "Connect your data sources",
@@ -21,7 +22,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted }) => 
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <h1 className="text-5xl font-bold text-foreground mb-4">
-        Welcome, <span className="text-primary">{userName}</span>! {/* Changed text-blue-500 to text-primary */}
+        Welcome, <span className="text-primary">{fullName}</span>! {/* Changed text-blue-500 to text-primary */}
       </h1>
       <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
         What would you like to explore?
