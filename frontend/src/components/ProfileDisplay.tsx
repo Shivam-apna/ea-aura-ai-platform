@@ -44,7 +44,7 @@ const initials = getInitials(fullName); // "SS" for "Shivam Singh"
       </Avatar>
       {!isCollapsed && (
         <div className="flex flex-col overflow-hidden">
-          <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+          <p className="text-sm font-medium text-foreground truncate">{fullName}</p>
         </div>
       )}
     </Link>
