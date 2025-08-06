@@ -9,13 +9,13 @@ import './LoginForm.css';
 interface LoginFormProps {
   onLoginSuccess?: () => void;
   redirectTo?: string;
-  initialBackgroundPosition?: string; // Added this line
+  initialBackgroundPosition?: string;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onLoginSuccess,
   redirectTo = '/landing',
-  initialBackgroundPosition = '25% center' // Default to 25% from left
+  initialBackgroundPosition = '25% center',
 }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -23,7 +23,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backgroundPosition, setBackgroundPosition] = useState(initialBackgroundPosition); // State for background position
+  const [backgroundPosition] = useState(initialBackgroundPosition);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -52,7 +52,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="eaura-body" style={{ backgroundPosition }}> {/* Apply inline style here */}
+    <div className="eaura-body" style={{ backgroundPosition }}>
       <div className="eaura-container">
         {/* Left Section */}
         <div className="eaura-left">
@@ -111,7 +111,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
             <p className="eaura-register-text">
               <b>Only registered and authorized users are permitted to access the login portal.</b>
-                <br />For any query, please{' '}
+              <br />
+              For any query, please{' '}
               <button
                 type="button"
                 onClick={() => window.location.href = 'https://ea-aura.ai/contact-us/'}
