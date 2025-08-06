@@ -363,7 +363,7 @@ const MissionAlignment = () => {
       }
 
       const data = await res.json();
-      if (data.parent_agent !== "mission_alignment_agent") {
+      if (data.parent_agent !== "strategic_alignment_agent") {
         toast.error("Invalid Query: Ask query related to mission alignment.");
         setLoading(false);
         return;
