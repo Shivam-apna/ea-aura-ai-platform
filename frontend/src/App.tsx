@@ -20,7 +20,6 @@ import LoginPage from "./pages/Login";
 import ChatbotLauncher from "./components/ChatbotLauncher";
 import { cn } from "@/lib/utils";
 import { useKeycloakRoles } from "./hooks/useKeycloakRoles";
-// Removed: import { KeycloakProvider, useKeycloak } from "./components/Auth/KeycloakProvider";
 import Landing from "./pages/Landing";
 import UploadData from "./pages/UploadData";
 import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext"; // Import DashboardRefreshProvider
@@ -31,22 +30,19 @@ const queryClient = new QueryClient();
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { clientRoles } = useKeycloakRoles();
-  // Removed: const { authenticated: keycloakAuthenticated, loading: keycloakLoading } = useKeycloak();
   const location = useLocation();
 
   console.log("ProtectedRoute Render:", {
     location: location.pathname,
     authLoading,
     isAuthenticated,
-    // Removed: keycloakLoading,
-    // Removed: keycloakAuthenticated,
     clientRoles,
   });
 
   // Add a specific check for roles loading: if authenticated but roles are empty and AuthProvider isn't loading anymore
-  const rolesAreLoading = isAuthenticated && clientRoles.length === 0 && !authLoading; // Changed keycloakLoading to authLoading
+  const rolesAreLoading = isAuthenticated && clientRoles.length === 0 && !authLoading;
 
-  if (authLoading || rolesAreLoading) { // Changed keycloakLoading to authLoading
+  if (authLoading || rolesAreLoading) {
     console.log("ProtectedRoute: Still loading authentication or roles. Showing loading screen.");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
@@ -55,7 +51,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
 
-  if (!isAuthenticated) { // Removed keycloakAuthenticated
+  if (!isAuthenticated) {
     console.log("ProtectedRoute: Not authenticated. Redirecting to /login.");
     return <Navigate to="/login" replace />;
   }
@@ -106,13 +102,17 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Don't render header and sidebar for login or landing page
-  if (location.pathname === '/login' || location.pathname === '/landing') {
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/landing';
+
+  if (isAuthPage) {
+    // For login and landing pages, just render children directly.
+    // These pages will manage their own full-screen styling.
     return <>{children}</>;
   }
 
   return (
-    <div className="flex flex-col w-full h-screen bg-background text-foreground">
+    // This div now only handles the flex layout for the main app, not global background/text colors
+    <div className="flex flex-col w-full h-screen">
       <AppHeader companyName="EA AURA" onSelectAgent={setActiveAgent} />
       <div className="flex flex-grow overflow-hidden relative">
         <Sidebar
@@ -121,7 +121,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleCollapse}
         />
-        <main className="flex-grow overflow-auto h-full flex flex-col">
+        <main className="flex-grow overflow-auto h-full flex flex-col bg-background text-foreground"> {/* Apply theme classes here */}
           {children}
         </main>
       </div>
@@ -141,7 +141,6 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {/* Removed KeycloakProvider */}
           <AuthProvider>
             <DashboardRefreshProvider>
               <AppLayout>

@@ -202,7 +202,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       
       {/* Prompt Bar */}
       <div className={cn(
-        "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
+        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200", // Changed bg-white to bg-card
         "focus-within:border-primary focus-within:shadow-md", // Changed border-blue-500 to border-primary
         "hover:border-gray-300 hover:shadow-md",
         "w-full max-w-[1500px] mx-auto px-6", // Changed pr-1 to px-6

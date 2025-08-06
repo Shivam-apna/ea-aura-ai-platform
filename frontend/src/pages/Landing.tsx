@@ -61,11 +61,11 @@ const Landing: React.FC = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-900 to-indigo-950">
       {/* Background animation/pattern - simplified for now */}
-      <div className="absolute inset-0 z-0 opacity-30" style={{
-        backgroundImage: 'url(https://i.postimg.cc/XYTD244P/luke-jones-Jc-EEIM963o-M-unsplash-1.png)',
+      <div className="absolute inset-0 z-0 opacity-100" style={{
+        backgroundImage: 'url(https://i.postimg.cc/R0RFBwCz/luke-jones-Jc-EEIM963o-M-unsplash-1-1.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        // filter: 'blur(2px) brightness(0.7)'
+        filter: 'blur(0px) brightness(2.0)'
       }}></div>
       {/* <div className="absolute inset-0 z-10 bg-black opacity-50"></div> Dark overlay */}
 
