@@ -346,7 +346,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
                   {chart?.y?.at(-1) !== undefined ? (
-                    <span className={cn("text-lg font-bold text-foreground group-hover:text-primary transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
+                    <span className={cn("text-lg font-bold text-foreground transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
                       <Icon className={cn("w-7 h-7 mb-0.5", theme === 'dark' ? "text-black" : "text-muted-foreground")} />
