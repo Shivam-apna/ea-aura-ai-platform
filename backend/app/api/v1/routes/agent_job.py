@@ -14,6 +14,8 @@ from elasticsearch import Elasticsearch, helpers
 import os
 from app.services.excel_to_elasticsearch import ExcelToElasticsearch
 import tempfile
+from app.services.avatar import generate_speech
+from fastapi.responses import JSONResponse, FileResponse
 
 
 router = APIRouter()
@@ -217,3 +219,65 @@ async def upload_file(
                 logger.info(f"Temporary file {temp_path} cleaned up")
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary file: {str(e)}")
+
+
+@router.post("/text-to-speech")
+def convert_text_to_speech(payload: dict = Body(...), request: Request = None):
+    text = payload.get("text")
+    tenant_id = payload.get("tenant_id")
+    voice = payload.get("voice", "alloy")  # Default OpenAI voice
+
+    if not text or not tenant_id:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Missing required fields",
+                "details": "Both 'text' and 'tenant_id' are required"
+            }
+        )
+
+    try:
+        logger.info("📥 Received /text-to-speech request", extra={
+            "endpoint": "/api/v1/text-to-speech",
+            "method": "POST",
+            "tenant_id": tenant_id,
+            "text_length": len(text),
+            "voice": voice
+        })
+
+        # Generate audio with OpenAI TTS
+        audio_path = generate_speech(text=text, tenant_id=tenant_id, voice=voice)
+
+        logger.info("✅ /text-to-speech completed", extra={
+            "tenant_id": tenant_id,
+            "audio_file": os.path.basename(audio_path),
+            "file_size": os.path.getsize(audio_path),
+            "status": "success"
+        })
+
+        return FileResponse(
+            path=str(audio_path),
+            media_type="audio/mpeg",
+            filename=os.path.basename(audio_path),
+            headers={
+                "Content-Disposition": f"attachment; filename={os.path.basename(audio_path)}",
+                "X-Tenant-ID": tenant_id
+            }
+        )
+
+    except Exception as e:
+        logger.exception("❌ /text-to-speech failed", extra={
+            "tenant_id": tenant_id,
+            "text": text[:100] + "..." if len(text) > 100 else text,
+            "voice": voice,
+            "error": str(e),
+            "status": "failed"
+        })
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal Server Error during text-to-speech conversion.",
+                "details": str(e)
+            }
+        )

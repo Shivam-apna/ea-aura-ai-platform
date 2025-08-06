@@ -29,6 +29,7 @@ import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
 import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
 import { useAuth } from "@/contexts/AuthContext";
+import { createTTS } from "@/utils/avatars";
 
 // Type definitions
 interface KpiItem {
@@ -117,6 +118,8 @@ const BusinessDashboard = () => {
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
   const chartsSectionRef = useRef<HTMLDivElement>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
@@ -298,7 +301,7 @@ const BusinessDashboard = () => {
     setLoading(true);
     try {
 
-           // Extract organization id from user object
+      // Extract organization id from user object
       let tenantId = "demo232";
       if (user && user.organization && typeof user.organization === "object") {
         // Get the first org id if present
@@ -316,7 +319,7 @@ const BusinessDashboard = () => {
       // Handle different HTTP status codes with user-friendly messages
       if (!res.ok) {
         let errorMessage = 'An error occurred while processing your request.';
-        
+
         switch (res.status) {
           case 400:
             errorMessage = 'Invalid request. Please check your input and try again.';
@@ -455,16 +458,16 @@ const BusinessDashboard = () => {
       localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
     } catch (err: any) {
       console.error("Error fetching charts:", err);
-      
+
       // Handle network errors and other exceptions
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
+
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -475,6 +478,8 @@ const BusinessDashboard = () => {
   useEffect(() => {
     registerRefreshHandler(fetchData, lastSubmittedPrompt);
   }, [fetchData, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
+
+  const handleCreateTTS = () => createTTS(activeTab, "Business Vitality", "business_parsed_summary", setTtsLoading, setIsSpeaking);
 
   return (
     <div className="relative min-h-screen">
@@ -503,6 +508,10 @@ const BusinessDashboard = () => {
         onDownloadPDF={handleDownloadPDF}
         downloadingPdf={downloadingPdf}
         hasChartsData={Object.keys(charts).length > 0}
+        onCreateTTS={handleCreateTTS}
+        ttsLoading={ttsLoading}
+        isSpeaking={isSpeaking}
+        setIsSpeaking={setIsSpeaking}
       />
 
       {/* Advanced Dashboard Layout Component with Refs */}
