@@ -80,7 +80,11 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   onTabChange,
   tabNames
 }) => {
-  const { selectedPrimaryColor, previewPrimaryColorHex, themeColors } = useTheme();
+  const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
+
+  // Detect if the current theme is dark
+  const isDarkTheme = theme === 'dark' || 
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const getPrimaryColorHex = () => {
     if (previewPrimaryColorHex) return previewPrimaryColorHex;
@@ -96,30 +100,45 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const HIDDEN_CHARTS_KEY = `${storagePrefix}_hidden_charts`;
 
   const [cardOrder, setCardOrder] = useState<{ [tab: string]: string[] }>(() => {
-    const saved = localStorage.getItem(CARD_ORDER_KEY);
-    return saved ? JSON.parse(saved) : {};
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(CARD_ORDER_KEY);
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
   });
 
   const [columns, setColumns] = useState(() => {
-    const saved = localStorage.getItem(COLUMNS_KEY);
-    return saved ? JSON.parse(saved) : 2;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(COLUMNS_KEY);
+      return saved ? JSON.parse(saved) : 2;
+    }
+    return 2;
   });
 
   const [hiddenCharts, setHiddenCharts] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem(HIDDEN_CHARTS_KEY);
-    return saved ? new Set(JSON.parse(saved)) : new Set();
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(HIDDEN_CHARTS_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    }
+    return new Set();
   });
 
   useEffect(() => {
-    localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(cardOrder));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(cardOrder));
+    }
   }, [cardOrder, CARD_ORDER_KEY]);
 
   useEffect(() => {
-    localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns));
+    }
   }, [columns, COLUMNS_KEY]);
 
   useEffect(() => {
-    localStorage.setItem(HIDDEN_CHARTS_KEY, JSON.stringify([...hiddenCharts]));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(HIDDEN_CHARTS_KEY, JSON.stringify([...hiddenCharts]));
+    }
   }, [hiddenCharts, HIDDEN_CHARTS_KEY]);
 
   useEffect(() => {
@@ -174,6 +193,139 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo'
   ];
 
+  // Get Plotly layout and config based on theme
+  const getPlotlyLayoutAndConfig = (chart: ChartData) => {
+    const baseLayout = {
+      width: undefined,
+      height: 280,
+      autosize: true,
+      title: '',
+      font: {
+        family: 'Inter, sans-serif',
+        size: 16,
+      },
+      margin: { l: 50, r: 30, t: 60, b: 50 },
+      xaxis: {
+        title: chart.xLabel,
+        zeroline: false,
+        tickfont: { size: 15 },
+        titlefont: { size: 17, family: 'Inter, sans-serif' },
+      },
+      yaxis: {
+        title: chart.yLabel,
+        zeroline: false,
+        tickfont: { size: 15 },
+        titlefont: { size: 17, family: 'Inter, sans-serif' },
+      },
+      legend: {
+        orientation: "h",
+        y: -0.2,
+        font: { size: 15 }
+      },
+      transition: { duration: 500, easing: 'cubic-in-out' },
+    };
+
+    if (isDarkTheme) {
+      // Apply dark theme colors
+      return {
+        layout: {
+          ...baseLayout,
+          plot_bgcolor: "hsl(0 0% 16.5%)", // Dark background
+          paper_bgcolor: "hsl(0 0% 16.5%)", // Dark paper background
+          font: {
+            ...baseLayout.font,
+            color: '#e5e7eb' // Light text color
+          },
+          xaxis: {
+            ...baseLayout.xaxis,
+            gridcolor: '#375139ff', // Dark grid
+            linecolor: '#0a0c0bff', // Dark axis line
+            tickfont: { size: 15, color: '#9ca3af' }, // Light tick color
+            titlefont: { size: 17, color: '#e5e7eb', family: 'Inter, sans-serif' },
+          },
+          yaxis: {
+            ...baseLayout.yaxis,
+            gridcolor: '#343a40', // Dark grid
+            linecolor: '#6b7280', // Dark axis line
+            tickfont: { size: 15, color: '#9ca3af' }, // Light tick color
+            titlefont: { size: 17, color: '#e5e7eb', family: 'Inter, sans-serif' },
+          },
+          legend: {
+            ...baseLayout.legend,
+            font: { size: 15, color: '#e5e7eb' }
+          },
+          hoverlabel: {
+            bgcolor: "#374151",
+            bordercolor: "#6b7280",
+            font: { color: "#e5e7eb", size: 15 }
+          },
+        },
+        config: {
+          displayModeBar: true,
+          displaylogo: false,
+          modeBarButtonsToRemove: buttonsToRemove,
+          responsive: true,
+          toImageButtonOptions: {
+            format: 'png',
+            filename: 'chart',
+            height: 500,
+            width: 700,
+            scale: 1
+          }
+        }
+      };
+    } else {
+      // Apply light theme colors
+      return {
+        layout: {
+          ...baseLayout,
+          plot_bgcolor: "#ffffff", // Light background
+          paper_bgcolor: "#ffffff", // Light paper background
+          font: {
+            ...baseLayout.font,
+            color: '#1f2937' // Dark text color
+          },
+          xaxis: {
+            ...baseLayout.xaxis,
+            gridcolor: '#e5e7eb', // Light grid
+            linecolor: '#d1d5db', // Light axis line
+            tickfont: { size: 15, color: '#6b7280' }, // Dark tick color
+            titlefont: { size: 17, color: '#1f2937', family: 'Inter, sans-serif' },
+          },
+          yaxis: {
+            ...baseLayout.yaxis,
+            gridcolor: '#e5e7eb', // Light grid
+            linecolor: '#d1d5db', // Light axis line
+            tickfont: { size: 15, color: '#6b7280' }, // Dark tick color
+            titlefont: { size: 17, color: '#1f2937', family: 'Inter, sans-serif' },
+          },
+          legend: {
+            ...baseLayout.legend,
+            font: { size: 15, color: '#1f2937' }
+          },
+          hoverlabel: {
+            bgcolor: "#ffffff",
+            bordercolor: "#d1d5db",
+            font: { color: "#1f2937", size: 15 }
+          },
+        },
+        config: {
+          displayModeBar: true,
+          displaylogo: false,
+          modeBarButtonsToRemove: buttonsToRemove,
+          responsive: true,
+          toImageButtonOptions: {
+            format: 'png',
+            filename: 'chart',
+            height: 500,
+            width: 700,
+            scale: 1
+          }
+        }
+      };
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full max-w-[1500px] mx-auto px-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full">
@@ -189,16 +341,16 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-500 font-medium">{kpi.originalKey || kpi.key}</span>
-                  {idx % 2 === 0 ? <BarChart2 className="w-4 h-4 text-primary" /> : <LineChart className="w-4 h-4 text-primary" />}
+                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black") } style={{ fontSize: "0.90rem" }}>{kpi.originalKey || kpi.key}</span>
+                  {idx % 2 === 0 ? <BarChart2 className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} /> : <LineChart className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} />}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
                   {chart?.y?.at(-1) !== undefined ? (
-                    <span className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{chart.y.at(-1).toLocaleString()}</span>
+                    <span className={cn("text-lg font-bold text-foreground group-hover:text-primary transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
-                      <Icon className="w-7 h-7 text-muted-foreground mb-0.5" />
-                      <span className="text-[10px] text-muted-foreground mt-0.5 font-medium">No data</span>
+                      <Icon className={cn("w-7 h-7 mb-0.5", theme === 'dark' ? "text-black" : "text-muted-foreground")} />
+                      <span className={cn("text-[10px] mt-0.5 font-medium", theme === 'dark' ? "text-black" : "text-muted-foreground")}>No data</span>
                     </span>
                   )}
                 </span>
@@ -227,7 +379,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 "rounded-full px-4 py-2 text-sm transition-all duration-300 active:scale-95",
                 "bg-muted/50 border border-border text-muted-foreground font-medium",
                 "hover:bg-muted/70",
-                "data-[state=active]:bg-gradient-primary-active data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent",
+                "data-[state=active]:bg-[rgb(59,130,246)] data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               )}
             >
@@ -423,92 +575,56 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                     </div>
                                     <div className="flex-1 w-full h-full" style={{ minHeight: 340, overflow: 'hidden' }}>
                                       {chart ? (
-                                        <Plot
-                                          data={(() => {
-                                            const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
-                                            if (isBar && Array.isArray(chart.y[0])) {
-                                              return chart.y.map((series, i) => ({
-                                                x: chart.x,
-                                                y: series,
-                                                type: 'bar',
-                                                marker: chartColors[metric.key]
-                                                  ? { color: Array(series.length).fill(chartColors[metric.key]) }
-                                                  : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
-                                              }));
-                                            } else if (isBar) {
-                                              return [{
-                                                x: chart.x,
-                                                y: chart.y,
-                                                type: 'bar',
-                                                marker: chartColors[metric.key]
-                                                  ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
-                                                  : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) }
-                                              }];
-                                            } else {
-                                              const type = chartTypes[metric.key] || chart.plotType;
-                                              return [{
-                                                x: chart.x,
-                                                y: chart.y,
-                                                type,
-                                                ...(type === 'scatter' ? { mode: 'markers' } : {}),
-                                                marker: { color: chartColors[metric.key] || chart.marker?.color || COLORS[0], size: 10, line: { width: 2, color: '#fff' } },
-                                              }];
-                                            }
-                                          })()}
-                                          layout={{
-                                            width: undefined,
-                                            height: 280,
-                                            autosize: true,
-                                            title: '',
-                                            plot_bgcolor: "hsl(var(--card))",
-                                            paper_bgcolor: "hsl(var(--card))",
-                                            font: {
-                                              family: 'Inter, sans-serif',
-                                              size: 16,
-                                              color: 'hsl(var(--foreground))'
-                                            },
-                                            margin: { l: 50, r: 30, t: 60, b: 50 },
-                                            xaxis: {
-                                              title: chart.xLabel,
-                                              gridcolor: 'hsl(var(--border))',
-                                              zeroline: false,
-                                              linecolor: 'hsl(var(--border))',
-                                              tickfont: { size: 15, color: 'hsl(var(--muted-foreground))' },
-                                              titlefont: { size: 17, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' },
-                                            },
-                                            yaxis: {
-                                              title: chart.yLabel,
-                                              gridcolor: 'hsl(var(--border))',
-                                              zeroline: false,
-                                              linecolor: 'hsl(var(--border))',
-                                              tickfont: { size: 15, color: 'hsl(var(--muted-foreground))' },
-                                              titlefont: { size: 17, color: 'hsl(var(--foreground))', family: 'Inter, sans-serif' },
-                                            },
-                                            legend: {
-                                              orientation: "h",
-                                              y: -0.2,
-                                              font: { size: 15, color: 'hsl(var(--foreground))' }
-                                            },
-                                            hoverlabel: {
-                                              bgcolor: "hsl(var(--popover))",
-                                              bordercolor: "hsl(var(--border))",
-                                              font: { color: "hsl(var(--popover-foreground))", size: 15 }
-                                            },
-                                            transition: { duration: 500, easing: 'cubic-in-out' },
-                                          }}
-                                          style={{ width: '100%', height: '100%' }}
-                                          config={{
-                                            displayModeBar: true,
-                                            displaylogo: false,
-                                            modeBarButtonsToRemove: buttonsToRemove,
-                                            responsive: true,
-                                          }}
-                                        />
+                                        (() => {
+                                          const { layout, config } = getPlotlyLayoutAndConfig(chart);
+                                          return (
+                                            <Plot
+                                              data={(() => {
+                                                const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
+                                                if (isBar && Array.isArray(chart.y[0])) {
+                                                  return chart.y.map((series, i) => ({
+                                                    x: chart.x,
+                                                    y: series,
+                                                    type: 'bar',
+                                                    marker: chartColors[metric.key]
+                                                      ? { color: Array(series.length).fill(chartColors[metric.key]) }
+                                                      : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
+                                                  }));
+                                                } else if (isBar) {
+                                                  return [{
+                                                    x: chart.x,
+                                                    y: chart.y,
+                                                    type: 'bar',
+                                                    marker: chartColors[metric.key]
+                                                      ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
+                                                      : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) }
+                                                  }];
+                                                } else {
+                                                  const type = chartTypes[metric.key] || chart.plotType;
+                                                  return [{
+                                                    x: chart.x,
+                                                    y: chart.y,
+                                                    type,
+                                                    ...(type === 'scatter' ? { mode: 'markers' } : {}),
+                                                    marker: { 
+                                                      color: chartColors[metric.key] || chart.marker?.color || COLORS[0], 
+                                                      size: 10, 
+                                                      line: { width: 2, color: isDarkTheme ? '#1f2937' : '#fff' } 
+                                                    },
+                                                  }];
+                                                }
+                                              })()}
+                                              layout={layout}
+                                              style={{ width: '100%', height: '100%' }}
+                                              config={config}
+                                            />
+                                          );
+                                        })()
                                       ) : (
-                                        <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
-                                          <BarChart2 className="w-12 h-12 mb-2 text-primary animate-bounce" />
-                                          <span className="text-base font-semibold">No data available</span>
-                                          <span className="text-xs text-muted-foreground mt-1">Try a different prompt or check your data source.</span>
+                                        <div className={cn("flex flex-col items-center justify-center pt-20 pb-8", "text-muted-foreground")}>
+                                          <BarChart2 className={cn("w-12 h-12 mb-2 animate-bounce", "text-primary")} />
+                                          <span className={cn("text-base font-semibold")}>No data available</span>
+                                          <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
                                         </div>
                                       )}
                                     </div>

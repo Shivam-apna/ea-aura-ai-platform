@@ -11,6 +11,7 @@ const LoginPage: React.FC = () => {
     <LoginForm 
       onLoginSuccess={handleLoginSuccess}
       redirectTo="/landing" // Ensure this is set to /landing
+      initialBackgroundPosition="50% center" // Set the background position to 50% center
     />
   );
 };

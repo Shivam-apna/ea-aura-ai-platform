@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, Download } from 'lucide-react';
+import { UploadCloud, Download, FileText, XCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-// Removed: import PageHeaderActions from "@/components/PageHeaderActions";
 import { HolographicCard } from './Dashboard'; // Import HolographicCard
+import { authService } from '@/services/authService'; // Import authService to get token
+import { getApiEndpoint } from '@/config/environment'; // Import getApiEndpoint
 
 const UploadData: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
     toast.info("Downloading template...");
@@ -30,36 +33,111 @@ const UploadData: React.FC = () => {
     toast.success("Template downloaded!");
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const allowedTypes = [
+        'text/csv',
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/json'
+      ];
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const isAllowedExtension = ['csv', 'xls', 'xlsx', 'json'].includes(fileExtension || '');
+
+      if (allowedTypes.includes(file.type) || isAllowedExtension) {
+        setSelectedFile(file);
+      } else {
+        setSelectedFile(null);
+        toast.error("Invalid file type. Please upload a CSV, Excel (XLS/XLSX), or JSON file.");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''; // Clear the file input
+        }
+      }
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Clear the file input
+    }
+  };
+
   const handleSubmit = async () => {
     if (!selectedAgent) {
       toast.error("Please select an agent.");
       return;
     }
+    if (!selectedFile) {
+      toast.error("Please select a file to upload.");
+      return;
+    }
 
     setIsLoading(true);
-    toast.info("Submitting request for processing...");
+    toast.info("Uploading file and submitting request for processing...");
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('agent', selectedAgent);
 
-    console.log("Submitting:", { agent: selectedAgent });
-    toast.success(`Request submitted for processing by ${selectedAgent}!`);
+      const accessToken = authService.getAccessToken();
+      if (!accessToken) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
 
-    // Reset form
-    setSelectedAgent("");
-    setIsLoading(false);
+      const response = await fetch(getApiEndpoint("/api/upload-data"), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          // 'Content-Type': 'multipart/form-data' is automatically set by fetch when using FormData
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Upload failed: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Fallback to status text if JSON parsing fails
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log("Upload successful:", result);
+      toast.success(`File uploaded and request submitted for processing by ${selectedAgent}!`);
+
+      // Reset form
+      setSelectedAgent("");
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+    } catch (error: any) {
+      console.error("Error during file upload:", error);
+      toast.error(error.message || "An unexpected error occurred during upload.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
     setSelectedAgent("");
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setIsLoading(false);
     toast.info("Upload process cancelled.");
   };
 
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background">
-      {/* Removed PageHeaderActions component */}
-
       <HolographicCard className="col-span-full neumorphic-card flex-grow">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -94,13 +172,63 @@ const UploadData: React.FC = () => {
               </div>
             </div>
 
+            {/* File Upload Input */}
+            <div className="space-y-2">
+              <label htmlFor="file-upload" className="text-sm font-medium text-muted-foreground">Upload File</label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="file-upload"
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden" // Hide the default file input
+                  disabled={isLoading}
+                  accept=".csv, .xls, .xlsx, .json" // Specify accepted file types
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="flex-grow justify-start bg-input border-border text-foreground hover:bg-input/80"
+                >
+                  <UploadCloud className="h-4 w-4 mr-2" />
+                  {selectedFile ? selectedFile.name : "Choose File (CSV, Excel, JSON)"}
+                </Button>
+                {selectedFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveFile}
+                    disabled={isLoading}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    <span className="sr-only">Remove file</span>
+                  </Button>
+                )}
+              </div>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent}>
-                {isLoading ? 'Processing...' : 'Submit for Processing'}
+              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent || !selectedFile}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...
+                  </>
+                ) : (
+                  'Submit for Processing'
+                )}
               </Button>
             </div>
           </div>

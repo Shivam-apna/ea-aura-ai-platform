@@ -25,7 +25,19 @@ const Profile = () => {
   const userId = userProfile?.sub || "N/A"; // Keycloak 'sub' is typically the user ID
   const tenantId = (userProfile as any)?.tenant_id || "N/A"; // Assuming 'tenant_id' is a custom claim
   const organizationId = orgKeys; // Assuming 'organization_id' is a custom claim
-
+  // Get initials from full name (first letter of first and last word)
+const getInitials = (fullName: string) => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0][0]?.toUpperCase() || "";
+  }
+  const first = parts[0][0];
+  const last = parts[parts.length - 1][0];
+  return (first + last).toUpperCase();
+};
+const initials = getInitials(fullName); // "SS" for "Shivam Singh"
+console.log("Initials:", initials); // Log initials for debugging
   // Mock company data - in a real app, this would come from your backend or Keycloak custom attributes
   const companyName = "Acme Corp";
   const department = "Engineering";
@@ -41,10 +53,12 @@ const Profile = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
-              <AvatarFallback className="bg-primary text-primary-foreground">{userName.charAt(0)}</AvatarFallback> {/* Changed bg-blue-600 to bg-primary */}
-            </Avatar>
+          <Avatar className="h-24 w-24 rounded-full bg-primary text-primary-foreground text-4xl font-bold text-blue-500 flex items-center justify-center">
+  <AvatarFallback className="w-full h-full flex items-center justify-center rounded-full">
+    {initials}
+  </AvatarFallback>
+</Avatar>
+
             <h2 className="text-2xl font-bold text-foreground">{fullName}</h2>
             <p className="text-muted-foreground">{userEmail}</p>
           </div>
@@ -80,24 +94,24 @@ const Profile = () => {
               </Label>
               <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
             </div>
-            <div>
+            {/* <div>
               <Label htmlFor="department" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <Briefcase className="h-4 w-4" /> Department
               </Label>
               <Input id="department" type="text" value={department} readOnly className="bg-input border-border text-foreground" />
-            </div>
-            <div className="md:col-span-2">
+            </div> */}
+            {/* <div className="md:col-span-2">
               <Label htmlFor="position" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Position
               </Label>
               <Input id="position" type="text" value={position} readOnly className="bg-input border-border text-foreground" />
-            </div>
+            </div> */}
           </div>
 
-          <div className="flex justify-end gap-2">
+          {/* <div className="flex justify-end gap-2">
             <Button variant="outline" className="bg-secondary text-secondary-foreground hover:bg-secondary/80">Edit Profile</Button>
             <Button variant="default">Save Changes</Button>
-          </div>
+          </div> */}
         </CardContent>
       </HolographicCard>
     </div>

@@ -30,6 +30,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+ const [lastQuery, setLastQuery] = useState(""); // Add this line
 
   // Initialize speech recognition
   useEffect(() => {
@@ -144,7 +145,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     const promptText = input.trim();
     setInput("");
     setTranscript("");
-
+    setLastQuery(promptText); // Save last query
     try {
       await onSubmit(promptText);
       // Remove success toast - let parent components handle success feedback
@@ -157,6 +158,15 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     }
   };
 
+  // Restore last query on input focus if input is empty
+  const handleInputFocus = () => {
+    if (!input && lastQuery) {
+      setInput(lastQuery);
+    }
+  };
+
+
+  
   const handleVoiceInput = () => {
     if (!recognition) {
       setErrorMessage("Voice input is not supported in your browser. Please use Chrome or Edge.");
@@ -202,7 +212,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       
       {/* Prompt Bar */}
       <div className={cn(
-        "flex items-center h-10 rounded-full bg-white shadow-lg transition-all duration-200", // Changed shadow-sm to shadow-lg
+        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200", // Changed bg-white to bg-card
         "focus-within:border-primary focus-within:shadow-md", // Changed border-blue-500 to border-primary
         "hover:border-gray-300 hover:shadow-md",
         "w-full max-w-[1500px] mx-auto px-6", // Changed pr-1 to px-6
@@ -216,6 +226,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
             value={input}
             onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            onFocus={handleInputFocus} // Add this line
             className={cn(
               "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
               "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"

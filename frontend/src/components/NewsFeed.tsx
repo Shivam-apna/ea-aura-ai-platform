@@ -96,19 +96,19 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
   }, [companyDomain]);
 
   return (
-    <Card className="neumorphic-card bg-card text-foreground shadow-lg rounded-xl">
+    <Card className="bg-white text-gray-900 shadow-lg rounded-xl"> {/* Changed bg-white to bg-[#e5f2fd] */}
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Newspaper className="h-5 w-5 text-blue-500" /> Company News
+          <Newspaper className="h-5 w-5 text-blue" /> Global News
         </CardTitle>
       </CardHeader>
       <CardContent className="h-[250px] p-4">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="flex items-center justify-center h-full text-gray-600">
             Loading news...
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full text-destructive">
+          <div className="flex items-center justify-center h-full text-red-600">
             {error}
           </div>
         ) : articles.length > 0 ? (
@@ -120,10 +120,10 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  className="block p-3 rounded-lg bg-[#e5f2fd] hover:bg-gray-50 transition-colors" /* Changed bg-gray-100 to bg-white, hover:bg-gray-200 to hover:bg-gray-50 */
                 >
-                  <h4 className="font-medium text-sm text-foreground line-clamp-1">{article.title}</h4>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{article.description}</p>
+                  <h4 className="font-medium text-sm text-gray-900 line-clamp-1">{article.title}</h4>
+                  <p className="text-xs text-gray-600 line-clamp-2">{article.description}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {article.source.name} - {new Date(article.publishedAt).toLocaleDateString()}
                   </p>
@@ -132,7 +132,7 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
             </div>
           </ScrollArea>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="flex items-center justify-center h-full text-gray-600">
             No news found for {companyDomain}.
           </div>
         )}

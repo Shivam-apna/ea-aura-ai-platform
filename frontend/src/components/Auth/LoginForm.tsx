@@ -5,15 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import './LoginForm.css';
- 
+
 interface LoginFormProps {
   onLoginSuccess?: () => void;
   redirectTo?: string;
+  initialBackgroundPosition?: string;
 }
- 
-export const LoginForm: React.FC<LoginFormProps> = ({ 
-  onLoginSuccess, 
-  redirectTo = '/landing' // Changed default redirectTo to /landing
+
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onLoginSuccess,
+  redirectTo = '/landing',
+  initialBackgroundPosition = '25% center',
 }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -21,13 +23,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
- 
+  const [backgroundPosition] = useState(initialBackgroundPosition);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError(null);
   };
- 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username || !formData.password) {
@@ -47,26 +50,25 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       setIsLoading(false);
     }
   };
- 
+
   return (
-<div className="eaura-body">
-<div className="eaura-container">
+    <div className="eaura-body" style={{ backgroundPosition }}>
+      <div className="eaura-container">
         {/* Left Section */}
-<div className="eaura-left">
-<h1>EA-AURA</h1>
-<p>Vision. Velocity. Value</p>
-</div>
- 
+        <div className="eaura-left">
+          <h1>EA-AURA</h1>
+          <p>Vision. Velocity. Value</p>
+        </div>
+
         {/* Right Section */}
-<div className="eaura-right">
-<div className="eaura-login-box">
-<h2>Log in</h2>
-<p>Exclusive offers, and personalized floral experiences.</p>
- 
+        <div className="eaura-right">
+          <div className="eaura-login-box">
+            <h2>Login</h2>
+
             {error && <div className="eaura-error">{error}</div>}
- 
+
             <form onSubmit={handleSubmit}>
-<Input
+              <Input
                 className="eaura-input"
                 type="text"
                 name="username"
@@ -76,9 +78,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 disabled={isLoading}
                 autoComplete="username"
               />
- 
+
               <div className="eaura-password-wrapper">
-<Input
+                <Input
                   className="eaura-input"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -88,40 +90,42 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   disabled={isLoading}
                   autoComplete="current-password"
                 />
-<button
+                <button
                   type="button"
                   className="eaura-eye-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
->
+                >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-</button>
-</div>
- 
+                </button>
+              </div>
+
               <Button
                 type="submit"
-                className="eaura-continue-btn"
+                className="eaura-continue-btn text-white"
                 disabled={isLoading}
->
+              >
                 {isLoading ? 'Signing in...' : 'Continue'}
-</Button>
-</form>
- 
+              </Button>
+            </form>
+
             <p className="eaura-register-text">
-              Don't have an account?{' '}
-<button
+              <b>Only registered and authorized users are permitted to access the login portal.</b>
+              <br />
+              For any query, please{' '}
+              <button
                 type="button"
                 onClick={() => window.location.href = 'https://ea-aura.ai/contact-us/'}
                 className="eaura-link"
->
+              >
                 Contact Us
-</button>
-</p>
-</div>
-</div>
-</div>
-</div>
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
- 
+
 export default LoginForm;
