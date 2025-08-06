@@ -21,10 +21,10 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullN
 
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <h1 className="text-5xl font-bold text-foreground mb-4">
-        Welcome, <span className="text-primary">{fullName}</span>! {/* Changed text-blue-500 to text-primary */}
+      <h1 className="text-5xl font-bold text-gray-900 mb-4"> {/* Changed text-foreground to text-gray-900 */}
+        Welcome, <span className="text-primary">{fullName}</span>!
       </h1>
-      <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
+      <p className="text-xl text-gray-600 mb-8 max-w-2xl"> {/* Changed text-muted-foreground to text-gray-600 */}
         What would you like to explore?
       </p>
 
@@ -39,15 +39,15 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullN
         Get Started <ArrowRight className="ml-2 h-5 w-5" />
       </Button>
 
-      <Card className="mt-12 w-full max-w-xl bg-card text-foreground shadow-lg rounded-xl">
+      <Card className="mt-12 w-full max-w-xl bg-white text-gray-900 shadow-lg rounded-xl"> {/* Changed bg-card to bg-white, text-foreground to text-gray-900 */}
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-center text-primary">Quick Start Guide</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {quickStartItems.map((item, index) => (
-            <div key={index} className="flex items-center bg-muted/50 p-4 rounded-lg shadow-sm">
+            <div key={index} className="flex items-center bg-gray-100 p-4 rounded-lg shadow-sm"> {/* Changed bg-muted/50 to bg-gray-100 */}
               <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-              <p className="text-base text-foreground text-left">{item}</p>
+              <p className="text-base text-gray-800 text-left">{item}</p> {/* Changed text-foreground to text-gray-800 */}
             </div>
           ))}
         </CardContent>

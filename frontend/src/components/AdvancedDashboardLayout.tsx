@@ -80,7 +80,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   onTabChange,
   tabNames
 }) => {
-  const { selectedPrimaryColor, previewPrimaryColorHex, themeColors } = useTheme();
+  const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme(); // Get current theme
 
   const getPrimaryColorHex = () => {
     if (previewPrimaryColorHex) return previewPrimaryColorHex;
@@ -189,16 +189,16 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-500 font-medium">{kpi.originalKey || kpi.key}</span>
-                  {idx % 2 === 0 ? <BarChart2 className="w-4 h-4 text-primary" /> : <LineChart className="w-4 h-4 text-primary" />}
+                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black")}>{kpi.originalKey || kpi.key}</span>
+                  {idx % 2 === 0 ? <BarChart2 className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} /> : <LineChart className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} />}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
                   {chart?.y?.at(-1) !== undefined ? (
-                    <span className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{chart.y.at(-1).toLocaleString()}</span>
+                    <span className={cn("text-lg font-bold text-foreground group-hover:text-primary transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
-                      <Icon className="w-7 h-7 text-muted-foreground mb-0.5" />
-                      <span className="text-[10px] text-muted-foreground mt-0.5 font-medium">No data</span>
+                      <Icon className={cn("w-7 h-7 mb-0.5", theme === 'dark' ? "text-black" : "text-muted-foreground")} />
+                      <span className={cn("text-[10px] mt-0.5 font-medium", theme === 'dark' ? "text-black" : "text-muted-foreground")}>No data</span>
                     </span>
                   )}
                 </span>
@@ -505,10 +505,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                           }}
                                         />
                                       ) : (
-                                        <div className="flex flex-col items-center justify-center text-gray-500 pt-8 pb-8">
-                                          <BarChart2 className="w-12 h-12 mb-2 text-primary animate-bounce" />
-                                          <span className="text-base font-semibold">No data available</span>
-                                          <span className="text-xs text-muted-foreground mt-1">Try a different prompt or check your data source.</span>
+                                        <div className={cn("flex flex-col items-center justify-center pt-8 pb-8", "text-muted-foreground")}>
+                                          <BarChart2 className={cn("w-12 h-12 mb-2 animate-bounce", "text-primary")} />
+                                          <span className={cn("text-base font-semibold")}>No data available</span>
+                                          <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
                                         </div>
                                       )}
                                     </div>

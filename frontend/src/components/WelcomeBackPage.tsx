@@ -16,11 +16,11 @@ interface WelcomeBackPageProps {
 const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({ userName, lastActivity, userDomain, onContinue, fullName }) => {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <h1 className="text-5xl font-bold text-foreground mb-4">
-        Welcome back, <span className="text-primary">{fullName}</span>! {/* Changed text-blue-500 to text-primary */}
+      <h1 className="text-5xl font-bold text-gray-900 mb-4"> {/* Changed text-foreground to text-gray-900 */}
+        Welcome back, <span className="text-primary">{fullName}</span>!
       </h1>
-      <p className="text-xl text-muted-foreground mb-8 max-w-2xl flex items-center justify-center gap-2">
-        <History className="h-6 w-6 text-muted-foreground" /> Your last activity: <span className="font-semibold">{lastActivity}</span>
+      <p className="text-xl text-gray-600 mb-8 max-w-2xl flex items-center justify-center gap-2"> {/* Changed text-muted-foreground to text-gray-600 */}
+        <History className="h-6 w-6 text-gray-600" /> Your last activity: <span className="font-semibold">{lastActivity}</span> {/* Changed text-muted-foreground to text-gray-600 */}
       </p>
 
       <Button
