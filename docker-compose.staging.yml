@@ -57,11 +57,16 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=staging-postgres-password
+      # Fixed Keycloak hostname and proxy configuration
       - KC_HOSTNAME=staging.ea-aura.ai
-      - KC_HOSTNAME_STRICT=false
-      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HOSTNAME_STRICT=true
+      - KC_HOSTNAME_STRICT_HTTPS=true
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
+      # Add proper frontend URL configuration
+      - KC_FRONTEND_URL=https://staging.ea-aura.ai/auth
+      # Ensure proper proxy headers are handled
+      - KC_PROXY_HEADERS=xforwarded
     command: start-dev
     ports:
       - "8080:8080"
@@ -132,6 +137,9 @@ services:
       - ENVIRONMENT=staging
       - VAULT_TOKEN=staging-vault-token
       - VAULT_ADDR=http://vault:8200
+      # Add Keycloak configuration for backend
+      - KEYCLOAK_URL=https://staging.ea-aura.ai/auth
+      - KEYCLOAK_REALM=ea_aura
     env_file:
       - ./backend/env.staging
     networks:
@@ -188,8 +196,9 @@ services:
     environment:
       - CB_DATABASE=./data/cloudbeaver.db
       - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
-      - CB_SERVER_URL=http://staging.ea-aura.ai/dbeaver
-      - CB_ROOT_URI=/
+      # Fixed DBeaver URL configuration
+      - CB_SERVER_URL=https://staging.ea-aura.ai/dbeaver
+      - CB_ROOT_URI=/dbeaver/
     volumes:
       - dbeaver_data_staging:/opt/cloudbeaver/workspace
       - dbeaver_logs_staging:/opt/cloudbeaver/logs
@@ -206,6 +215,9 @@ services:
       - NODE_ENV=production
       - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
       - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
+      # Add Keycloak realm configuration
+      - VITE_KEYCLOAK_REALM=ea_aura
+      - VITE_KEYCLOAK_CLIENT_ID=ea_aura
     networks:
       - ea-aura-staging
     restart: unless-stopped
@@ -220,4 +232,4 @@ volumes:
 
 networks:
   ea-aura-staging:
-    driver: bridge 
+    driver: bridge

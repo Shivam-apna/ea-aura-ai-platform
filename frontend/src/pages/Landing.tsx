@@ -21,7 +21,8 @@ const Landing: React.FC = () => {
     }
     return true; // Default to true on server-side render
   });
-
+  
+  const fullName = (user?.name ? ` ${user.name}` : '');
   const userName = user?.preferred_username || user?.name || "User";
   const userEmail = user?.email || "user@example.com";
   const userDomain = userEmail.split('@')[1] || "example.com"; // Extract domain from email
@@ -64,9 +65,9 @@ const Landing: React.FC = () => {
         backgroundImage: 'url(https://i.postimg.cc/XYTD244P/luke-jones-Jc-EEIM963o-M-unsplash-1.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        filter: 'blur(2px) brightness(0.7)'
+        // filter: 'blur(2px) brightness(0.7)'
       }}></div>
-      <div className="absolute inset-0 z-10 bg-black opacity-50"></div> {/* Dark overlay */}
+      {/* <div className="absolute inset-0 z-10 bg-black opacity-50"></div> Dark overlay */}
 
       <div className="relative z-20 w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6 md:p-10 flex flex-col items-center">
         {/* Role Avatar at top-right */}
@@ -75,9 +76,9 @@ const Landing: React.FC = () => {
         </div>
 
         {isNewUser ? (
-          <WelcomePage userName={userName} onGetStarted={handleGetStarted} />
+          <WelcomePage userName={userName} fullName={fullName} onGetStarted={handleGetStarted} />
         ) : (
-          <WelcomeBackPage userName={userName} lastActivity={lastActivity} userDomain={userDomain} onContinue={handleContinue} />
+          <WelcomeBackPage userName={userName} fullName={fullName} lastActivity={lastActivity} userDomain={userDomain} onContinue={handleContinue} />
         )}
       </div>
     </div>
