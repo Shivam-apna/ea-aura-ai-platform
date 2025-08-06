@@ -38,7 +38,7 @@ def get_query_hash(query_text: str) -> str:
 
 def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> str:
     logger.info(f"[CACHE CHECK] USER QUESTION (first 100 chars): {query_text[:100]}")
-    logger.info(f"2222222222222222222222222222222222222222222222222222222222222222222222222: {tenant_id}")
+    logger.info(f"tenantid: {tenant_id}")
     query_hash = get_query_hash(query_text)
 
     # 1. Exact hash + tenant
