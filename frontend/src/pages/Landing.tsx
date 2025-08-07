@@ -20,9 +20,8 @@ const Landing: React.FC = () => {
   });
   
   const fullName = user?.name || user?.preferred_username || "User";
-  const userEmail = user?.email || "user@example.com";
-  const userDomain = user?.domain || "example.com"; // Extract domain from email
-
+  const userEmail = user?.email || "NA";
+  const userDomain = user?.domain || "gmail"
   // Placeholder for last activity
   const lastActivity = "Dashboard viewed 5 minutes ago";
 

@@ -142,7 +142,7 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-600">
-            No news found for {companyDomain}.
+            No news found.
           </div>
         )}
       </CardContent>
