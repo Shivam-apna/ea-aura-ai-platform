@@ -121,6 +121,9 @@ const BusinessDashboard = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
 
+  // Add AbortController ref for canceling requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
     // Restore charts and input for active tab
@@ -171,6 +174,15 @@ const BusinessDashboard = () => {
     }
   }, [activeTab]); // Add activeTab dependency
 
+  // Function to stop the current process
+  const handleStopProcess = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setLoading(false);
+      toast.info("Process stopped successfully");
+    }
+  };
 
   // Function to create a mapping between config keys and actual API response keys
   const createKeyMapping = (apiResponseKeys: string[], configKeys: any[]) => {
@@ -299,6 +311,10 @@ const BusinessDashboard = () => {
 
   const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
     setLoading(true);
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
     try {
 
       // Extract organization id from user object
@@ -314,6 +330,7 @@ const BusinessDashboard = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
+        signal: abortControllerRef.current.signal, // Add abort signal
       });
 
       // Handle different HTTP status codes with user-friendly messages
@@ -457,6 +474,12 @@ const BusinessDashboard = () => {
       setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
       localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
     } catch (err: any) {
+      // Handle abort error gracefully
+      if (err.name === 'AbortError') {
+        console.log('Request was aborted');
+        return; // Don't show error toast for user-initiated abort
+      }
+
       console.error("Error fetching charts:", err);
 
       // Handle network errors and other exceptions
@@ -471,6 +494,7 @@ const BusinessDashboard = () => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      abortControllerRef.current = null; // Clean up
     }
   };
 
@@ -485,10 +509,18 @@ const BusinessDashboard = () => {
     <div className="relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
           <div className="flex flex-col items-center gap-4">
             <GraphLoader />
             <span className="text-lg font-semibold text-blue-600 animate-pulse">Generating your dashboard...</span>
+            <Button
+              onClick={handleStopProcess}
+              variant="ghost"
+              size="sm"
+              className="mt-2 flex items-center gap-2 bg-[rgb(59,130,246)] hover:bg-[rgb(233,73,73)] text-white hover:text-white"
+            >
+              Cancel
+            </Button>
           </div>
         </div>
       )}
