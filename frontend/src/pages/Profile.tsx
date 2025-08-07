@@ -11,14 +11,27 @@ import { useAuth } from '@/contexts/AuthContext';
 const Profile = () => {
   const { user } = useAuth();
   const userProfile = user;
- const orgKeys = user && user.organization ? Object.keys(user.organization)[0] : "N/A";
+
+  // Determine organization name
+  let organizationName = "N/A";
+  if (userProfile?.organization && typeof userProfile.organization === 'object') {
+    const orgKeys = Object.keys(userProfile.organization);
+    if (orgKeys.length > 0) {
+      const firstOrgKey = orgKeys[0];
+      if (userProfile.organization[firstOrgKey] && userProfile.organization[firstOrgKey].name) {
+        organizationName = userProfile.organization[firstOrgKey].name;
+      }
+    }
+  }
+
   // Log all token parsed details to the console for verification
   useEffect(() => {
     if (userProfile) {
       console.log("Keycloak Token Parsed Details:", userProfile);
     }
   }, [userProfile]);
-  const fullName = userProfile?.name?` ${userProfile.name}` : '';
+
+  const fullName = userProfile?.name ? ` ${userProfile.name}` : '';
   const userName = userProfile?.preferred_username || userProfile?.name || "Guest User";
   const userEmail = userProfile?.email || "guest@example.com";
   const userRole = userProfile?.realm_access?.roles?.includes('admin') ? 'Admin' : 'User'; // Example role logic
@@ -39,7 +52,6 @@ const getInitials = (fullName: string) => {
 const initials = getInitials(fullName); // "SS" for "Shivam Singh"
 console.log("Initials:", initials); // Log initials for debugging
   // Mock company data - in a real app, this would come from your backend or Keycloak custom attributes
-  const companyName = "Acme Corp";
   const department = "Engineering";
   const position = "Software Engineer";
 
@@ -80,7 +92,7 @@ console.log("Initials:", initials); // Log initials for debugging
               <Label htmlFor="name" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Name
               </Label>
-              <Input id="name" type="text" value={fullName} readOnly className="bg-input border-border text-foreground" />
+              <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
               <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2 mb-2">
