@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Profile = () => {
   const { user } = useAuth();
   const userProfile = user;
-
+  const orgKeys = user && user.organization ? Object.keys(user.organization)[0] : "N/A";
   // Determine organization name
   let organizationName = "N/A";
   if (userProfile?.organization && typeof userProfile.organization === 'object') {
@@ -37,7 +37,8 @@ const Profile = () => {
   const userRole = userProfile?.realm_access?.roles?.includes('admin') ? 'Admin' : 'User'; // Example role logic
   const userId = userProfile?.sub || "N/A"; // Keycloak 'sub' is typically the user ID
   const tenantId = (userProfile as any)?.tenant_id || "N/A"; // Assuming 'tenant_id' is a custom claim
-  const organizationId = organizationName; // Corrected: Use organizationName here
+  const organizationId = orgKeys; // Corrected: Use organizationName here
+  const userDomain = userProfile?.domain || "NA"
   // Get initials from full name (first letter of first and last word)
 const getInitials = (fullName: string) => {
   if (!fullName) return "";
@@ -92,7 +93,7 @@ console.log("Initials:", initials); // Log initials for debugging
               <Label htmlFor="name" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Name
               </Label>
-              <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
+              <Input id="role" type="text" value={fullName} readOnly className="bg-input border-border text-foreground" />
             </div>
             <div>
               <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2 mb-2">
@@ -106,12 +107,12 @@ console.log("Initials:", initials); // Log initials for debugging
               </Label>
               <Input id="role" type="text" value={userRole} readOnly className="bg-input border-border text-foreground" />
             </div>
-            {/* <div>
+            <div>
               <Label htmlFor="department" className="text-muted-foreground flex items-center gap-2 mb-2">
-                <Briefcase className="h-4 w-4" /> Department
+                <Briefcase className="h-4 w-4" /> Domain
               </Label>
-              <Input id="department" type="text" value={department} readOnly className="bg-input border-border text-foreground" />
-            </div> */}
+              <Input id="department" type="text" value={userDomain} readOnly className="bg-input border-border text-foreground" />
+            </div>
             {/* <div className="md:col-span-2">
               <Label htmlFor="position" className="text-muted-foreground flex items-center gap-2 mb-2">
                 <UserIcon className="h-4 w-4" /> Position
