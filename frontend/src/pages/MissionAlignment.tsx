@@ -97,6 +97,9 @@ const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mission_
 const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mission_alignment_metric_groups_cache", tab);
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mission_alignment_last_prompt", tab);
 
+// Define the specific prompt for Mission Alignment (AIM Elevate)
+const MISSION_PROMPT = "What are the Revenue generated, CTR, Gross Margin, Net Profit Margin, Conversion Rate, GMROI and CPL of AIM Elevate.";
+
 
 const MissionAlignment = () => {
   const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
@@ -522,13 +525,18 @@ const MissionAlignment = () => {
         </div>
       )}
 
-      {/* Prompt Section - using PagePromptBar */}
-      <PagePromptBar
-        placeholder="Ask about mission alignment, goals, or any metric..."
-        onSubmit={fetchData}
-        onLoadingChange={setLoading}
-        className="mt-4 mb-2"
-      />
+      {/* Common wrapper for prompt bar */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Prompt Section - using PagePromptBar */}
+        <PagePromptBar
+          placeholder="Ask about mission alignment, goals, or any metric..."
+          onSubmit={fetchData}
+          onLoadingChange={setLoading}
+          className="mt-4 mb-2"
+          initialPrompt={MISSION_PROMPT} // Pass the specific prompt
+          storageKeyForInput="mission_alignment_prompt_input" // Unique storage key
+        />
+      </div>
 
       {/* Page Header Actions Row - Updated with PDF props */}
       <PageHeaderActions
@@ -543,24 +551,27 @@ const MissionAlignment = () => {
         setIsSpeaking={setIsSpeaking}
       />
 
-      {/* Advanced Dashboard Layout Component with Refs */}
-      <div ref={kpiSectionRef}>
-        <AdvancedDashboardLayout
-          charts={charts}
-          dynamicKpiKeys={dynamicKpiKeys}
-          dynamicMetricGroups={dynamicMetricGroups}
-          storagePrefix="mission_alignment"
-          onChartClose={handleCloseChart}
-          onRestoreCharts={handleRestoreCharts}
-          onChartTypeChange={handleChartTypeChange}
-          onChartColorChange={handleChartColorChange}
-          chartTypes={chartTypes}
-          chartColors={chartColors}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabNames={TAB_NAMES}
-        />
+      {/* Common wrapper for dashboard layout */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Advanced Dashboard Layout Component with Refs */}
+        <div ref={kpiSectionRef}>
+          <AdvancedDashboardLayout
+            charts={charts}
+            dynamicKpiKeys={dynamicKpiKeys}
+            dynamicMetricGroups={dynamicMetricGroups}
+            storagePrefix="mission_alignment"
+            onChartClose={handleCloseChart}
+            onRestoreCharts={handleRestoreCharts}
+            onChartTypeChange={handleChartTypeChange}
+            onChartColorChange={handleChartColorChange}
+            chartTypes={chartTypes}
+            chartColors={chartColors}
+            loading={loading}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabNames={TAB_NAMES}
+          />
+        </div>
       </div>
     </div>
   );

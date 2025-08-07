@@ -128,7 +128,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
       </Link>
 
       <div className="flex items-center gap-3">
-        <div className="text-sm text-foreground font-normal mr-1 h-8 flex items-center">
+        <div className="text-sm text-primary font-normal mr-1 h-8 flex items-center">
           {formattedTime}, {formattedDate} {timezone}
         </div>
 
@@ -137,7 +137,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="h-8 w-8 rounded-full text-primary hover:bg-muted transition-colors"
           onClick={triggerRefresh} // Call triggerRefresh on click
         >
           <RefreshCw className="h-5 w-5" />
@@ -147,7 +147,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
         {/* Notification Popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-primary hover:bg-muted transition-colors">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
               {unreadCount > 0 && (

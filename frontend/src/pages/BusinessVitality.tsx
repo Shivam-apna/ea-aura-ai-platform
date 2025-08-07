@@ -99,6 +99,9 @@ const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("business
 const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("business_metric_groups_cache", tab);
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("business_last_prompt", tab);
 
+// Define the specific prompt for Business Vitality
+const BUSINESS_PROMPT = "What are GMROI, Net Profit Margin, Gross Margin, COGS, Gross Profit Margin, Net Sales, GMROI and conversion rate of pilkhan tree.";
+
 
 const BusinessDashboard = () => {
   const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
@@ -525,13 +528,18 @@ const BusinessDashboard = () => {
         </div>
       )}
 
-      {/* Prompt Section - using PagePromptBar */}
-      <PagePromptBar
-        placeholder="Ask about business, sales, or any metric..."
-        onSubmit={fetchData}
-        onLoadingChange={setLoading}
-        className="mt-4 mb-2"
-      />
+      {/* Common wrapper for prompt bar */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Prompt Section - using PagePromptBar */}
+        <PagePromptBar
+          placeholder="Ask about business, sales, or any metric..."
+          onSubmit={fetchData}
+          onLoadingChange={setLoading}
+          className="mt-4 mb-2"
+          initialPrompt={BUSINESS_PROMPT} // Pass the specific prompt
+          storageKeyForInput="business_vitality_prompt_input" // Unique storage key
+        />
+      </div>
 
       {/* Page Header Actions Row - Updated with PDF props */}
       <PageHeaderActions
@@ -546,24 +554,27 @@ const BusinessDashboard = () => {
         setIsSpeaking={setIsSpeaking}
       />
 
-      {/* Advanced Dashboard Layout Component with Refs */}
-      <div ref={kpiSectionRef}>
-        <AdvancedDashboardLayout
-          charts={charts}
-          dynamicKpiKeys={dynamicKpiKeys}
-          dynamicMetricGroups={dynamicMetricGroups}
-          storagePrefix="business_vitality"
-          onChartClose={handleCloseChart}
-          onRestoreCharts={handleRestoreCharts}
-          onChartTypeChange={handleChartTypeChange}
-          onChartColorChange={handleChartColorChange}
-          chartTypes={chartTypes}
-          chartColors={chartColors}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabNames={TAB_NAMES}
-        />
+      {/* Common wrapper for dashboard layout */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Advanced Dashboard Layout Component with Refs */}
+        <div ref={kpiSectionRef}>
+          <AdvancedDashboardLayout
+            charts={charts}
+            dynamicKpiKeys={dynamicKpiKeys}
+            dynamicMetricGroups={dynamicMetricGroups}
+            storagePrefix="business_vitality"
+            onChartClose={handleCloseChart}
+            onRestoreCharts={handleRestoreCharts}
+            onChartTypeChange={handleChartTypeChange}
+            onChartColorChange={handleChartColorChange}
+            chartTypes={chartTypes}
+            chartColors={chartColors}
+            loading={loading}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabNames={TAB_NAMES}
+          />
+        </div>
       </div>
     </div>
   );

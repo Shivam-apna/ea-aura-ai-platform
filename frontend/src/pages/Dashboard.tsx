@@ -551,13 +551,18 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           </div>
         </div>
       )}
-      {/* Prompt Section - using PagePromptBar */}
-      <PagePromptBar
-        placeholder="Ask about brand, index, or any metric..."
-        onSubmit={handlePromptSubmit}
-        onLoadingChange={setLoading}
-        className="mt-4 mb-2"
-      />
+
+      {/* Common wrapper for prompt bar */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Prompt Section - using PagePromptBar */}
+        <PagePromptBar
+          placeholder="Ask about brand, index, or any metric..."
+          onSubmit={handlePromptSubmit}
+          onLoadingChange={setLoading}
+          className="mt-4 mb-2"
+        />
+      </div>
+
       {/* Page Header Actions Row */}
       <PageHeaderActions title="Overview" className="mb-2"
         onDownloadPDF={handleDownloadPDF}
@@ -569,24 +574,27 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
         setIsSpeaking={setIsSpeaking}
       />
 
-      {/* Advanced Dashboard Layout Component */}
-      <div ref={kpiSectionRef}>
-        <AdvancedDashboardLayout
-          charts={charts}
-          dynamicKpiKeys={dynamicKpiKeys}
-          dynamicMetricGroups={dynamicMetricGroups}
-          storagePrefix="dashboard"
-          onChartClose={handleCloseChart}
-          onRestoreCharts={handleRestoreCharts}
-          onChartTypeChange={handleChartTypeChange}
-          onChartColorChange={handleChartColorChange}
-          chartTypes={chartTypes}
-          chartColors={chartColors}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabNames={TAB_NAMES}
-        />
+      {/* Common wrapper for dashboard layout */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Advanced Dashboard Layout Component */}
+        <div ref={kpiSectionRef}>
+          <AdvancedDashboardLayout
+            charts={charts}
+            dynamicKpiKeys={dynamicKpiKeys}
+            dynamicMetricGroups={dynamicMetricGroups}
+            storagePrefix="dashboard"
+            onChartClose={handleCloseChart}
+            onRestoreCharts={handleRestoreCharts}
+            onChartTypeChange={handleChartTypeChange}
+            onChartColorChange={handleChartColorChange}
+            chartTypes={chartTypes}
+            chartColors={chartColors}
+            loading={loading}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabNames={TAB_NAMES}
+          />
+        </div>
       </div>
     </div>
   );

@@ -137,12 +137,6 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
                 <h4 className="font-medium text-sm text-gray-900 line-clamp-1">
                   {article.title}
                 </h4>
-                <div className="flex justify-between items-center mt-2">
-
-                  <p className="text-xs text-gray-500">
-                    {formatDate(article.pubDate)}
-                  </p>
-                </div>
               </a>
             ))}
           </div>

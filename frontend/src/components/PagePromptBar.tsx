@@ -13,6 +13,8 @@ interface PagePromptBarProps {
   onSubmit: (value: string) => void;
   onLoadingChange?: (loading: boolean) => void;
   className?: string;
+  initialPrompt?: string; // New prop for initial prompt
+  storageKeyForInput?: string; // New prop for localStorage key
 }
 
 const PagePromptBar: React.FC<PagePromptBarProps> = ({
@@ -21,6 +23,8 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   onSubmit,
   onLoadingChange,
   className,
+  initialPrompt = "", // Default to empty string
+  storageKeyForInput, // No default, it's optional
 }) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +34,33 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
- const [lastQuery, setLastQuery] = useState(""); // Add this line
+  const isInitialMount = useRef(true); // New ref to track initial mount
+
+  // Effect to load initial prompt from localStorage or prop
+  useEffect(() => {
+    if (storageKeyForInput) {
+      const savedInput = localStorage.getItem(storageKeyForInput);
+      if (savedInput !== null) {
+        setInput(savedInput);
+      } else {
+        setInput(initialPrompt);
+      }
+    } else {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt, storageKeyForInput]);
+
+  // Effect to save input to localStorage whenever it changes, but skip initial mount
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return; // Skip saving on the very first render after mount
+    }
+
+    if (storageKeyForInput) {
+      localStorage.setItem(storageKeyForInput, input);
+    }
+  }, [input, storageKeyForInput]); // Depend on 'input' to trigger saving on change
 
   // Initialize speech recognition
   useEffect(() => {
@@ -143,9 +173,9 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     onLoadingChange?.(true);
 
     const promptText = input.trim();
-    setInput("");
+    setInput(""); // Clear input immediately
     setTranscript("");
-    setLastQuery(promptText); // Save last query
+    
     try {
       await onSubmit(promptText);
       // Remove success toast - let parent components handle success feedback
@@ -157,15 +187,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       onLoadingChange?.(false);
     }
   };
-
-  // Restore last query on input focus if input is empty
-  const handleInputFocus = () => {
-    if (!input && lastQuery) {
-      setInput(lastQuery);
-    }
-  };
-
-
   
   const handleVoiceInput = () => {
     if (!recognition) {
@@ -212,12 +233,12 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       
       {/* Prompt Bar */}
       <div className={cn(
-        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200", // Changed bg-white to bg-card
-        "focus-within:border-primary focus-within:shadow-md", // Changed border-blue-500 to border-primary
+        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200",
+        "focus-within:border-primary focus-within:shadow-md",
         "hover:border-gray-300 hover:shadow-md",
-        "w-full max-w-[1500px] mx-auto px-6", // Changed pr-1 to px-6
-        "dark:shadow-prompt-glow", // Add this line
-        className // Apply the passed className
+        "w-full", // Removed max-w-[1500px] mx-auto px-6
+        "dark:shadow-prompt-glow",
+        className
       )}>
         <div className="relative flex-grow">
           <Input
@@ -226,7 +247,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
             value={input}
             onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            onFocus={handleInputFocus} // Add this line
             className={cn(
               "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
               "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -281,14 +301,12 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isListening ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2"> {/* Centered content */}
               <Volume2 className="h-4 w-4" />
-              <Sparkles className="h-3 w-3 animate-pulse" />
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center"> {/* Centered content */}
               {buttonText}
-              <Sparkles className="h-3 w-3" />
             </div>
           )}
         </Button>
