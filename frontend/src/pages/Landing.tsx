@@ -21,7 +21,7 @@ const Landing: React.FC = () => {
   
   const fullName = user?.name || user?.preferred_username || "User";
   const userEmail = user?.email || "user@example.com";
-  const userDomain = user?.domain || "gmail"; // Extract domain from email
+  const userDomain = user?.domain || "example.com"; // Extract domain from email
 
   // Placeholder for last activity
   const lastActivity = "Dashboard viewed 5 minutes ago";
@@ -55,7 +55,7 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-start p-4 overflow-hidden bg-gradient-to-br from-blue-900 to-indigo-950">
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-900 to-indigo-950"> {/* Changed justify-start to justify-center and removed p-4 */}
       {/* Background animation/pattern */}
       <div className="absolute inset-0 z-0 opacity-100" style={{
         backgroundImage: 'url(https://i.postimg.cc/PrSCLDq0/ea-aura-image.jpg)',

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react'; // Import AlertCircle
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils'; // Import cn for conditional classes
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -23,12 +26,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showErrorMessage, setShowErrorMessage] = useState(false); // New state for error message visibility
   const [backgroundPosition] = useState(initialBackgroundPosition);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (error) {
+      setShowErrorMessage(true);
+      timer = setTimeout(() => {
+        setShowErrorMessage(false);
+        setError(null); // Clear error message after hiding
+      }, 7000); // Auto-hide after 7 seconds
+    }
+    return () => clearTimeout(timer);
+  }, [error]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) setError(null);
+    if (error) {
+      setError(null); // Clear error when user starts typing
+      setShowErrorMessage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +58,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
     setIsLoading(true);
     setError(null);
+    setShowErrorMessage(false); // Hide previous error message immediately
     try {
       await login(formData.username, formData.password);
       if (onLoginSuccess) onLoginSuccess();
@@ -46,6 +66,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      // The useEffect will handle setting showErrorMessage to true and auto-hiding
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +83,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Right Section */}
         <div className="eaura-right">
-          <div className="eaura-login-box">
+          <div className={cn("eaura-login-box", { "shake": showErrorMessage })}> {/* Apply shake class */}
             <h2>Login</h2>
 
-            {error && <div className="eaura-error">{error}</div>}
+            {/* Inline Error Message */}
+            {error && showErrorMessage && (
+              <div className="eaura-error-message">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <span> Access denied. Only registered and authorized users can log in to EA-AURA. Please contact your admin for access.</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <Input
@@ -105,12 +132,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 className="eaura-continue-btn text-white"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Continue'}
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
 
             <p className="eaura-register-text">
-              <b>Only registered and authorized users are permitted to access the login portal.</b>
               <br />
               For any query, please{' '}
               <button

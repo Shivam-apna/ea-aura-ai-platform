@@ -523,13 +523,16 @@ const BrandIndex = () => {
         </div>
       )}
 
-      {/* Prompt Section - using PagePromptBar */}
-      <PagePromptBar
-        placeholder="Ask about brand, index, or any metric..."
-        onSubmit={fetchData}
-        onLoadingChange={setLoading}
-        className="mt-4 mb-2"
-      />
+      {/* Common wrapper for prompt bar */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Prompt Section - using PagePromptBar */}
+        <PagePromptBar
+          placeholder="Ask about brand, index, or any metric..."
+          onSubmit={fetchData}
+          onLoadingChange={setLoading}
+          className="mt-4 mb-2"
+        />
+      </div>
 
       {/* Page Header Actions Row - Updated with PDF props */}
       <PageHeaderActions
@@ -544,24 +547,27 @@ const BrandIndex = () => {
         setIsSpeaking={setIsSpeaking}
       />
 
-      {/* Advanced Dashboard Layout Component with Refs */}
-      <div ref={kpiSectionRef}>
-        <AdvancedDashboardLayout
-          charts={charts}
-          dynamicKpiKeys={dynamicKpiKeys}
-          dynamicMetricGroups={dynamicMetricGroups}
-          storagePrefix="brand_index"
-          onChartClose={handleCloseChart}
-          onRestoreCharts={handleRestoreCharts}
-          onChartTypeChange={handleChartTypeChange}
-          onChartColorChange={handleChartColorChange}
-          chartTypes={chartTypes}
-          chartColors={chartColors}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabNames={TAB_NAMES}
-        />
+      {/* Common wrapper for dashboard layout */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Advanced Dashboard Layout Component with Refs */}
+        <div ref={kpiSectionRef}>
+          <AdvancedDashboardLayout
+            charts={charts}
+            dynamicKpiKeys={dynamicKpiKeys}
+            dynamicMetricGroups={dynamicMetricGroups}
+            storagePrefix="brand_index"
+            onChartClose={handleCloseChart}
+            onRestoreCharts={handleRestoreCharts}
+            onChartTypeChange={handleChartTypeChange}
+            onChartColorChange={handleChartColorChange}
+            chartTypes={chartTypes}
+            chartColors={chartColors}
+            loading={loading}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabNames={TAB_NAMES}
+          />
+        </div>
       </div>
     </div>
   );

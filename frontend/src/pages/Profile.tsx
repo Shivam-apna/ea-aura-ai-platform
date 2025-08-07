@@ -37,7 +37,7 @@ const Profile = () => {
   const userRole = userProfile?.realm_access?.roles?.includes('admin') ? 'Admin' : 'User'; // Example role logic
   const userId = userProfile?.sub || "N/A"; // Keycloak 'sub' is typically the user ID
   const tenantId = (userProfile as any)?.tenant_id || "N/A"; // Assuming 'tenant_id' is a custom claim
-  const organizationId = orgKeys; // Assuming 'organization_id' is a custom claim
+  const organizationId = organizationName; // Corrected: Use organizationName here
   // Get initials from full name (first letter of first and last word)
 const getInitials = (fullName: string) => {
   if (!fullName) return "";

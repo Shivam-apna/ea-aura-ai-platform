@@ -104,7 +104,7 @@ const ChatbotLauncher: React.FC<ChatbotLauncherProps> = ({
         onClick={handleOpenChat}
         aria-label="Open Chatbot"
       >
-        <MessageSquare className="h-7 w-7" />
+        <MessageSquare className="h-7 w-7 text-white" /> {/* Changed text-primary-foreground to text-white */}
       </Button>
 
       {/* Chatbot Popup Panel */}

@@ -327,7 +327,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   };
 
   return (
-    <div className="relative min-h-screen w-full max-w-[1500px] mx-auto px-6">
+    <div className="relative min-h-screen w-full"> {/* Removed max-w-[1500px] mx-auto px-6 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];

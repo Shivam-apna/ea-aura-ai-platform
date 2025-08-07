@@ -23,7 +23,7 @@ const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({ userName, lastActivit
   const { theme } = useTheme(); // Get current theme
 
   return (
-    <div className="relative z-20 w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6 md:p-10 flex flex-col items-center mt-8">
+    <div className="relative z-20 w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-4 md:p-6 flex flex-col items-center mt-0"> {/* Reduced padding, removed mt-8 */}
       {/* NEW HEADER SECTION */}
       <header className="absolute top-0 left-0 right-0 z-30 w-full px-6 py-3 flex items-center justify-between bg-background shadow-md rounded-t-3xl">
         {/* Right: Company Logo (now on the left) */}
@@ -48,7 +48,7 @@ const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({ userName, lastActivit
         </div>
       </header>
 
-      <div className="flex flex-col items-center justify-center p-8 text-center pt-20"> {/* Added pt-20 to push content below header */}
+      <div className="flex flex-col items-center justify-center p-4 text-center pt-20"> {/* Reduced p-8 to p-4 */}
         <h1 className="text-5xl font-bold text-gray-900 mb-4">
           Welcome back, <span className="text-primary">{fullName}</span>!
         </h1>
@@ -67,7 +67,7 @@ const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({ userName, lastActivit
           Continue <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
 
-        <div className="mt-12 w-full max-w-2xl">
+        <div className="mt-8 w-full max-w-2xl"> {/* Reduced mt-12 to mt-8 */}
           <NewsFeed companyDomain={userDomain} />
         </div>
       </div>
