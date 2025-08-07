@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { getApiEndpoint } from '@/config/environment'; // Assuming getApiEndpoint can be used for external APIs or you'll create a new one
 import { toast } from 'sonner';
 import { Newspaper } from 'lucide-react';
 
 interface NewsArticle {
   title: string;
   description: string;
-  url: string;
-  source: {
-    name: string;
-  };
-  publishedAt: string;
+  link: string;
+  source_id: string;
+  pubDate: string;
+}
+
+interface NewsDataResponse {
+  status: string;
+  totalResults: number;
+  results: NewsArticle[];
+  nextPage?: string;
 }
 
 interface NewsFeedProps {
@@ -24,85 +27,95 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Replace with environment variable in production
+  const NEWSDATA_API_KEY = 'pub_f0165722da564a1995195ad5a3a615de';
+  const NEWSDATA_BASE_URL = 'https://newsdata.io/api/1/news';
+
   useEffect(() => {
     const fetchNews = async () => {
       setLoading(true);
       setError(null);
+
       try {
-        // IMPORTANT: Replace with your actual News API endpoint and key
-        // This is a placeholder. You need to set up a backend proxy or use a client-side API key (less secure).
-        // Example for NewsAPI.org:
-        // const NEWS_API_KEY = import.meta.env.VITE_NEWS_API_KEY;
-        // const NEWS_API_BASE_URL = import.meta.env.VITE_NEWS_API_BASE_URL || 'https://newsapi.org/v2';
-        // const query = encodeURIComponent(`"${companyDomain}" OR "CEO of ${companyDomain}"`);
-        // const url = `${NEWS_API_BASE_URL}/everything?q=${query}&apiKey=${NEWS_API_KEY}&language=en&sortBy=publishedAt`;
+        // Extract company name from domain for better search results
+        const companyName = companyDomain.replace(/\.(com|org|net|io|co).*$/i, '');
 
-        // For demonstration, we'll use a mock API call.
-        // In a real application, you would fetch from a secure backend endpoint
-        // that proxies your News API requests to hide your API key.
-        
-        // Mock API call
-        const mockResponse = {
-          articles: [
-            {
-              title: `Latest update from ${companyDomain} on Q3 earnings`,
-              description: "The company announced strong Q3 results, exceeding analyst expectations with significant growth in key markets.",
-              url: "https://example.com/news/q3-earnings",
-              source: { name: "Financial Times" },
-              publishedAt: "2023-10-26T10:00:00Z",
-            },
-            {
-              title: `CEO of ${companyDomain} discusses future of AI`,
-              description: "In a recent interview, the CEO shared insights on the company's strategic investments in artificial intelligence and machine learning.",
-              url: "https://example.com/news/ai-strategy",
-              source: { name: "TechCrunch" },
-              publishedAt: "2023-10-25T14:30:00Z",
-            },
-            {
-              title: `New partnership announced by ${companyDomain}`,
-              description: "A groundbreaking collaboration is set to expand the company's reach into emerging markets.",
-              url: "https://example.com/news/partnership",
-              source: { name: "Business Wire" },
-              publishedAt: "2023-10-24T09:15:00Z",
-            },
-          ],
-        };
+        // Build query parameters
+        const params = new URLSearchParams({
+          apikey: NEWSDATA_API_KEY,
+          q: `"${companyDomain}"`,
+          language: 'en',
+          category: 'business,technology',
+          size: '10',
+        });
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const url = `${NEWSDATA_BASE_URL}?${params}`;
+        console.log('Fetching news from:', url.replace(NEWSDATA_API_KEY, 'API_KEY_HIDDEN'));
 
-        // const response = await fetch(url);
-        // if (!response.ok) {
-        //   throw new Error(`Failed to fetch news: ${response.statusText}`);
-        // }
-        // const data = await response.json();
-        // setArticles(data.articles.slice(0, 5)); // Limit to 5 articles
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        setArticles(mockResponse.articles.slice(0, 5));
-        toast.success("News feed updated!");
-
+        const data: NewsDataResponse = await response.json();
+        if (data.status === 'success' && data.results) {
+          const validArticles = data.results
+            .filter(article => article.title && article.description && article.link)
+            .slice(0, 5);
+          setArticles(validArticles);
+          toast.success(`Found ${validArticles.length} news articles!`);
+        } else {
+          throw new Error('No articles found or API returned error status');
+        }
       } catch (err) {
         console.error("Error fetching news:", err);
-        setError("Failed to load news. Please check your API key and network connection.");
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(`Failed to load news: ${errorMessage}`);
         toast.error("Failed to load news feed.");
+
+        // Fallback to mock data
+        setArticles([
+          {
+            title: `Latest update from ${companyDomain}`,
+            description: "Unable to fetch live news. This is fallback content.",
+            link: "https://example.com",
+            source_id: "fallback",
+            pubDate: new Date().toISOString(),
+          }
+        ]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (companyDomain) {
+    if (companyDomain && companyDomain.trim()) {
       fetchNews();
+    } else {
+      setLoading(false);
+      setError("Please provide a valid company domain");
     }
   }, [companyDomain]);
 
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Unknown date';
+    }
+  };
+
   return (
-    <Card className="bg-white text-gray-900 shadow-lg rounded-xl"> {/* Changed bg-white to bg-[#e5f2fd] */}
+    <Card className="bg-white text-gray-900 shadow-lg rounded-xl border-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Newspaper className="h-5 w-5 text-blue" /> Global News
+          <Newspaper className="h-5 w-5 text-blue-500" /> Trending News
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-[250px] p-4">
+      <CardContent className="p-4">
         {loading ? (
           <div className="flex items-center justify-center h-full text-gray-600">
             Loading news...
@@ -112,25 +125,21 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
             {error}
           </div>
         ) : articles.length > 0 ? (
-          <ScrollArea className="h-full pr-4">
-            <div className="space-y-3">
-              {articles.map((article, index) => (
-                <a
-                  key={index}
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-3 rounded-lg bg-[#e5f2fd] hover:bg-gray-50 transition-colors" /* Changed bg-gray-100 to bg-white, hover:bg-gray-200 to hover:bg-gray-50 */
-                >
-                  <h4 className="font-medium text-sm text-gray-900 line-clamp-1">{article.title}</h4>
-                  <p className="text-xs text-gray-600 line-clamp-2">{article.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {article.source.name} - {new Date(article.publishedAt).toLocaleDateString()}
-                  </p>
-                </a>
-              ))}
-            </div>
-          </ScrollArea>
+          <div className="space-y-3">
+            {articles.map((article, index) => (
+              <a
+                key={index}
+                href={article.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 rounded-lg bg-[#e5f2fd] hover:bg-gray-200 transition-colors"
+              >
+                <h4 className="font-medium text-sm text-gray-900 line-clamp-1">
+                  {article.title}
+                </h4>
+              </a>
+            ))}
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-600">
             No news found for {companyDomain}.

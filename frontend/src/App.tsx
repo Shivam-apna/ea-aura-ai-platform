@@ -121,7 +121,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleCollapse}
         />
-        <main className="flex-grow overflow-auto h-full flex flex-col bg-background text-foreground"> {/* Apply theme classes here */}
+        <main className={cn(
+          "flex-grow overflow-auto h-full flex flex-col",
+          !isAuthPage && "bg-background text-foreground" // Apply theme classes only if not an auth page
+        )}>
           {children}
         </main>
       </div>

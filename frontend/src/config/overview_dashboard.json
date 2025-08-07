@@ -2,8 +2,8 @@
     "metric_groups": {
         "Overview": [
             {
-                "key": "Conversion Rate (%)",
-                "label": "Conversion Rate"
+                "key": "Sentiment Score",
+                "label": "Sentiment Score"
             },
             {
                 "key": "CXHS",
@@ -22,26 +22,26 @@
                 "label": "Audience Growth"
             },
             {
-                "key": "Traffic by Location",
-                "label": "Traffic by Location"
+                "key": "NPS Score",
+                "label": "NPS Score"
             }
         ]
     },
     "kpi_keys": [
         {
-            "key": "Gross Profit Margin",
+            "key": "Sentiment Score",
             "bgColor": "#E4F8C2"
         },
         {
-            "key": "NPS Score",
+            "key": "CES Score",
             "bgColor": "#E6F1FD"
         },
         {
-            "key": "Alignment Score (%)",
+            "key": "NPS Score",
             "bgColor": "#E4F8C2"
         },
         {
-            "key": "Unique Website Visitors",
+            "key": "CXHS",
             "bgColor": "#E6F1FD"
         }
     ]

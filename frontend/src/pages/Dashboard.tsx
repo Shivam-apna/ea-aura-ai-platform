@@ -29,6 +29,7 @@ import AdvancedDashboardLayout from "@/components/AdvancedDashboardLayout";
 import { generatePDF } from "@/utils/generatePDF";
 import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
 import { useAuth } from "@/contexts/AuthContext";
+import { createTTS } from "@/utils/avatars";
 // Type definitions
 interface KpiItem {
   key: string;
@@ -138,6 +139,11 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   // Refs for PDF generation
   const kpiSectionRef = useRef<HTMLDivElement>(null);
   const chartsSectionRef = useRef<HTMLDivElement>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+
+  // Add AbortController ref for canceling requests
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
@@ -188,6 +194,17 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       setDynamicMetricGroups(METRIC_GROUPS); // Reset to default
     }
   }, [activeTab]); // Add activeTab dependency
+
+  // Function to stop the current process
+  const handleStopProcess = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setLoading(false);
+      toast.info("Process stopped successfully");
+    }
+  };
+
 
 
   // Function to create a mapping between config keys and actual API response keys
@@ -319,8 +336,11 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   // Modified fetchData to accept prompt from PagePromptBar
   const handlePromptSubmit = async (prompt: string) => {
     setLoading(true);
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
     try {
-            // Extract organization id from user object
+      // Extract organization id from user object
       let tenantId = "demo232";
       if (user && user.organization && typeof user.organization === "object") {
         // Get the first org id if present
@@ -333,12 +353,13 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
+        signal: abortControllerRef.current.signal, // Add abort signal
       });
 
       // Handle different HTTP status codes with user-friendly messages
       if (!res.ok) {
         let errorMessage = 'An error occurred while processing your request.';
-        
+
         switch (res.status) {
           case 400:
             errorMessage = 'Invalid request. Please check your input and try again.';
@@ -477,20 +498,27 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
       localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
     } catch (err: any) {
+
+      // Handle abort error gracefully
+      if (err.name === 'AbortError') {
+        console.log('Request was aborted');
+        return; // Don't show error toast for user-initiated abort
+      }
       console.error("Error fetching charts:", err);
-      
+
       // Handle network errors and other exceptions
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
+
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -502,48 +530,71 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
   // Flatten all metrics from all groups for direct display
   const allMetrics = Object.values(dynamicMetricGroups).flat();
 
+  const handleCreateTTS = () => createTTS(activeTab, "Overview Analysis", "overview_parsed_summary", setTtsLoading, setIsSpeaking);
+
   return (
     <div className="relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
           <div className="flex flex-col items-center gap-4">
             <GraphLoader />
             <span className="text-lg font-semibold text-blue-600 animate-pulse">Generating your dashboard...</span>
+            <Button
+              onClick={handleStopProcess}
+              variant="ghost"
+              size="sm"
+              className="mt-2 flex items-center gap-2 bg-[rgb(59,130,246)] hover:bg-[rgb(233,73,73)] text-white hover:text-white"
+            >
+              Cancel
+            </Button>
           </div>
         </div>
       )}
-      {/* Prompt Section - using PagePromptBar */}
-      <PagePromptBar
-        placeholder="Ask about brand, index, or any metric..."
-        onSubmit={handlePromptSubmit}
-        onLoadingChange={setLoading}
-        className="mt-4 mb-2"
-      />
+
+      {/* Common wrapper for prompt bar */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Prompt Section - using PagePromptBar */}
+        <PagePromptBar
+          placeholder="Ask about brand, index, or any metric..."
+          onSubmit={handlePromptSubmit}
+          onLoadingChange={setLoading}
+          className="mt-4 mb-2"
+        />
+      </div>
+
       {/* Page Header Actions Row */}
       <PageHeaderActions title="Overview" className="mb-2"
         onDownloadPDF={handleDownloadPDF}
         downloadingPdf={downloadingPdf}
-        hasChartsData={Object.keys(charts).length > 0} />
+        hasChartsData={Object.keys(charts).length > 0}
+        onCreateTTS={handleCreateTTS}
+        ttsLoading={ttsLoading}
+        isSpeaking={isSpeaking}
+        setIsSpeaking={setIsSpeaking}
+      />
 
-      {/* Advanced Dashboard Layout Component */}
-      <div ref={kpiSectionRef}>
-        <AdvancedDashboardLayout
-          charts={charts}
-          dynamicKpiKeys={dynamicKpiKeys}
-          dynamicMetricGroups={dynamicMetricGroups}
-          storagePrefix="dashboard"
-          onChartClose={handleCloseChart}
-          onRestoreCharts={handleRestoreCharts}
-          onChartTypeChange={handleChartTypeChange}
-          onChartColorChange={handleChartColorChange}
-          chartTypes={chartTypes}
-          chartColors={chartColors}
-          loading={loading}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          tabNames={TAB_NAMES}
-        />
+      {/* Common wrapper for dashboard layout */}
+      <div className="w-full max-w-[1500px] mx-auto px-6">
+        {/* Advanced Dashboard Layout Component */}
+        <div ref={kpiSectionRef}>
+          <AdvancedDashboardLayout
+            charts={charts}
+            dynamicKpiKeys={dynamicKpiKeys}
+            dynamicMetricGroups={dynamicMetricGroups}
+            storagePrefix="dashboard"
+            onChartClose={handleCloseChart}
+            onRestoreCharts={handleRestoreCharts}
+            onChartTypeChange={handleChartTypeChange}
+            onChartColorChange={handleChartColorChange}
+            chartTypes={chartTypes}
+            chartColors={chartColors}
+            loading={loading}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabNames={TAB_NAMES}
+          />
+        </div>
       </div>
     </div>
   );

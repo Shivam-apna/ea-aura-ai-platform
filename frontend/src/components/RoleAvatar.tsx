@@ -17,16 +17,28 @@ const RoleAvatar: React.FC<RoleAvatarProps> = ({ className }) => {
 
   const userName = user?.preferred_username || user?.name || "Guest";
   const userRole = clientRoles.includes('admin') ? 'Admin' : 'User'; // Simple role logic
+  const fullName = user?.name?` ${user.name}` : '';
+  const getInitials = (fullName: string) => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) {
+    return parts[0][0]?.toUpperCase() || "";
+  }
+  const first = parts[0][0];
+  const last = parts[parts.length - 1][0];
+  return (first + last).toUpperCase();
+};
+const initials = getInitials(fullName);
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <Badge variant="secondary" className="px-2 py-1 text-xs font-semibold rounded-full">
         {userRole}
       </Badge>
-      <Avatar className="h-9 w-9 border-2 border-primary"> {/* Changed border-blue-500 to border-primary */}
-        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} />
-        <AvatarFallback className="bg-primary text-primary-foreground font-bold text-base"> {/* Changed bg-blue-500 to bg-primary and text-white to text-primary-foreground */}
-          {userName.charAt(0).toUpperCase()}
+      <Avatar className={cn("h-8 w-8")}> {/* Adjusted avatar size for collapsed state */}
+        {/* <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} alt={userName} /> */}
+        <AvatarFallback className="w-full h-full flex items-center justify-center rounded-full text-blue-800 flex">
+            {initials}
         </AvatarFallback>
       </Avatar>
     </div>
