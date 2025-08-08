@@ -17,7 +17,6 @@
       "profitability",
       "sales",
       "price",
-      "margin",
       "profit",
       "GMROI",
       "expense",
@@ -27,7 +26,10 @@
       "sale",
       "gross profit margin",
       "cogs",
-      "percentage"
+      "percentage",
+      "revenue",
+      "financial metrics",
+      "business performance"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile",
@@ -50,14 +52,18 @@
         "keywords": [
           "sales",
           "price",
-          "margin",
+          "sales margin",
           "profit",
           "GMROI",
           "expense",
           "sale",
           "gross profit margin",
           "cogs",
-          "percentage"
+          "percentage",
+          "sales volume",
+          "revenue trends",
+          "sales performance",
+          "profit margins"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
@@ -91,7 +97,12 @@
           "spend",
           "revenue",
           "ROI",
-          "CPL"
+          "CPL",
+          "marketing performance",
+          "ad spend",
+          "campaign ROI",
+          "marketing metrics",
+          "lead generation"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
@@ -126,7 +137,12 @@
       "Sentiment Score",
       "Issue Category",
       "First Response Time (hrs)",
-      "Resolution Time (hrs)"
+      "Resolution Time (hrs)",
+      "customer experience",
+      "support tickets",
+      "customer service",
+      "ticket resolution",
+      "customer sentiment"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile",
@@ -150,9 +166,13 @@
         "keywords": [
           "survey",
           "feedback",
-          "margin",
-          "Tags",
-          "Channel"
+          "survey margin",
+          "Survey Tags",
+          "Channel",
+          "customer feedback",
+          "survey responses",
+          "feedback analysis",
+          "customer opinions"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
@@ -177,12 +197,15 @@
         ],
         "keywords": [
           "Customer Handle",
-          "Content",
+          "Social Content",
           "Engagement Level",
-          "Platform",
-          "Tags",
-          "Content",
-          "Sentiment Score"
+          "Social Platform",
+          "Content Tags",
+          "Social Content Analysis",
+          "Customer Sentiment Score",
+          "social media feedback",
+          "customer social engagement",
+          "social customer service"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
@@ -210,7 +233,12 @@
           "SLA Met (%)",
           "Agent Assigned",
           "First Response Time (hrs)",
-          "Resolution Time (hrs)"
+          "Resolution Time (hrs)",
+          "support tickets",
+          "ticket resolution",
+          "support metrics",
+          "help desk",
+          "customer support"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
@@ -240,7 +268,13 @@
       "objective fit",
       "Resource Allocation",
       "Impact Metrics",
-      "Risks Identified"
+      "Risks Identified",
+      "strategic planning",
+      "organizational goals",
+      "mission alignment",
+      "strategic objectives",
+      "goal achievement",
+      "strategic focus"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile"
@@ -268,7 +302,11 @@
           "Owner",
           "Mitigation Strategies",
           "Impact Metrics",
-          "Risks Identified"
+          "Risks Identified",
+          "strategic alignment",
+          "mission metrics",
+          "organizational alignment",
+          "strategic initiatives"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile"
@@ -305,10 +343,15 @@
       "Reach",
       "Likes",
       "Comments",
-      "Platform",
+      "Social Platform",
       "Post",
       "Session Growth",
-      "Visitors"
+      "Visitors",
+      "brand perception",
+      "digital presence",
+      "web analytics",
+      "social media engagement",
+      "brand awareness"
     ],
     "llm_config": {
       "model": "llama-3.3-70b-versatile"
@@ -335,7 +378,11 @@
           "Page views",
           "time Spent",
           "Visitors",
-          "Session Growth"
+          "Session Growth",
+          "website analytics",
+          "web traffic",
+          "site performance",
+          "user behavior"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile"
@@ -358,7 +405,7 @@
         ],
         "keywords": [
           "Impressions",
-          "Platform",
+          "Brand Platform",
           "Post ID",
           "Post Type",
           "Followers",
@@ -367,8 +414,12 @@
           "Shares",
           "Comments",
           "Engagement Rate",
-          "Sentiment Score",
-          "Share of Voice"
+          "Brand Sentiment Score",
+          "Share of Voice",
+          "brand engagement",
+          "social media reach",
+          "post performance",
+          "brand social presence"
         ],
         "llm_config": {
           "model": "llama-3.3-70b-versatile",
