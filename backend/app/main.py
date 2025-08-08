@@ -36,8 +36,8 @@ app = FastAPI(
     debug=env_config["debug"]
 )
 
-# Header Override Middleware - Add this to fix Google Fonts
-class SecurityHeaderOverrideMiddleware(BaseHTTPMiddleware):
+# Aggressive Header Override Middleware
+class AggressiveHeaderOverrideMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.environment = settings.environment
@@ -45,45 +45,51 @@ class SecurityHeaderOverrideMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
-        # Override CSP to allow Google Fonts and external resources
-        if self.environment in ["development", "staging"]:
-            # More permissive CSP for dev/staging
-            csp_policy = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://newsdata.io; "
-                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
-                "img-src 'self' data: blob: https://i.postimg.cc https://postimg.cc; "
-                "frame-src 'self' https://staging.ea-aura.ai; "
-                "frame-ancestors 'self' https://staging.ea-aura.ai;"
-            )
-        else:
-            # Production CSP with external resources allowed
-            csp_policy = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://newsdata.io; "
-                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
-                "img-src 'self' data: https://i.postimg.cc https://postimg.cc; "
-                "frame-src 'self' https://staging.ea-aura.ai; "
-                "frame-ancestors 'self' https://staging.ea-aura.ai;"
-            )
+        # Very permissive CSP that allows everything we need
+        permissive_csp = (
+            "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+            "connect-src 'self' https: data:; "
+            "font-src 'self' https: data:; "
+            "img-src 'self' https: data: blob:; "
+            "frame-src 'self' https:; "
+            "frame-ancestors 'self' https:; "
+            "object-src 'none';"
+        )
         
-        # This will override nginx's Content-Security-Policy header
-        response.headers["Content-Security-Policy"] = csp_policy
-        
-        # Add other helpful headers (these will also override nginx if set)
+        # Force override ALL security headers
+        response.headers["Content-Security-Policy"] = permissive_csp
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["X-Content-Type-Options"] = "nosniff"
         
+        # Log what we're setting (for debugging)
+        logger.info(f"🔒 Setting CSP header: {permissive_csp[:100]}...")
+        
         return response
 
-# Add the header override middleware BEFORE CORS
-app.add_middleware(SecurityHeaderOverrideMiddleware)
+# Alternative: Use HTTP middleware decorator (sometimes more reliable)
+@app.middleware("http")
+async def force_header_override(request: Request, call_next):
+    response = await call_next(request)
+    
+    # This is a backup - will run after the class-based middleware
+    if not response.headers.get("Content-Security-Policy"):
+        logger.warning("⚠️ CSP header not set by middleware, setting now...")
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+            "font-src 'self' https: data:; "
+            "style-src 'self' https: data: 'unsafe-inline'; "
+            "connect-src 'self' https: data:; "
+            "img-src 'self' https: data: blob:;"
+        )
+    
+    return response
 
-# CORS middleware with environment-specific origins (keep your existing config)
+# Add the aggressive header override middleware FIRST
+app.add_middleware(AggressiveHeaderOverrideMiddleware)
+
+# CORS middleware with environment-specific origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=env_config["cors_origins"],
@@ -103,11 +109,54 @@ if settings.is_development or settings.is_testing:
     app.include_router(test_agent_run.router, tags=["Debug"])
     logger.info("🧪 Test routes enabled for development/testing")
 
+# Debug endpoint - ALWAYS available for now to troubleshoot
+@app.get("/debug/headers")
+async def debug_headers(request: Request, response: Response):
+    """Debug endpoint to check what headers are being sent"""
+    
+    # Manually set CSP on this response too
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+        "font-src 'self' https: data:; "
+        "style-src 'self' https: data: 'unsafe-inline'; "
+        "connect-src 'self' https: data:; "
+        "img-src 'self' https: data: blob:;"
+    )
+    
+    return {
+        "environment": settings.environment,
+        "request_headers": dict(request.headers),
+        "message": "Check browser Network tab for response headers",
+        "csp_override": "ACTIVE",
+        "manual_csp_set": True,
+        "debug_time": "Check logs for CSP setting messages"
+    }
+
+# Test endpoint to verify external resources
+@app.get("/test/external-resources")
+async def test_external_resources(response: Response):
+    """Test endpoint to check if external resources work"""
+    
+    # Set very permissive CSP
+    response.headers["Content-Security-Policy"] = (
+        "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; "
+        "style-src * 'unsafe-inline'; connect-src *; font-src *; img-src * data: blob:;"
+    )
+    
+    return {
+        "google_fonts_test": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap",
+        "image_test": "https://i.postimg.cc/PrSCLDq0/ea-aura-image.jpg",
+        "api_test": "https://newsdata.io/api/1/news",
+        "csp_policy": "completely_permissive",
+        "message": "Try accessing these resources from frontend"
+    }
+
 # Startup event for ES + Index init
 @app.on_event("startup")
 async def startup_event():
     logger.info("🚀 Starting up EA AURA Backend...")
-    logger.info("🔒 Security header override middleware enabled - Google Fonts should now work")
+    logger.info("🔒 AGGRESSIVE Security header override middleware enabled")
+    logger.info("🌐 Google Fonts, PostImg, and NewsData should now work")
     try:
         get_es_client()
         IndexManager.create_indices()
@@ -119,33 +168,41 @@ async def startup_event():
 
 # Root endpoint
 @app.get("/")
-async def root():
+async def root(response: Response):
+    # Set CSP on root endpoint too
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+        "font-src 'self' https: data:; "
+        "style-src 'self' https: data: 'unsafe-inline'; "
+        "connect-src 'self' https: data:; "
+        "img-src 'self' https: data: blob:;"
+    )
+    
     return {
         "message": "EA AURA AI Platform",
         "environment": settings.environment,
         "version": "1.0.0",
         "status": "running",
-        "fonts_enabled": True  # Indicate that Google Fonts are now allowed
+        "fonts_enabled": True,
+        "external_resources_enabled": True
     }
 
-# Health check endpoint (keep your existing one)
+# Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check(response: Response):
+    # Set CSP on health endpoint too
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
+        "font-src 'self' https: data:; "
+        "style-src 'self' https: data: 'unsafe-inline'; "
+        "connect-src 'self' https: data:; "
+        "img-src 'self' https: data: blob:;"
+    )
+    
     return {
         "status": "healthy",
         "environment": settings.environment,
         "timestamp": "2024-01-01T00:00:00Z",
-        "google_fonts_enabled": True
+        "google_fonts_enabled": True,
+        "external_resources_enabled": True
     }
-
-# Optional: Debug endpoint to check headers (only in dev/staging)
-if settings.is_development or settings.environment == "staging":
-    @app.get("/debug/headers")
-    async def debug_headers(request: Request):
-        """Debug endpoint to check what headers are being sent"""
-        return {
-            "environment": settings.environment,
-            "request_headers": dict(request.headers),
-            "message": "Check browser Network tab for response headers",
-            "csp_override": "active"
-        }
