@@ -385,6 +385,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           case 503:
             errorMessage = 'Service is currently under maintenance. Please try again later.';
             break;
+          case 429:
+            errorMessage = 'Token limit exceeded.';
+            break;
           default:
             errorMessage = `Request failed with status ${res.status}. Please try again.`;
         }
