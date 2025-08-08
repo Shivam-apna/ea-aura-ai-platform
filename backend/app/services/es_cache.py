@@ -36,7 +36,7 @@ def create_cache_index_if_not_exists():
 def get_query_hash(query_text: str) -> str:
     return hashlib.sha256(query_text.encode()).hexdigest()[:16]
 
-def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> str:
+def search_cache(query_text: str, tenant_id: str, threshold: float = 0.15) -> str:
     logger.info(f"[CACHE CHECK] USER QUESTION (first 100 chars): {query_text[:100]}")
     logger.info(f"tenantid: {tenant_id}")
     query_hash = get_query_hash(query_text)
