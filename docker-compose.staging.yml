@@ -112,6 +112,8 @@ services:
       - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_BASEPATH: "/kibana"           # Add this line
+      SERVER_REWRITEBASEPATH: "true"       # Add this line
     depends_on:
       elasticsearch:
         condition: service_healthy
