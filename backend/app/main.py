@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 import sys
 
@@ -35,6 +36,62 @@ app = FastAPI(
     debug=env_config["debug"]
 )
 
+# Header Override Middleware - Add this to fix Google Fonts
+class SecurityHeaderOverrideMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.environment = settings.environment
+    
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # Override CSP to allow Google Fonts and external resources
+        if self.environment in ["development", "staging"]:
+            # More permissive CSP for dev/staging
+            csp_policy = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://newsdata.io; "
+                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
+                "img-src 'self' data: blob: https://i.postimg.cc https://postimg.cc; "
+                "frame-src 'self' https://staging.ea-aura.ai; "
+                "frame-ancestors 'self' https://staging.ea-aura.ai;"
+            )
+        else:
+            # Production CSP with external resources allowed
+            csp_policy = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://newsdata.io; "
+                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
+                "img-src 'self' data: https://i.postimg.cc https://postimg.cc; "
+                "frame-src 'self' https://staging.ea-aura.ai; "
+                "frame-ancestors 'self' https://staging.ea-aura.ai;"
+            )
+        
+        # This will override nginx's Content-Security-Policy header
+        response.headers["Content-Security-Policy"] = csp_policy
+        
+        # Add other helpful headers (these will also override nginx if set)
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        
+        return response
+
+# Add the header override middleware BEFORE CORS
+app.add_middleware(SecurityHeaderOverrideMiddleware)
+
+# CORS middleware with environment-specific origins (keep your existing config)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=env_config["cors_origins"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include all API routers
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(agent_job.router, prefix="/api/v1")
@@ -50,6 +107,7 @@ if settings.is_development or settings.is_testing:
 @app.on_event("startup")
 async def startup_event():
     logger.info("🚀 Starting up EA AURA Backend...")
+    logger.info("🔒 Security header override middleware enabled - Google Fonts should now work")
     try:
         get_es_client()
         IndexManager.create_indices()
@@ -59,15 +117,6 @@ async def startup_event():
         if settings.is_production:
             raise e
 
-# CORS middleware with environment-specific origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=env_config["cors_origins"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Root endpoint
 @app.get("/")
 async def root():
@@ -75,16 +124,28 @@ async def root():
         "message": "EA AURA AI Platform",
         "environment": settings.environment,
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "fonts_enabled": True  # Indicate that Google Fonts are now allowed
     }
 
-# Health check endpoint
+# Health check endpoint (keep your existing one)
 @app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
         "environment": settings.environment,
-        "timestamp": "2024-01-01T00:00:00Z"
+        "timestamp": "2024-01-01T00:00:00Z",
+        "google_fonts_enabled": True
     }
 
-
+# Optional: Debug endpoint to check headers (only in dev/staging)
+if settings.is_development or settings.environment == "staging":
+    @app.get("/debug/headers")
+    async def debug_headers(request: Request):
+        """Debug endpoint to check what headers are being sent"""
+        return {
+            "environment": settings.environment,
+            "request_headers": dict(request.headers),
+            "message": "Check browser Network tab for response headers",
+            "csp_override": "active"
+        }
