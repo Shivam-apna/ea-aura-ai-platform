@@ -376,7 +376,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" : chart?.delta < 0 ? "text-red-500" : "text-muted-foreground"}`}
                 >
                   {chart?.delta === undefined || chart?.delta === null
-                    ? "--"
+                    ? ""
                     : chart.delta === 0
                       ? "0%"
                       : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}

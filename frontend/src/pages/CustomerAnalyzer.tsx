@@ -535,6 +535,7 @@ const CustomerAnalyzer = () => {
           className="mt-4 mb-2"
           initialPrompt="What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS of AIM Elevate?"
           storageKeyForInput="customer_analyzer_prompt_input"
+          pageId="customer_analyzer_page" // Unique page ID for caching
         />
       </div>
 
