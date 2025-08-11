@@ -536,6 +536,7 @@ const BrandIndex = () => {
           className="mt-4 mb-2"
           initialPrompt="What are the Bounce Rate, Page Views, Brand, Audience Growth, Engagement Rate, Sentiment Score, Share of Voice, and Impressions of AIM Elevate?"
           storageKeyForInput="brand_index_prompt_input"
+          pageId="brand_index_page"
         />
       </div>
 

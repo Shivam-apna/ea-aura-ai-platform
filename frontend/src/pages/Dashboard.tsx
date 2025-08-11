@@ -568,6 +568,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           className="mt-4 mb-2"
           initialPrompt={OVERVIEW_PROMPT} // Set the specific prompt for Overview
           storageKeyForInput="overview_prompt_input" // Unique storage key for Overview
+          pageId="overview_page" // Unique page ID for caching
         />
       </div>
 
