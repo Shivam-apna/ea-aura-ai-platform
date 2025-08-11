@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import React from "react";
+import React, { useEffect } from "react";
 import AppHeader from "./components/AppHeader";
 import Sidebar from "./components/Sidebar";
 import BusinessVitality from "./pages/BusinessVitality";
@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 import { useKeycloakRoles } from "./hooks/useKeycloakRoles";
 import Landing from "./pages/Landing";
 import UploadData from "./pages/UploadData";
-import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext"; // Import DashboardRefreshProvider
+import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext";
+import { useTheme } from "./components/ThemeProvider";
 
 const queryClient = new QueryClient();
 
@@ -97,12 +98,32 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [activeAgent, setActiveAgent] = React.useState('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const { theme } = useTheme(); // Get the current theme from context
 
   const handleToggleCollapse = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/landing';
+
+  // Effect to force light mode for auth pages and restore theme for others
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (isAuthPage) {
+      // Force light mode for auth pages
+      root.classList.remove('dark');
+      root.classList.add('light');
+    } else {
+      // Let ThemeProvider manage for other pages
+      root.classList.remove('light', 'dark'); // Clear any forced state
+      if (theme === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.classList.add(systemTheme);
+      } else {
+        root.classList.add(theme);
+      }
+    }
+  }, [isAuthPage, theme]); // Depend on isAuthPage and theme
 
   if (isAuthPage) {
     // For login and landing pages, just render children directly.
@@ -123,7 +144,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         />
         <main className={cn(
           "flex-grow overflow-auto h-full flex flex-col",
-          !isAuthPage && "bg-background text-foreground" // Apply theme classes only if not an auth page
+          // No need for this conditional class anymore, as the html element will control the theme
+          // !isAuthPage && "bg-background text-foreground"
         )}>
           {children}
         </main>

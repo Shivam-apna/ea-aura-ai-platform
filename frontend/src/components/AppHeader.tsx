@@ -93,11 +93,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
             <RefreshCw className="h-5 w-5" />
             <span className="sr-only">Refresh Data</span>
           </Button>
-          <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          {/* Notification Popover - commented out */}
+          {/* <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <Bell className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
             <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          </Button>
+          </Button> */}
         </div>
       </header>
     );
@@ -112,6 +113,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
           className="h-20 w-auto object-contain block dark:hidden transition-opacity duration-300"
           onError={(e) => {
             console.error('Light logo failed to load');
+            (e.target as HTMLImageElement).src = logoLightImage;
+            (e.target as HTMLImageElement).classList.remove('hidden', 'dark:block');
+            (e.target as HTMLImageElement).classList.add('block');
           }}
         />
         <img
@@ -127,7 +131,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
         />
       </Link>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3"> {/* Adjusted gap to 4 for better spacing */}
         <div className="text-sm text-primary font-normal mr-1 h-8 flex items-center">
           {formattedTime}, {formattedDate} {timezone}
         </div>
@@ -144,8 +148,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
           <span className="sr-only">Refresh Data</span>
         </Button>
 
-        {/* Notification Popover */}
-        <Popover>
+        {/* Notification Popover - commented out */}
+        {/* <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-primary hover:bg-muted transition-colors">
               <Bell className="h-5 w-5" />
@@ -162,7 +166,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
               onMarkAllAsRead={handleMarkAllAsRead}
             />
           </PopoverContent>
-        </Popover>
+        </Popover> */}
       </div>
     </header>
   );

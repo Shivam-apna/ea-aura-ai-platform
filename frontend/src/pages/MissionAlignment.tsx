@@ -98,7 +98,7 @@ const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mis
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mission_alignment_last_prompt", tab);
 
 // Define the specific prompt for Mission Alignment (AIM Elevate)
-const MISSION_PROMPT = "What are the Revenue generated, CTR, Gross Margin, Net Profit Margin, Conversion Rate, GMROI and CPL of AIM Elevate.";
+const MISSION_PROMPT = "What are the Alignment Score, Resource Allocation, Impact Metrics, and Risks Identified of AIM Elevate?";
 
 
 const MissionAlignment = () => {
