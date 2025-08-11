@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import VoiceVisualizer from './VoiceVisualizer';
 import VoiceLevelIndicator from './VoiceLevelIndicator';
-// Removed Popover imports: import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-// Removed ScrollArea import: import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PagePromptBarProps {
   placeholder?: string;
@@ -18,20 +16,6 @@ interface PagePromptBarProps {
   initialPrompt?: string; // New prop for initial prompt
   storageKeyForInput?: string; // New prop for localStorage key
 }
-
-// Static suggestions (no longer used in this version)
-const staticSuggestions = [
-  "What are the current sales trends?",
-  "Show me customer churn risk analysis.",
-  "Analyze brand gravity metrics.",
-  "What is our mission alignment score?",
-  "Generate a report on Q3 revenue.",
-  "Compare sales performance this year vs. last year.",
-  "Show me traffic by device.",
-  "What are the top performing products?",
-  "Summarize customer feedback.",
-  "Identify key growth opportunities."
-];
 
 const PagePromptBar: React.FC<PagePromptBarProps> = ({
   placeholder = "Ask-Aura",
@@ -52,44 +36,19 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isInitialMount = useRef(true); // New ref to track initial mount
 
-  // Function to load recent prompts (no longer used in this version)
-  const loadRecentPrompts = (): string[] => {
-    if (storageKeyForInput) {
-      const stored = localStorage.getItem(`${storageKeyForInput}_recent_prompts`);
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  };
-
-  // Function to save a new prompt to recent prompts (no longer used in this version)
-  const saveRecentPrompt = (prompt: string) => {
-    if (storageKeyForInput) {
-      const currentRecents = loadRecentPrompts();
-      const newRecents = [prompt, ...currentRecents.filter(p => p !== prompt)].slice(0, 10); // Keep last 10 unique prompts
-      localStorage.setItem(`${storageKeyForInput}_recent_prompts`, JSON.stringify(newRecents));
-    }
-  };
-
   // Effect to load initial prompt from localStorage or prop
   useEffect(() => {
     if (storageKeyForInput) {
       const savedInput = localStorage.getItem(storageKeyForInput);
       if (savedInput !== null) {
-        // If there's a saved value (from a previous edit/submit or initial pre-population), use it
         setInput(savedInput);
-      } else if (initialPrompt) {
-        // If no saved value AND an initialPrompt is provided, use it and save it
-        setInput(initialPrompt);
-        localStorage.setItem(storageKeyForInput, initialPrompt); // Mark as pre-populated for this specific bar
       } else {
-        // If no saved value and no initialPrompt, ensure it's empty
-        setInput("");
+        setInput(initialPrompt);
       }
     } else {
-      // If no storageKeyForInput is provided, just use initialPrompt (or empty)
       setInput(initialPrompt);
     }
-  }, [initialPrompt, storageKeyForInput]); // This effect should only run when these props change
+  }, [initialPrompt, storageKeyForInput]);
 
   // Effect to save input to localStorage whenever it changes, but skip initial mount
   useEffect(() => {
@@ -178,93 +137,28 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     }
   }, []);
 
-  // Debounced suggestion filtering (removed for this diagnostic step)
-  // const filterSuggestions = (query: string) => {
-  //   if (query.length < 2) {
-  //     setSuggestions([]);
-  //     setIsSuggestionsOpen(false);
-  //     return;
-  //   }
-
-  //   const allAvailableSuggestions = Array.from(new Set([...staticSuggestions, ...loadRecentPrompts()]));
-  //   const filtered = allAvailableSuggestions.filter(s =>
-  //     s.toLowerCase().includes(query.toLowerCase())
-  //   );
-  //   setSuggestions(filtered);
-  //   setIsSuggestionsOpen(filtered.length > 0);
-  //   setHighlightedIndex(-1);
-  // };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInput(value);
-    setErrorMessage(""); // Clear error on input change
-
-    // Removed debounce for suggestions
-    // if (debounceTimeoutRef.current) {
-    //   clearTimeout(debounceTimeoutRef.current);
-    // }
-    // debounceTimeoutRef.current = setTimeout(() => {
-    //   filterSuggestions(value);
-    // }, 200);
-  };
-
-  // Removed handleSelectSuggestion
-  // const handleSelectSuggestion = (suggestion: string) => {
-  //   setInput(suggestion);
-  //   setIsSuggestionsOpen(false);
-  //   setHighlightedIndex(-1);
-  // };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    // Removed suggestion navigation logic
-    // if (isSuggestionsOpen && suggestions.length > 0) {
-    //   if (event.key === 'ArrowDown') {
-    //     event.preventDefault();
-    //     setHighlightedIndex(prev => (prev + 1) % suggestions.length);
-    //   } else if (event.key === 'ArrowUp') {
-    //     event.preventDefault();
-    //     setHighlightedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-    //   } else if (event.key === 'Enter' && highlightedIndex !== -1) {
-    //     event.preventDefault();
-    //     handleSelectSuggestion(suggestions[highlightedIndex]);
-    //   } else if (event.key === 'Escape') {
-    //     event.preventDefault();
-    //     setIsSuggestionsOpen(false);
-    //     setHighlightedIndex(-1);
-    //     inputRef.current?.blur();
-    //   }
-    // } else 
-    if (event.key === 'Enter') {
-      // If suggestions are not open or no suggestions, proceed with normal submit
-      handleSend();
-    }
-    // Ctrl/Cmd + K to focus is already handled in the existing useEffect
-  };
-
   useEffect(() => {
-    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
         event.preventDefault();
         inputRef.current?.focus();
       }
       if (event.key === 'Escape') {
         if (inputRef.current) {
-          input.trim() === "" && inputRef.current.blur(); // Only blur if input is empty
+          inputRef.current.blur();
         }
+        setInput('');
         if (isListening && recognition) {
           recognition.stop();
         }
-        // Removed setIsSuggestionsOpen(false);
-        // Removed setHighlightedIndex(-1);
       }
     };
 
-    document.addEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleGlobalKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isListening, recognition, input]); // Added input to dependencies to check its value
+  }, [isListening, recognition]);
 
   const handleSend = async () => {
     if (input.trim() === "") {
@@ -279,11 +173,8 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     onLoadingChange?.(true);
 
     const promptText = input.trim();
-    saveRecentPrompt(promptText); // Save the submitted prompt (still calls loadRecentPrompts/saveRecentPrompt)
     setInput(""); // Clear input immediately
     setTranscript("");
-    // Removed setIsSuggestionsOpen(false);
-    // Removed setHighlightedIndex(-1);
     
     try {
       await onSubmit(promptText);
@@ -320,8 +211,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     if (isListening && recognition) {
       recognition.stop();
     }
-    // Removed setIsSuggestionsOpen(false);
-    // Removed setHighlightedIndex(-1);
   };
 
   return (
@@ -344,37 +233,27 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       
       {/* Prompt Bar */}
       <div className={cn(
-        "flex items-center h-10 rounded-xl bg-card shadow-lg transition-all duration-200", // Changed rounded-full to rounded-xl
+        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200",
         "focus-within:border-primary focus-within:shadow-md",
         "hover:border-gray-300 hover:shadow-md",
         "w-full", // Removed max-w-[1500px] mx-auto px-6
         "dark:shadow-prompt-glow",
-        "relative z-50", // Added z-50 to ensure it's above the loading overlay
         className
       )}>
         <div className="relative flex-grow">
-          {/* Popover and PopoverTrigger removed */}
           <Input
             ref={inputRef}
             placeholder={isListening ? "Listening..." : placeholder}
             value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown} // Use onKeyDown for arrow navigation and Enter
+            onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)} // Limit input length
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
             className={cn(
               "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
               "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
-            autoComplete="off" // Disable browser's autocomplete
-            // Removed aria-autocomplete, aria-controls, aria-expanded, role
+            disabled={isLoading}
           />
-          {/* PopoverContent removed */}
           
-          {isLoading && ( // Add a loading spinner inside the input area
-            <div className="absolute right-10 top-1/2 -translate-y-1/2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
           {/* Voice Input Button with Heartbeat Animation */}
           <Button
             variant="ghost"
@@ -413,7 +292,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           disabled={isLoading || !input.trim()}
           variant="default"
           className={cn(
-            "h-8 px-4 py-1.5 rounded-xl mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200", // Changed rounded-full to rounded-xl
+            "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
             isListening 
               ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
               : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"

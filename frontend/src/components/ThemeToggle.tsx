@@ -29,16 +29,16 @@ const ThemeToggle: React.FC = () => {
       {/* Sun Icon (Left) */}
       <Sun
         className={cn(
-          "absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10",
-          "text-white" // Set to white
+          "absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10", // Adjusted size
+          isLight ? "text-primary" : "text-muted-foreground" // Vibrant blue for active, gray for inactive - changed text-[#3AA7F8] to text-primary, text-gray-500 to text-muted-foreground
         )}
       />
 
       {/* Moon Icon (Right) */}
       <Moon
         className={cn(
-          "absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10",
-          "text-white" // Set to white
+          "absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors duration-300 z-10", // Adjusted size
+          !isLight ? "text-primary" : "text-muted-foreground" // Vibrant blue for active, gray for inactive - changed text-[#3AA7F8] to text-primary, text-gray-500 to text-muted-foreground
         )}
       />
 
