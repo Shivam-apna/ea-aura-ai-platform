@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, Loader2, X, Sparkles, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, X, Sparkles, AlertCircle, History, Trash2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import VoiceVisualizer from './VoiceVisualizer';
-import VoiceLevelIndicator from './VoiceLevelIndicator';
-// Removed Popover imports: import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-// Removed ScrollArea import: import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface SavedQuery {
+  id: string;
+  query: string;
+  timestamp: number;
+}
 
 interface PagePromptBarProps {
   placeholder?: string;
@@ -15,23 +17,10 @@ interface PagePromptBarProps {
   onSubmit: (value: string) => void;
   onLoadingChange?: (loading: boolean) => void;
   className?: string;
-  initialPrompt?: string; // New prop for initial prompt
-  storageKeyForInput?: string; // New prop for localStorage key
+  initialPrompt?: string;
+  storageKeyForInput?: string;
+  pageId?: string; // New prop to identify the current page for query history
 }
-
-// Static suggestions (no longer used in this version)
-const staticSuggestions = [
-  "What are the current sales trends?",
-  "Show me customer churn risk analysis.",
-  "Analyze brand gravity metrics.",
-  "What is our mission alignment score?",
-  "Generate a report on Q3 revenue.",
-  "Compare sales performance this year vs. last year.",
-  "Show me traffic by device.",
-  "What are the top performing products?",
-  "Summarize customer feedback.",
-  "Identify key growth opportunities."
-];
 
 const PagePromptBar: React.FC<PagePromptBarProps> = ({
   placeholder = "Ask-Aura",
@@ -39,8 +28,9 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   onSubmit,
   onLoadingChange,
   className,
-  initialPrompt = "", // Default to empty string
-  storageKeyForInput, // No default, it's optional
+  initialPrompt = "",
+  storageKeyForInput,
+  pageId = "default", // Default page ID
 }) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,64 +39,136 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const [recognition, setRecognition] = useState<any>(null);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isInitialMount = useRef(true); // New ref to track initial mount
+  const historyRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
-  // Function to load recent prompts (no longer used in this version)
-  const loadRecentPrompts = (): string[] => {
+  // Generate storage key for queries based on page ID
+  const getQueriesStorageKey = () => `saved_queries_${pageId}`;
+
+  // Generate storage key for input based on page ID
+  const getInputStorageKey = () => {
     if (storageKeyForInput) {
-      const stored = localStorage.getItem(`${storageKeyForInput}_recent_prompts`);
-      return stored ? JSON.parse(stored) : [];
+      return `${storageKeyForInput}_${pageId}`;
     }
-    return [];
+    return null;
   };
 
-  // Function to save a new prompt to recent prompts (no longer used in this version)
-  const saveRecentPrompt = (prompt: string) => {
-    if (storageKeyForInput) {
-      const currentRecents = loadRecentPrompts();
-      const newRecents = [prompt, ...currentRecents.filter(p => p !== prompt)].slice(0, 10); // Keep last 10 unique prompts
-      localStorage.setItem(`${storageKeyForInput}_recent_prompts`, JSON.stringify(newRecents));
+  // Load saved queries from localStorage
+  const loadSavedQueries = () => {
+    try {
+      const saved = localStorage.getItem(getQueriesStorageKey());
+      if (saved) {
+        const queries = JSON.parse(saved);
+        setSavedQueries(queries);
+      }
+    } catch (error) {
+      console.error('Error loading saved queries:', error);
     }
   };
 
-  // Effect to load initial prompt from localStorage or prop
+  // Save queries to localStorage
+  const saveQueriesToStorage = (queries: SavedQuery[]) => {
+    try {
+      localStorage.setItem(getQueriesStorageKey(), JSON.stringify(queries));
+    } catch (error) {
+      console.error('Error saving queries:', error);
+    }
+  };
+
+  // Add a new query to saved queries (keep only latest 5)
+  const addQueryToHistory = (query: string) => {
+    if (!query.trim()) return;
+
+    const newQuery: SavedQuery = {
+      id: Date.now().toString(),
+      query: query.trim(),
+      timestamp: Date.now(),
+    };
+
+    setSavedQueries(prev => {
+      // Remove duplicate if exists
+      const filtered = prev.filter(q => q.query !== query.trim());
+      // Add new query at the beginning and keep only 5 latest
+      const updated = [newQuery, ...filtered].slice(0, 5);
+      saveQueriesToStorage(updated);
+      return updated;
+    });
+  };
+
+  // Delete a saved query
+  const deleteQuery = (queryId: string) => {
+    setSavedQueries(prev => {
+      const updated = prev.filter(q => q.id !== queryId);
+      saveQueriesToStorage(updated);
+      return updated;
+    });
+    toast.success("Query deleted");
+  };
+
+  // Select a saved query
+  const selectQuery = (query: string) => {
+    setInput(query);
+    setShowHistory(false);
+    inputRef.current?.focus();
+    toast.success("Query selected");
+  };
+
+  // Clear all saved queries
+  const clearAllQueries = () => {
+    setSavedQueries([]);
+    localStorage.removeItem(getQueriesStorageKey());
+    toast.success("All queries cleared");
+  };
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  // Effect to load initial prompt and saved queries
   useEffect(() => {
-    if (storageKeyForInput) {
-      const savedInput = localStorage.getItem(storageKeyForInput);
+    loadSavedQueries();
+    
+    const inputStorageKey = getInputStorageKey();
+    if (inputStorageKey) {
+      const savedInput = localStorage.getItem(inputStorageKey);
       if (savedInput !== null) {
-        // If there's a saved value (from a previous edit/submit or initial pre-population), use it
         setInput(savedInput);
-      } else if (initialPrompt) {
-        // If no saved value AND an initialPrompt is provided, use it and save it
-        setInput(initialPrompt);
-        localStorage.setItem(storageKeyForInput, initialPrompt); // Mark as pre-populated for this specific bar
       } else {
-        // If no saved value and no initialPrompt, ensure it's empty
-        setInput("");
+        setInput(initialPrompt);
       }
     } else {
-      // If no storageKeyForInput is provided, just use initialPrompt (or empty)
       setInput(initialPrompt);
     }
-  }, [initialPrompt, storageKeyForInput]); // This effect should only run when these props change
+  }, [initialPrompt, storageKeyForInput, pageId]);
 
-  // Effect to save input to localStorage whenever it changes, but skip initial mount
+  // Effect to save input to localStorage with page-specific key
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      return; // Skip saving on the very first render after mount
+      return;
     }
 
-    if (storageKeyForInput) {
-      localStorage.setItem(storageKeyForInput, input);
+    const inputStorageKey = getInputStorageKey();
+    if (inputStorageKey) {
+      localStorage.setItem(inputStorageKey, input);
     }
-  }, [input, storageKeyForInput]); // Depend on 'input' to trigger saving on change
-
+  }, [input, storageKeyForInput, pageId]);
+  console.log(pageId,"jjjjjjjj")
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Check for browser support
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (SpeechRecognition) {
@@ -138,7 +200,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           setTranscript(fullTranscript);
           setInput(fullTranscript);
           
-          // Simulate voice level based on transcript length and confidence
           const level = Math.min(1, fullTranscript.length / 50);
           setVoiceLevel(level);
         };
@@ -178,93 +239,47 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     }
   }, []);
 
-  // Debounced suggestion filtering (removed for this diagnostic step)
-  // const filterSuggestions = (query: string) => {
-  //   if (query.length < 2) {
-  //     setSuggestions([]);
-  //     setIsSuggestionsOpen(false);
-  //     return;
-  //   }
+  // Handle clicks outside history dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (historyRef.current && !historyRef.current.contains(event.target as Node)) {
+        setShowHistory(false);
+      }
+    };
 
-  //   const allAvailableSuggestions = Array.from(new Set([...staticSuggestions, ...loadRecentPrompts()]));
-  //   const filtered = allAvailableSuggestions.filter(s =>
-  //     s.toLowerCase().includes(query.toLowerCase())
-  //   );
-  //   setSuggestions(filtered);
-  //   setIsSuggestionsOpen(filtered.length > 0);
-  //   setHighlightedIndex(-1);
-  // };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInput(value);
-    setErrorMessage(""); // Clear error on input change
-
-    // Removed debounce for suggestions
-    // if (debounceTimeoutRef.current) {
-    //   clearTimeout(debounceTimeoutRef.current);
-    // }
-    // debounceTimeoutRef.current = setTimeout(() => {
-    //   filterSuggestions(value);
-    // }, 200);
-  };
-
-  // Removed handleSelectSuggestion
-  // const handleSelectSuggestion = (suggestion: string) => {
-  //   setInput(suggestion);
-  //   setIsSuggestionsOpen(false);
-  //   setHighlightedIndex(-1);
-  // };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    // Removed suggestion navigation logic
-    // if (isSuggestionsOpen && suggestions.length > 0) {
-    //   if (event.key === 'ArrowDown') {
-    //     event.preventDefault();
-    //     setHighlightedIndex(prev => (prev + 1) % suggestions.length);
-    //   } else if (event.key === 'ArrowUp') {
-    //     event.preventDefault();
-    //     setHighlightedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-    //   } else if (event.key === 'Enter' && highlightedIndex !== -1) {
-    //     event.preventDefault();
-    //     handleSelectSuggestion(suggestions[highlightedIndex]);
-    //   } else if (event.key === 'Escape') {
-    //     event.preventDefault();
-    //     setIsSuggestionsOpen(false);
-    //     setHighlightedIndex(-1);
-    //     inputRef.current?.blur();
-    //   }
-    // } else 
-    if (event.key === 'Enter') {
-      // If suggestions are not open or no suggestions, proceed with normal submit
-      handleSend();
+    if (showHistory) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-    // Ctrl/Cmd + K to focus is already handled in the existing useEffect
-  };
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showHistory]);
 
   useEffect(() => {
-    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
         event.preventDefault();
         inputRef.current?.focus();
       }
       if (event.key === 'Escape') {
-        if (inputRef.current) {
-          input.trim() === "" && inputRef.current.blur(); // Only blur if input is empty
+        if (showHistory) {
+          setShowHistory(false);
+        } else if (inputRef.current) {
+          inputRef.current.blur();
+          setInput('');
         }
         if (isListening && recognition) {
           recognition.stop();
         }
-        // Removed setIsSuggestionsOpen(false);
-        // Removed setHighlightedIndex(-1);
       }
     };
 
-    document.addEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleGlobalKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isListening, recognition, input]); // Added input to dependencies to check its value
+  }, [isListening, recognition, showHistory]);
 
   const handleSend = async () => {
     if (input.trim() === "") {
@@ -272,22 +287,21 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       return;
     }
 
-    // Clear any previous error message
     setErrorMessage("");
-
     setIsLoading(true);
     onLoadingChange?.(true);
 
     const promptText = input.trim();
-    saveRecentPrompt(promptText); // Save the submitted prompt (still calls loadRecentPrompts/saveRecentPrompt)
-    setInput(""); // Clear input immediately
+    
+    // Add query to history before clearing input
+    addQueryToHistory(promptText);
+    
+    setInput("");
     setTranscript("");
-    // Removed setIsSuggestionsOpen(false);
-    // Removed setHighlightedIndex(-1);
+    setShowHistory(false);
     
     try {
       await onSubmit(promptText);
-      // Remove success toast - let parent components handle success feedback
     } catch (error: any) {
       console.error("Error submitting prompt:", error);
       setErrorMessage(`Failed to submit prompt: ${error.message}`);
@@ -320,12 +334,10 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     if (isListening && recognition) {
       recognition.stop();
     }
-    // Removed setIsSuggestionsOpen(false);
-    // Removed setHighlightedIndex(-1);
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       {/* Error Message Display */}
       {errorMessage && (
         <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
@@ -344,37 +356,45 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       
       {/* Prompt Bar */}
       <div className={cn(
-        "flex items-center h-10 rounded-xl bg-card shadow-lg transition-all duration-200", // Changed rounded-full to rounded-xl
+        "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200",
         "focus-within:border-primary focus-within:shadow-md",
         "hover:border-gray-300 hover:shadow-md",
-        "w-full", // Removed max-w-[1500px] mx-auto px-6
+        "w-full",
         "dark:shadow-prompt-glow",
         className
       )}>
+        {/* History Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-8 w-8 rounded-full ml-1 flex-shrink-0 transition-all duration-300",
+            showHistory 
+              ? "text-primary bg-primary/10 hover:bg-primary/20" 
+              : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+          )}
+          onClick={() => setShowHistory(!showHistory)}
+          aria-label="Query History"
+          disabled={isLoading}
+        >
+          <History className="h-4 w-4" />
+        </Button>
+
         <div className="relative flex-grow">
-          {/* Popover and PopoverTrigger removed */}
           <Input
             ref={inputRef}
             placeholder={isListening ? "Listening..." : placeholder}
             value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown} // Use onKeyDown for arrow navigation and Enter
+            onChange={(e) => e.target.value.length <= 200 && setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
             className={cn(
               "flex-grow h-full border-none bg-transparent text-sm font-normal text-foreground placeholder:text-muted-foreground",
               "pl-4 pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
-            autoComplete="off" // Disable browser's autocomplete
-            // Removed aria-autocomplete, aria-controls, aria-expanded, role
+            disabled={isLoading}
           />
-          {/* PopoverContent removed */}
           
-          {isLoading && ( // Add a loading spinner inside the input area
-            <div className="absolute right-10 top-1/2 -translate-y-1/2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Voice Input Button with Heartbeat Animation */}
+          {/* Voice Input Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -391,7 +411,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
             {isListening ? (
               <div className="relative">
                 <MicOff className="h-4 w-4" />
-                {/* Professional Heartbeat Animation */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                 </div>
@@ -407,12 +426,13 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
             )}
           </Button>
         </div>
+
         <Button
           onClick={handleSend}
           disabled={isLoading || !input.trim()}
           variant="default"
           className={cn(
-            "h-8 px-4 py-1.5 rounded-xl mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200", // Changed rounded-full to rounded-xl
+            "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
             isListening 
               ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
               : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
@@ -421,16 +441,78 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isListening ? (
-            <div className="flex items-center justify-center gap-2"> {/* Centered content */}
+            <div className="flex items-center justify-center gap-2">
               <Volume2 className="h-4 w-4" />
             </div>
           ) : (
-            <div className="flex items-center justify-center"> {/* Centered content */}
+            <div className="flex items-center justify-center">
               {buttonText}
             </div>
           )}
         </Button>
       </div>
+
+      {/* Query History Dropdown */}
+      {showHistory && (
+        <div 
+          ref={historyRef}
+          className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+        >
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Recent Queries</span>
+              <span className="text-xs text-muted-foreground">({pageId})</span>
+            </div>
+            {savedQueries.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllQueries}
+                className="text-xs h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
+          
+          <div className="py-2">
+            {savedQueries.length === 0 ? (
+              <div className="px-4 py-6 text-center text-muted-foreground text-sm">
+                No saved queries yet
+              </div>
+            ) : (
+              savedQueries.map((savedQuery) => (
+                <div
+                  key={savedQuery.id}
+                  className="group flex items-start gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  onClick={() => selectQuery(savedQuery.query)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                      {savedQuery.query}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatTimestamp(savedQuery.timestamp)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteQuery(savedQuery.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

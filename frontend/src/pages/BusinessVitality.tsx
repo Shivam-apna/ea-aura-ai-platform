@@ -541,6 +541,7 @@ const BusinessDashboard = () => {
           className="mt-4 mb-2"
           initialPrompt={BUSINESS_PROMPT} // Pass the specific prompt
           storageKeyForInput="business_vitality_prompt_input" // Unique storage key
+          pageId="business_vitality_page" // Unique page ID for caching
         />
       </div>
 

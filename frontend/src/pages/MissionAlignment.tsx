@@ -538,6 +538,7 @@ const MissionAlignment = () => {
           className="mt-4 mb-2"
           initialPrompt={MISSION_PROMPT} // Pass the specific prompt
           storageKeyForInput="mission_alignment_prompt_input" // Unique storage key
+          pageId="mission_alignment_page" // Unique page ID for caching
         />
       </div>
 
