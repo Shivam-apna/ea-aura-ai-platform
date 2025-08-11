@@ -234,7 +234,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
 
       {/* ✅ Floating Voice Orb When Speaking */}
       {isSpeaking && (
-        <div className="fixed bottom-4 left-4 z-[9999] bg-transparent/90 rounded-full shadow-xl p-2">
+        <div className="fixed bottom-4 left-4 z-[9999] bg-[rgb(229 242 253)] rounded-full shadow-xl p-2">
           <CompactVoiceVisualizer isSpeaking={isSpeaking} />
         </div>
       )}
