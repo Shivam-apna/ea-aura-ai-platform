@@ -29,7 +29,7 @@
     },
     "kpi_keys": [
         {
-            "key": "Gross Profit Margin",
+            "key": "Gross Profit Margin (%)",
             "bgColor": "#E4F8C2"
         },
         {
