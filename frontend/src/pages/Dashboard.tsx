@@ -120,6 +120,9 @@ const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboar
 const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_alignment_metric_groups_cache", tab);
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_last_prompt", tab);
 
+// Define the specific prompt for the Overview page
+const OVERVIEW_PROMPT = "What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS of AIM Elevate?";
+
 
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
   const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
@@ -563,6 +566,8 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
           onSubmit={handlePromptSubmit}
           onLoadingChange={setLoading}
           className="mt-4 mb-2"
+          initialPrompt={OVERVIEW_PROMPT} // Set the specific prompt for Overview
+          storageKeyForInput="overview_prompt_input" // Unique storage key for Overview
         />
       </div>
 
@@ -596,6 +601,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
             activeTab={activeTab}
             onTabChange={setActiveTab}
             tabNames={TAB_NAMES}
+            hideTabsList={true} // Set to true for the Overview page
           />
         </div>
       </div>

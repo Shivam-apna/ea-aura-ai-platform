@@ -184,14 +184,14 @@ export const CompactVoiceVisualizer = ({ isSpeaking = false, className = "" }) =
                     alt="Voice visualization"
                     className="w-20 h-20 object-contain"
                     style={{
-                        filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0))',
+                        filter: 'drop-shadow(0 4px 20px ))',
                     }}
                 />
             ) : (
                 <div
                     className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 opacity-50"
                     style={{
-                        filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0))',
+                        filter: 'drop-shadow(0 4px 20px )',
                     }}
                 />
             )}

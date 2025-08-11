@@ -9,11 +9,11 @@
       "bgColor": "#E6F1FD"
     },
     {
-      "key": "Engagement Rate",
+      "key": "Engagement Rate (%)",
       "bgColor": "#E4F8C2"
     },
     {
-      "key": "Bounce Rate",
+      "key": "Bounce Rate (%)",
       "bgColor": "#E6F1FD"
     }
   ],

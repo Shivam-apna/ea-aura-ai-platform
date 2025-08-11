@@ -1,15 +1,15 @@
 {
   "kpi_keys": [
     {
-      "key": "Gross Margin",
+      "key": "Gross Margin (%)",
       "bgColor": "#E4F8C2"
     },
     {
-      "key": "Net Profit Margin",
+      "key": "Net Profit Margin (%)",
       "bgColor": "#E6F1FD"
     },
     {
-      "key": "Conversion Rate",
+      "key": "Conversion Rate (%)",
       "bgColor": "#E4F8C2"
     },
     {

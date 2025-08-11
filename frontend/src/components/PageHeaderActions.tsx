@@ -104,7 +104,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
         </div>
         <div className="flex items-center space-x-4">
           {/* Video Icon */}
-          <ShadcnTooltip>
+          {/* <ShadcnTooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => setIsVideoModalOpen(true)}>
                 <Video className="h-5 w-5" />
@@ -114,10 +114,10 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             <TooltipContent>
               <p>Watch Demo</p>
             </TooltipContent>
-          </ShadcnTooltip>
+          </ShadcnTooltip> */}
 
           {/* PowerPoint Icon */}
-          <ShadcnTooltip>
+          {/* <ShadcnTooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => handleDownload('PPT')}>
                 <Presentation className="h-5 w-5" />
@@ -127,7 +127,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             <TooltipContent>
               <p>Export to PowerPoint</p>
             </TooltipContent>
-          </ShadcnTooltip>
+          </ShadcnTooltip> */}
 
           {/* Excel Icon */}
           <ShadcnTooltip>
@@ -172,11 +172,11 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full text-primary hover:bg-muted hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-8 w-8 rounded-full hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleTTSClick}
                 disabled={ttsLoading || isSpeaking}
               >
-                <Speech className="h-4 w-4" />
+                <Speech className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
                 <span className="sr-only">Voice Summary</span>
               </Button>
             </TooltipTrigger>
@@ -234,7 +234,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
 
       {/* ✅ Floating Voice Orb When Speaking */}
       {isSpeaking && (
-        <div className="fixed bottom-4 left-4 z-[9999] bg-transparent/90 rounded-full shadow-xl p-2">
+        <div className="fixed bottom-4 left-4 z-[9999] bg-[rgb(229 242 253)] rounded-full shadow-xl p-2">
           <CompactVoiceVisualizer isSpeaking={isSpeaking} />
         </div>
       )}

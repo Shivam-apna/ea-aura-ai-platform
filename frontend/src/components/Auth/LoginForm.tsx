@@ -25,48 +25,116 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showErrorMessage, setShowErrorMessage] = useState(false); // New state for error message visibility
+
+  // New states for validation errors
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null); // For top-level messages
+  const [showGeneralErrorMessage, setShowGeneralErrorMessage] = useState(false); // For general error message visibility and shake
+
   const [backgroundPosition] = useState(initialBackgroundPosition);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (error) {
-      setShowErrorMessage(true);
+    if (generalError) {
+      setShowGeneralErrorMessage(true);
       timer = setTimeout(() => {
-        setShowErrorMessage(false);
-        setError(null); // Clear error message after hiding
+        setShowGeneralErrorMessage(false);
+        setGeneralError(null); // Clear general error message after hiding
       }, 7000); // Auto-hide after 7 seconds
     }
     return () => clearTimeout(timer);
-  }, [error]);
+  }, [generalError]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) {
-      setError(null); // Clear error when user starts typing
-      setShowErrorMessage(false);
+
+    // Clear specific field error when user starts typing in that field
+    if (name === 'username' && usernameError) setUsernameError(null);
+    if (name === 'password' && passwordError) setPasswordError(null);
+
+    // Clear general error message and hide it when any input changes
+    if (generalError) {
+      setGeneralError(null);
+      setShowGeneralErrorMessage(false);
     }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'username' && !value.trim()) {
+      setUsernameError("Please fill that field");
+    }
+    if (name === 'password' && !value.trim()) {
+      setPasswordError("Please fill that field");
+    }
+  };
+
+  const validateForm = (): boolean => {
+    let isValid = true;
+    let newUsernameError: string | null = null;
+    let newPasswordError: string | null = null;
+    let newGeneralError: string | null = null;
+
+    if (!formData.username.trim()) {
+      newUsernameError = "Please fill that field";
+      isValid = false;
+    }
+    if (!formData.password.trim()) {
+      newPasswordError = "Please fill that field";
+      isValid = false;
+    }
+
+    if (!isValid) {
+      if (newUsernameError && newPasswordError) {
+        newGeneralError = "Please fill in the details below";
+      }
+    }
+
+    setUsernameError(newUsernameError);
+    setPasswordError(newPasswordError);
+    setGeneralError(newGeneralError);
+    setShowGeneralErrorMessage(!!newGeneralError); // Show general error if it exists
+
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.username || !formData.password) {
-      setError('Please fill in all fields');
-      return;
+
+    // Clear all previous errors before new submission attempt
+    setUsernameError(null);
+    setPasswordError(null);
+    setGeneralError(null);
+    setShowGeneralErrorMessage(false);
+
+    if (!validateForm()) {
+      return; // Stop if client-side validation fails
     }
+
     setIsLoading(true);
-    setError(null);
-    setShowErrorMessage(false); // Hide previous error message immediately
+
     try {
       await login(formData.username, formData.password);
       if (onLoginSuccess) onLoginSuccess();
       navigate(redirectTo);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
-      // The useEffect will handle setting showErrorMessage to true and auto-hiding
+      const backendErrorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
+
+      // Check for specific Keycloak error messages if available
+      if (backendErrorMessage.includes("invalid_grant") || backendErrorMessage.includes("invalid username or password")) {
+        // This is a credential mismatch.
+        // As per request, highlight password field and show specific message for Case 3.
+        // For Case 4 (both incorrect), the general error message will also be shown.
+        setPasswordError("Incorrect Password");
+        setGeneralError("Access denied. Only registered and authorized users can log in to EA-AURA. Please contact your admin for access.");
+      } else {
+        // Other types of errors (network, server issues, etc.)
+        setGeneralError(backendErrorMessage);
+      }
+      setShowGeneralErrorMessage(true); // Trigger shake and visibility for the general error
     } finally {
       setIsLoading(false);
     }
@@ -83,37 +151,44 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Right Section */}
         <div className="eaura-right">
-          <div className={cn("eaura-login-box", { "shake": showErrorMessage })}> {/* Apply shake class */}
+          <div className={cn("eaura-login-box", { "shake": showGeneralErrorMessage })}> {/* Apply shake class */}
             <h2>Login</h2>
+            <p className="eaura-register-text"><h5>Turn Vision into Velocity and Velocity into Value with EA-AURA.ai</h5></p>
+            
 
-            {/* Inline Error Message */}
-            {error && showErrorMessage && (
+            {/* Inline General Error Message */}
+            {generalError && showGeneralErrorMessage && (
               <div className="eaura-error-message">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                <span> Access denied. Only registered and authorized users can log in to EA-AURA. Please contact your admin for access.</span>
+                <span> {generalError}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
               <Input
-                className="eaura-input"
+                className={cn("eaura-input", { "border-red-500": usernameError })}
                 type="text"
                 name="username"
                 placeholder="Enter username or email"
                 value={formData.username}
                 onChange={handleInputChange}
+                onBlur={handleBlur}
                 disabled={isLoading}
                 autoComplete="username"
               />
+              {usernameError && (
+                <p className="text-sm text-red-500 mt-[-15px] mb-[15px] self-start pl-2">{usernameError}</p>
+              )}
 
               <div className="eaura-password-wrapper">
                 <Input
-                  className="eaura-input"
+                  className={cn("eaura-input", { "border-red-500": passwordError })}
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
                   disabled={isLoading}
                   autoComplete="current-password"
                 />
@@ -126,6 +201,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordError && (
+                <p className="text-sm text-red-500 mt-[-15px] mb-[15px] self-start pl-2">{passwordError}</p>
+              )}
 
               <Button
                 type="submit"
