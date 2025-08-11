@@ -57,6 +57,7 @@ class AuthService {
 
     const tokens: AuthTokens = await response.json();
     this.storeTokens(tokens);
+    localStorage.setItem('last_activity_timestamp', Date.now().toString()); // Store login timestamp
     return tokens;
   }
 
@@ -178,6 +179,7 @@ class AuthService {
       }
     }
 
+    localStorage.setItem('last_activity_timestamp', Date.now().toString()); // Store logout timestamp
     this.clearTokens();
   }
 

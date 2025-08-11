@@ -5,6 +5,7 @@ import { useKeycloakRoles } from '@/hooks/useKeycloakRoles';
 import WelcomePage from '@/components/WelcomePage';
 import WelcomeBackPage from '@/components/WelcomeBackPage';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns'; // Import format from date-fns
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -20,16 +21,34 @@ const Landing: React.FC = () => {
   });
   
   const fullName = user?.name || user?.preferred_username || "User";
-  const userEmail = user?.email || "NA";
-  const userDomain = user?.domain || "gmail"
-  // Placeholder for last activity
-  const lastActivity = "Dashboard viewed 5 minutes ago";
+  const userEmail = user?.email || "user@example.com";
+  const userDomain = user?.domain || "AI"; // Extract domain from email
+
+  // State for dynamic last activity
+  const [lastActivity, setLastActivity] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTimestamp = localStorage.getItem('last_activity_timestamp');
+      if (storedTimestamp) {
+        try {
+          const date = new Date(parseInt(storedTimestamp, 10));
+          setLastActivity(format(date, 'h:mm a, dd MMMM yyyy'));
+        } catch (e) {
+          console.error("Error parsing last activity timestamp:", e);
+          setLastActivity(null); // Reset if parsing fails
+        }
+      } else {
+        setLastActivity(null); // No timestamp found
+      }
+    }
+  }, [isAuthenticated]); // Re-run when auth state changes
 
   const handleGetStarted = () => {
     localStorage.setItem('is_returning_user', 'true');
@@ -67,7 +86,13 @@ const Landing: React.FC = () => {
       {isNewUser ? (
         <WelcomePage userName={fullName} fullName={fullName} userDomain={userDomain} onGetStarted={handleGetStarted} />
       ) : (
-        <WelcomeBackPage userName={fullName} fullName={fullName} lastActivity={lastActivity} userDomain={userDomain} onContinue={handleContinue} />
+        <WelcomeBackPage 
+          userName={fullName} 
+          fullName={fullName} 
+          lastActivity={lastActivity || "This is your first login"} // Pass dynamic or default message
+          userDomain={userDomain} 
+          onContinue={handleContinue} 
+        />
       )}
     </div>
   );
