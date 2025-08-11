@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
                   variant="ghost"
                   className={cn(
                     "w-full justify-start hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm",
-                    isActive ? "bg-primary text-white hover:bg-primary hover:text-white shadow-md" : "text-foreground", // Changed text-primary-foreground to text-white
+                    isActive ? "bg-primary text-white hover:bg-primary hover:text-blue shadow-md" : "text-foreground", // Changed text-primary-foreground to text-white
                     isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
                   )}
                   onClick={() => {

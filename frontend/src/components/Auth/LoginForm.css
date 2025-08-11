@@ -4,6 +4,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+
 }
 
 .eaura-body {
@@ -41,7 +42,7 @@
 }
 
 .eaura-left h1 {
-  font-size: 4rem;
+  font-size: 5rem;
   font-weight: 700;
   margin: 0 0 16px 0;
   letter-spacing: 0.05em;
@@ -49,7 +50,7 @@
 }
 
 .eaura-left p {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 400;
   margin: 0;
   opacity: 0.95;
@@ -83,9 +84,9 @@
 }
 
 .eaura-login-box h2 {
-  font-size: 2.75rem;
-  font-weight: 700;
-  color: #08090a;
+  font-size: 3rem;
+  font-weight: 800;
+  color: #001b36;
   text-align: center;
   margin-bottom: 16px;
   letter-spacing: -0.5px;
@@ -93,11 +94,18 @@
 
 .eaura-login-box > p {
   color: #718096;
-  font-size: 1rem;
+  font-size: 14px;
   text-align: center;
   line-height: 1.6;
   max-width: 320px;
   margin-bottom: 24px;
+}
+
+.eaura-login-box form { /* Targeting the form directly */
+  width: 80%; /* Set form width to 80% */
+  display: flex; /* Use flex to center its content */
+  flex-direction: column;
+  align-items: center; /* Center items horizontally */
 }
 
 .eaura-form-content {
@@ -108,7 +116,7 @@
 }
 
 .eaura-input {
-  width: 100%;
+  width: 100%; /* Keep inputs 100% of their parent (the form) */
   height: 56px;
   padding: 0 24px;
   border-radius: 999px; /* Increased border radius for more rounded appearance */
@@ -117,8 +125,7 @@
   font-weight: 500;
   margin-bottom: 20px;
   outline: none;
-  background: #2d3748;
-  color: #000000;
+  /* Removed hardcoded background and color to allow theme-awareness */
   transition: all 0.2s ease;
 }
 
@@ -134,29 +141,29 @@
 
 .eaura-password-wrapper {
   position: relative;
-  width: 100%;
+  width: 100%; /* Keep wrapper 100% of its parent (the form) */
 }
 
 .eaura-password-wrapper .eaura-input {
-  padding-right: 50px;
+  padding-right: 40px; /* Adjusted padding-right to accommodate the icon */
   margin-bottom: 24px;
 }
 .eaura-eye-btn {
   position: absolute;
-  right: 20px;
-  top: 50%;
+  right: 12px; /* Adjusted position to be 12px from the right edge */
+  top: 30%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #000000;
+  color: #6b7280; /* Changed from hsl(var(--muted-foreground)) to a hardcoded dark gray */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 4px;
 }
 .eaura-continue-btn {
-  width: 100%;
+  width: 100%; /* Keep button 100% of its parent (the form) */
   height: 56px;
   border-radius: 999px; /* Applied the same border radius as input fields */
   background: #3898FF;
@@ -198,7 +205,6 @@
 .eaura-separator:not(:empty)::after { margin-left: 1em; }
 
 .eaura-register-text {
-  margin-top: 24px;
   color: rgba(0, 0, 0, 0.9);
   font-size: 0.9375rem;
 }
@@ -208,7 +214,7 @@
 }
 
 .eaura-register-text .eaura-link {
-  color: inherit;
+  color: #4db2ff; /* Changed to the requested color */
   text-decoration: underline;
   background: none;
   padding: 0;

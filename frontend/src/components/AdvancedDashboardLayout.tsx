@@ -33,17 +33,18 @@ interface MetricGroups {
   [groupName: string]: MetricItem[];
 }
 
+// Define the ChartData interface based on its usage in the component
 interface ChartData {
   title: string;
   plotType: string;
   x: any[];
-  y: any[];
+  y: any; // Can be any[] or any[][] depending on chart type
   xLabel: string;
   yLabel: string;
-  value?: any;
+  value?: number;
   delta?: number;
   marker?: {
-    color?: string;
+    color: string;
   };
 }
 
@@ -62,6 +63,7 @@ interface AdvancedDashboardLayoutProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   tabNames?: string[];
+  hideTabsList?: boolean; // New prop
 }
 
 const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
@@ -73,12 +75,13 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   onRestoreCharts,
   onChartTypeChange,
   onChartColorChange,
-  chartTypes = {},
-  chartColors = {},
+  chartTypes: initialChartTypes = {}, // Use initialChartTypes for prop
+  chartColors: initialChartColors = {}, // Use initialChartColors for prop
   loading = false,
   activeTab,
   onTabChange,
-  tabNames
+  tabNames,
+  hideTabsList = false // Default to false
 }) => {
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
 
@@ -122,6 +125,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     }
     return new Set();
   });
+
+  // Correctly declare state variables and their setters
+  const [chartTypes, setChartTypes] = useState<Record<string, string>>(initialChartTypes);
+  const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -180,6 +187,17 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const handleRestoreCharts = () => {
     setHiddenCharts(new Set());
     onRestoreCharts();
+  };
+
+  // These functions now correctly use the state setters
+  const handleChartTypeChangeInternal = (key: string, type: string) => {
+    setChartTypes(prev => ({ ...prev, [key]: type }));
+    onChartTypeChange(key, type); // Also call the prop function
+  };
+
+  const handleChartColorChangeInternal = (key: string, color: string) => {
+    setChartColors(prev => ({ ...prev, [key]: color }));
+    onChartColorChange(key, color); // Also call the prop function
   };
 
   const currentTab = activeTab || Object.keys(dynamicMetricGroups)[0];
@@ -370,23 +388,26 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       </div>
 
       <Tabs value={currentTab} onValueChange={handleTabChangeWithLog} className="space-y-4 w-full mt-4">
-        <TabsList className="flex gap-2 bg-transparent p-0 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
-          {(tabNames || Object.keys(dynamicMetricGroups)).map((tab) => (
-            <TabsTrigger
-              key={tab}
-              value={tab}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm transition-all duration-300 active:scale-95",
-                "bg-muted/50 border border-border text-muted-foreground font-medium",
-                "hover:bg-muted/70",
-                "data-[state=active]:bg-[rgb(59,130,246)] data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              )}
-            >
-              {tab}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* Conditionally render TabsList */}
+        {hideTabsList ? null : (
+          <TabsList className="flex gap-2 bg-transparent p-0 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 whitespace-nowrap">
+            {(tabNames || Object.keys(dynamicMetricGroups)).map((tab) => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm transition-all duration-300 active:scale-95",
+                  "bg-muted/50 border border-border text-muted-foreground font-medium",
+                  "hover:bg-muted/70",
+                  "data-[state=active]:bg-[rgb(59,130,246)] data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                )}
+              >
+                {tab.replace(/_/g, ' ')}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
 
         <TabsContent key={currentTab} value={currentTab}>
           <div className="flex justify-end mb-2 gap-4 items-center">
@@ -529,7 +550,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 <Button
                                                   variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
                                                   size="icon"
-                                                  onClick={() => onChartTypeChange(metric.key, 'bar')}
+                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'bar')}
                                                   title="Bar Chart"
                                                 >
                                                   <BarChart2 className="w-5 h-5" />
@@ -537,7 +558,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 <Button
                                                   variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
                                                   size="icon"
-                                                  onClick={() => onChartTypeChange(metric.key, 'line')}
+                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'line')}
                                                   title="Line Chart"
                                                 >
                                                   <LineChart className="w-5 h-5" />
@@ -545,7 +566,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 <Button
                                                   variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
                                                   size="icon"
-                                                  onClick={() => onChartTypeChange(metric.key, 'scatter')}
+                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'scatter')}
                                                   title="Scatter Plot"
                                                 >
                                                   <ScatterChart className="w-5 h-5" />
@@ -554,7 +575,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                   type="color"
                                                   className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
                                                   value={chartColors[metric.key] || chart.marker?.color || primaryColorForCharts}
-                                                  onChange={e => onChartColorChange(metric.key, e.target.value)}
+                                                  onChange={e => handleChartColorChangeInternal(metric.key, e.target.value)}
                                                   title="Pick graph color"
                                                 />
                                               </div>
