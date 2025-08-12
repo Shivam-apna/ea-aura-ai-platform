@@ -19,7 +19,7 @@ def summarize_text_with_llama3(text: str) -> str:
     payload = {
         "model": "llama3-70b-8192",
         "messages": [
-            {"role": "system", "content": "You are an expert summarizer. Summarize the input text clearly and concisely for voiceover."},
+            {"role": "system", "content": "You are an expert summarizer. Summarize the input text clearly and concisely for voiceover. Do not write of the input text. Try to response like- 'Here is a clear and concise summary of the response'"},
             {"role": "user", "content": text}
         ],
         "temperature": 0.5

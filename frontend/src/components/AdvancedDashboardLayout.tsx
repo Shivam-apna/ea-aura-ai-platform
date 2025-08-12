@@ -15,6 +15,13 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
 import { cn } from '@/lib/utils';
+import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Speech } from "lucide-react";
+import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
+import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
+import ClipLoader from "react-spinners/ClipLoader";
+
+
 
 // Type definitions
 interface KpiItem {
@@ -85,8 +92,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
 }) => {
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
 
+  const iconColorClass = theme === 'dark' ? 'text-white' : 'text-primary'; // Conditional class
+
   // Detect if the current theme is dark
-  const isDarkTheme = theme === 'dark' || 
+  const isDarkTheme = theme === 'dark' ||
     (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const getPrimaryColorHex = () => {
@@ -129,6 +138,33 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   // Correctly declare state variables and their setters
   const [chartTypes, setChartTypes] = useState<Record<string, string>>(initialChartTypes);
   const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
+  const [ttsLoadingMap, setTtsLoadingMap] = useState<Record<string, boolean>>({});
+  const [isSpeakingMap, setIsSpeakingMap] = useState<Record<string, boolean>>({});
+
+  const handleTTSClick = (chartKey: string, chartLabel: string) => {
+    // ✅ Set loading to true for this specific chart
+    setTtsLoadingMap((prev: Record<string, boolean>) => ({
+      ...prev,
+      [chartKey]: true,
+    }));
+
+    createIndividualMetricTTS(
+      chartKey,            // metricKey
+      currentTab, // activeTab or page title
+      "graph_summary", // storageKey
+      (loading: boolean) =>
+        setTtsLoadingMap((prev: Record<string, boolean>) => ({
+          ...prev,
+          [chartKey]: loading,
+        })),
+      (speaking: boolean) =>
+        setIsSpeakingMap((prev: Record<string, boolean>) => ({
+          ...prev,
+          [chartKey]: speaking,
+        }))
+    );
+  };
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -359,7 +395,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black") } style={{ fontSize: "0.90rem" }}>{kpi.originalKey || kpi.key}</span>
+                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black")} style={{ fontSize: "0.90rem" }}>{kpi.originalKey || kpi.key}</span>
                   {idx % 2 === 0 ? <BarChart2 className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} /> : <LineChart className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} />}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
@@ -461,6 +497,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                             )}
                             <span className="text-sm font-medium text-gray-700">{metric.label}</span>
                           </div>
+
                           <Button
                             variant={isHidden ? "outline" : "secondary"}
                             size="sm"
@@ -480,6 +517,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                           >
                             {isHidden ? "Show" : canHide ? "Hide" : "Last Graph"}
                           </Button>
+
                         </div>
                       );
                     })}
@@ -538,49 +576,81 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                     <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
                                       <h3 className="text-base font-semibold text-foreground">{metric.label}</h3>
                                       <div className="flex items-center gap-2">
+
                                         {chart && (
-                                          <Popover>
-                                            <PopoverTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
-                                                <Settings2 className="w-5 h-5" />
-                                              </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
-                                              <div className="flex gap-2 mb-2">
+                                          <>
+                                            {/* TTS/Avatar Button with Loading Spinner */}
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
                                                 <Button
-                                                  variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
+                                                  variant="ghost"
                                                   size="icon"
-                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'bar')}
-                                                  title="Bar Chart"
+                                                  className={cn("h-8 w-8 rounded-full hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed", iconColorClass)}
+                                                  onClick={() => handleTTSClick(metric.key, metric.label)}
+                                                  disabled={ttsLoadingMap[metric.key] || isSpeakingMap[metric.key]}
                                                 >
-                                                  <BarChart2 className="w-5 h-5" />
+                                                  {ttsLoadingMap[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <Speech className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
+                                                  )}
+                                                  <span className="sr-only">Voice Summary</span>
                                                 </Button>
-                                                <Button
-                                                  variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
-                                                  size="icon"
-                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'line')}
-                                                  title="Line Chart"
-                                                >
-                                                  <LineChart className="w-5 h-5" />
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {ttsLoadingMap[metric.key]
+                                                    ? 'Generating voice...'
+                                                    : isSpeakingMap[metric.key]
+                                                      ? 'Currently speaking...'
+                                                      : 'Voice Summary'
+                                                  }
+                                                </p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+                                            <Popover>
+                                              <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
+                                                  <Settings2 className="w-5 h-5" />
                                                 </Button>
-                                                <Button
-                                                  variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
-                                                  size="icon"
-                                                  onClick={() => handleChartTypeChangeInternal(metric.key, 'scatter')}
-                                                  title="Scatter Plot"
-                                                >
-                                                  <ScatterChart className="w-5 h-5" />
-                                                </Button>
-                                                <input
-                                                  type="color"
-                                                  className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
-                                                  value={chartColors[metric.key] || chart.marker?.color || primaryColorForCharts}
-                                                  onChange={e => handleChartColorChangeInternal(metric.key, e.target.value)}
-                                                  title="Pick graph color"
-                                                />
-                                              </div>
-                                            </PopoverContent>
-                                          </Popover>
+                                              </PopoverTrigger>
+                                              <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
+                                                <div className="flex gap-2 mb-2">
+                                                  <Button
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
+                                                    size="icon"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'bar')}
+                                                    title="Bar Chart"
+                                                  >
+                                                    <BarChart2 className="w-5 h-5" />
+                                                  </Button>
+                                                  <Button
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
+                                                    size="icon"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'line')}
+                                                    title="Line Chart"
+                                                  >
+                                                    <LineChart className="w-5 h-5" />
+                                                  </Button>
+                                                  <Button
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
+                                                    size="icon"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'scatter')}
+                                                    title="Scatter Plot"
+                                                  >
+                                                    <ScatterChart className="w-5 h-5" />
+                                                  </Button>
+                                                  <input
+                                                    type="color"
+                                                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
+                                                    value={chartColors[metric.key] || chart.marker?.color || primaryColorForCharts}
+                                                    onChange={e => handleChartColorChangeInternal(metric.key, e.target.value)}
+                                                    title="Pick graph color"
+                                                  />
+                                                </div>
+                                              </PopoverContent>
+                                            </Popover>
+                                          </>
                                         )}
                                         <button
                                           className="rounded-full p-1 bg-muted/50 hover:bg-destructive/20 text-gray-400 hover:text-red-500 z-10 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -627,10 +697,10 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                     y: chart.y,
                                                     type,
                                                     ...(type === 'scatter' ? { mode: 'markers' } : {}),
-                                                    marker: { 
-                                                      color: chartColors[metric.key] || chart.marker?.color || COLORS[0], 
-                                                      size: 10, 
-                                                      line: { width: 2, color: isDarkTheme ? '#1f2937' : '#fff' } 
+                                                    marker: {
+                                                      color: chartColors[metric.key] || chart.marker?.color || COLORS[0],
+                                                      size: 10,
+                                                      line: { width: 2, color: isDarkTheme ? '#1f2937' : '#fff' }
                                                     },
                                                   }];
                                                 }
@@ -639,6 +709,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                               style={{ width: '100%', height: '100%' }}
                                               config={config}
                                             />
+
                                           );
                                         })()
                                       ) : (
@@ -646,7 +717,17 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                           <BarChart2 className={cn("w-12 h-12 mb-2 animate-bounce", "text-primary")} />
                                           <span className={cn("text-base font-semibold")}>No data available</span>
                                           <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
+
+
                                         </div>
+                                      )}
+
+                                      {/* Voice Visualizer - Now shows for any chart when speaking */}
+                                      {isSpeakingMap[metric.key] && (
+                                        <div className="fixed bottom-4 left-4 z-[9999] bg-[rgb(229_242_253)] rounded-full shadow-xl p-2">
+                                          <CompactVoiceVisualizer isSpeaking={isSpeakingMap[metric.key]} />
+                                        </div>
+
                                       )}
                                     </div>
                                   </CardContent>
