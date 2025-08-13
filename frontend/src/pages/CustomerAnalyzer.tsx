@@ -384,13 +384,49 @@ const CustomerAnalyzer = () => {
       }
 
       const data = await res.json();
+      // Check for GeneralAgent response first
+      if (data.selected_agent === "GeneralAgent") {
+        // Show toast with GeneralAgent response for 10 seconds with close button
+        toast(
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <div className="font-semibold text-blue-600 mb-2">EA-AURA Assistant</div>
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {data.response}
+              </div>
+            </div>
+            <button
+              onClick={() => toast.dismiss()}
+              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4 text-gray-500" />
+            </button>
+          </div>,
+          {
+            duration: 9000,
+            style: {
+              maxWidth: '600px',
+              padding: '16px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            },
+            className: 'custom-toast',
+          }
+        );
+        setLoading(false);
+        return;
+      }
+
       if (data.parent_agent !== "customer_analyzer_agent") {
         toast("Invalid Query: Ask query related to customer.");
         setLoading(false);
         return;
       }
       const parsed = data.sub_agent_response;
-      console.log("parsed response:", parsed);
+      // console.log("parsed response:", parsed);
 
       const summaryKey = `customer_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
