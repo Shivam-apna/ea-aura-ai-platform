@@ -95,7 +95,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullN
     <div className="relative z-20 w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-4 md:p-6 flex flex-col items-center mt-0">
       {/* Voice Assistant Orb in bottom-left of card */}
       {isSpeaking && (
-        <div className="absolute bottom-4 left-4 bg-[rgb(229 242 253)] rounded-full shadow-xl p-2">
+        <div className="fixed bottom-4 left-4 z-[9999] bg-[rgb(229_242_253)] rounded-full shadow-xl p-2">
           <CompactVoiceVisualizer isSpeaking={isSpeaking} />
         </div>
       )}

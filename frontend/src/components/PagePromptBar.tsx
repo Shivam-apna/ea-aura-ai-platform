@@ -139,7 +139,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   // Effect to load initial prompt and saved queries
   useEffect(() => {
     loadSavedQueries();
-    
+
     const inputStorageKey = getInputStorageKey();
     if (inputStorageKey) {
       const savedInput = localStorage.getItem(inputStorageKey);
@@ -165,12 +165,11 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       localStorage.setItem(inputStorageKey, input);
     }
   }, [input, storageKeyForInput, pageId]);
-  console.log(pageId,"jjjjjjjj")
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
+
       if (SpeechRecognition) {
         const recognitionInstance = new SpeechRecognition();
         recognitionInstance.continuous = true;
@@ -199,7 +198,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           const fullTranscript = finalTranscript + interimTranscript;
           setTranscript(fullTranscript);
           setInput(fullTranscript);
-          
+
           const level = Math.min(1, fullTranscript.length / 50);
           setVoiceLevel(level);
         };
@@ -208,7 +207,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           console.error('Speech recognition error:', event.error);
           setIsListening(false);
           setVoiceLevel(0);
-          
+
           switch (event.error) {
             case 'no-speech':
               toast.error("No speech detected. Please try again.");
@@ -292,14 +291,14 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     onLoadingChange?.(true);
 
     const promptText = input.trim();
-    
+
     // Add query to history before clearing input
     addQueryToHistory(promptText);
-    
+
     setInput("");
     setTranscript("");
     setShowHistory(false);
-    
+
     try {
       await onSubmit(promptText);
     } catch (error: any) {
@@ -310,7 +309,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
       onLoadingChange?.(false);
     }
   };
-  
+
   const handleVoiceInput = () => {
     if (!recognition) {
       setErrorMessage("Voice input is not supported in your browser. Please use Chrome or Edge.");
@@ -353,7 +352,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           </Button>
         </div>
       )}
-      
+
       {/* Prompt Bar */}
       <div className={cn(
         "flex items-center h-10 rounded-full bg-card shadow-lg transition-all duration-200",
@@ -369,8 +368,8 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           size="icon"
           className={cn(
             "h-8 w-8 rounded-full ml-1 flex-shrink-0 transition-all duration-300",
-            showHistory 
-              ? "text-primary bg-primary/10 hover:bg-primary/20" 
+            showHistory
+              ? "text-primary bg-primary/10 hover:bg-primary/20"
               : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
           )}
           onClick={() => setShowHistory(!showHistory)}
@@ -393,15 +392,15 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
             )}
             disabled={isLoading}
           />
-          
+
           {/* Voice Input Button */}
           <Button
             variant="ghost"
             size="icon"
             className={cn(
               "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-all duration-300 flex-shrink-0",
-              isListening 
-                ? "text-red-500 bg-red-50 hover:bg-red-100" 
+              isListening
+                ? "text-red-500 bg-red-50 hover:bg-red-100"
                 : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
             )}
             onClick={handleVoiceInput}
@@ -433,8 +432,8 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           variant="default"
           className={cn(
             "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
-            isListening 
-              ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600" 
+            isListening
+              ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
               : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
           )}
         >
@@ -454,7 +453,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
 
       {/* Query History Dropdown */}
       {showHistory && (
-        <div 
+        <div
           ref={historyRef}
           className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
         >
@@ -475,7 +474,7 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
               </Button>
             )}
           </div>
-          
+
           <div className="py-2">
             {savedQueries.length === 0 ? (
               <div className="px-4 py-6 text-center text-muted-foreground text-sm">
