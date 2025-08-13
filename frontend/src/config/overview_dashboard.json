@@ -29,7 +29,7 @@
     },
     "kpi_keys": [
         {
-            "key": "Gross Profit Margin (%)",
+            "key": "CES score",
             "bgColor": "#E4F8C2"
         },
         {
@@ -37,11 +37,11 @@
             "bgColor": "#E6F1FD"
         },
         {
-            "key": "Alignment Score (%)",
+            "key": "Sentiment Score (%)",
             "bgColor": "#E4F8C2"
         },
         {
-            "key": "Unique Website Visitors",
+            "key": "CSAT (%)",
             "bgColor": "#E6F1FD"
         }
     ]
