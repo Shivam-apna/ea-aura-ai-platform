@@ -116,7 +116,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
           </ShadcnTooltip> */}
 
           {/* PowerPoint Icon */}
-          <ShadcnTooltip>
+          {/* <ShadcnTooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => handleDownload('PPT')}>
                 <Presentation className="h-5 w-5" />
@@ -126,10 +126,10 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             <TooltipContent>
               <p>Export to PowerPoint</p>
             </TooltipContent>
-          </ShadcnTooltip>
+          </ShadcnTooltip> */}
 
           {/* Excel Icon */}
-          <ShadcnTooltip>
+          {/* <ShadcnTooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)} onClick={() => handleDownload('Excel')}>
                 <FileSpreadsheet className="h-5 w-5" />
@@ -139,7 +139,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             <TooltipContent>
               <p>Export to Excel</p>
             </TooltipContent>
-          </ShadcnTooltip>
+          </ShadcnTooltip> */}
 
           {/* PDF Download Button - Updated with conditional rendering and loading state */}
           {hasChartsData && (
