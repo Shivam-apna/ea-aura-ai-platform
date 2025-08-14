@@ -458,7 +458,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
 
 
-      const summaryKey = `overview_parsed_summary${activeTab}`;
+      const summaryKey = `overview_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
       let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
