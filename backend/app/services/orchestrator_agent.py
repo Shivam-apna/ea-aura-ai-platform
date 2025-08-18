@@ -1,7 +1,7 @@
 from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 from app.utils.agent_config_loader import get_all_agent_configs
 from app.services.general_agent import GeneralAgent
-from app.groq_config import get_groq_config
+from app.groq_config import get_groq_config  # This now supports both Groq and LM Studio
 from datetime import datetime
 import uuid
 import json
@@ -97,9 +97,18 @@ def get_enhanced_data_hash(enhanced_data: str) -> str:
     import hashlib
     return hashlib.md5(enhanced_data.encode()).hexdigest()[:8]  # Short hash
 
+def get_llm_config_list(model: str) -> list:
+    """Get LLM configuration list - supports both Groq and LM Studio"""
+    config = get_groq_config()  # This function now handles both providers
+    
+    return [{
+        "model": model,
+        "api_key": config["api_key"],
+        "base_url": "https://api.pinguaicloud.com/v1"
+    }]
+
 def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job_id: str, tenant_id: str):
     """Execute a single agent with enhanced token tracking"""
-    groq_config = get_groq_config()
     
     # Get enhanced data for the agent
     enhanced_data = get_enhanced_data_for_agent(agent_name, input_text, tenant_id)
@@ -120,13 +129,9 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
 
     print("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", agent_prompt)
 
-    # Configure agent
+    # Configure agent with updated config method
     model = agent_data["llm_config"]["model"]
-    config_list = [{
-        "model": model,
-        "api_key": groq_config["api_key"],
-        "base_url": groq_config["base_url"]
-    }]
+    config_list = get_llm_config_list(model)
     
     try:
         # Execute agent
@@ -173,29 +178,28 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
             except Exception:
                 pass
         
-        logger.error(f"🚫 Agent {agent_name} failed due to OpenAI org/API key issue", extra={
+        logger.error(f"🚫 Agent {agent_name} failed due to LLM API issue", extra={
             "job_id": job_id,
             "error": error_message,
             "agent": agent_name
         })
         
         return None, {
-            "error": f"Agent {agent_name} execution failed due to an issue with the API key or organization.",
+            "error": f"Agent {agent_name} execution failed due to an issue with the LLM API.",
             "details": error_message
         }
 
 def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str, 
                      input_text: str, job_id: str, tenant_id: str):
     """Execute a sub-agent with token tracking"""
-    groq_config = get_groq_config()
-    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text,tenant_id)
+    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text, tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
     
     # Create cache key for sub-agent
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
     
     # Check cache with the cache key
-    cached_response = search_cache(cache_key,tenant_id)
+    cached_response = search_cache(cache_key, tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for sub-agent {agent_name}. Skipping LLM call.")
         return cached_response, None
@@ -205,11 +209,7 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
     subagent_prompt = prepare_agent_prompt({"prompt_template": subagent_prompt_template}, input_text, enhanced_data)
     
     subagent_model = sub_agent_config["llm_config"]["model"]
-    subagent_config_list = [{
-        "model": subagent_model,
-        "api_key": groq_config["api_key"],
-        "base_url": groq_config["base_url"]
-    }]
+    subagent_config_list = get_llm_config_list(subagent_model)
     
     try:
         sub_assistant = AssistantAgent(name=agent_name, llm_config={"config_list": subagent_config_list})
@@ -221,7 +221,7 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         subagent_response = sub_group_chat.messages[-1]["content"]
 
         # Save response to cache with the cache key
-        save_to_cache(cache_key, subagent_response,tenant_id)
+        save_to_cache(cache_key, subagent_response, tenant_id)
         
         # Track tokens for sub-agent
         token_usage = token_tracker.track_agent_tokens(
@@ -255,14 +255,14 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
             except Exception:
                 pass
         
-        logger.error(f"🚫 Sub-agent {agent_name} failed due to OpenAI org/API key issue", extra={
+        logger.error(f"🚫 Sub-agent {agent_name} failed due to LLM API issue", extra={
             "job_id": job_id,
             "error": error_message,
             "agent": agent_name
         })
         
         return None, {
-            "error": f"Sub-agent {agent_name} execution failed due to an issue with the API key or organization.",
+            "error": f"Sub-agent {agent_name} execution failed due to an issue with the LLM API.",
             "details": error_message
         }
 
@@ -375,9 +375,6 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                 "token_usage": token_summary
             }
         
-       
-
-        
         else:
             return {
                 "job_id": job_id,
@@ -403,7 +400,6 @@ create_cache_index_if_not_exists()
 def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict, 
                         subagent_response: str, input_text: str, job_id: str, tenant_id: str):
     """Execute parent agent with caching support"""
-    groq_config = get_groq_config()
     
     # Create parent agent prompt
     parent_prompt_template = parent_agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
@@ -414,18 +410,14 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
     cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash)
     
     # Check cache first
-    cached_response = search_cache(cache_key,tenant_id)
+    cached_response = search_cache(cache_key, tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for parent agent {parent_agent_name}. Skipping LLM call.")
         return cached_response, None
     
     # Execute parent agent if not in cache
     parent_model = parent_agent_data["llm_config"]["model"]
-    parent_config_list = [{
-        "model": parent_model,
-        "api_key": groq_config["api_key"],
-        "base_url": groq_config["base_url"]
-    }]
+    parent_config_list = get_llm_config_list(parent_model)
     
     try:
         parent_assistant = AssistantAgent(name=parent_agent_name, llm_config={"config_list": parent_config_list})
@@ -437,7 +429,7 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
         parent_response = parent_group_chat.messages[-1]["content"]
         
         # Save to cache
-        save_to_cache(cache_key, parent_response,tenant_id)
+        save_to_cache(cache_key, parent_response, tenant_id)
         
         # Track tokens
         parent_token_usage = token_tracker.track_agent_tokens(
@@ -471,14 +463,14 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
             except Exception:
                 pass
         
-        logger.error(f"🚫 Parent agent {parent_agent_name} failed due to OpenAI org/API key issue", extra={
+        logger.error(f"🚫 Parent agent {parent_agent_name} failed due to LLM API issue", extra={
             "job_id": job_id,
             "error": error_message,
             "agent": parent_agent_name
         })
         
         return None, {
-            "error": f"Parent agent {parent_agent_name} execution failed due to an issue with the API key or organization.",
+            "error": f"Parent agent {parent_agent_name} execution failed due to an issue with the LLM API.",
             "details": error_message
         }
 
@@ -489,7 +481,7 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
     workflow_cache_key = create_cache_key(input_text, "full_orchestration")
     
     # Check if we have a cached result for the entire workflow
-    cached_workflow = search_cache(workflow_cache_key,tenant_id)
+    cached_workflow = search_cache(workflow_cache_key, tenant_id)
     if cached_workflow:
         logger.info("✅ Full orchestration cache HIT - returning complete cached workflow")
         try:
@@ -532,7 +524,6 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         return cached_result
     
     job_id = str(uuid.uuid4())
-    groq_config = get_groq_config()
     
     # Reset token tracking for new job
     token_tracker.reset_tracking()
@@ -707,7 +698,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         
         # Cache the entire workflow result
         workflow_cache_key = create_cache_key(input_text, "full_orchestration")
-        save_to_cache(workflow_cache_key, json.dumps(final_result),tenant_id)
+        save_to_cache(workflow_cache_key, json.dumps(final_result), tenant_id)
         
         logger.info("✅ Agent orchestration completed", extra={
             "job_id": job_id,

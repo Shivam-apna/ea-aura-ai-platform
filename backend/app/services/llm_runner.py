@@ -28,7 +28,7 @@ def real_agent_response(agent_name: str, input_text: str, model: str = "gemma2-9
         }
 
         # Ensure correct URL - Groq uses this exact format
-        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        api_url = "https://api.pinguaicloud.com/v1/chat/completions"
         
         print(f"[DEBUG] Making request to: {api_url}")
         print(f"[DEBUG] Model: {model}")
