@@ -17,6 +17,7 @@ from app.services.data_enhancer import get_enhanced_data_for_agent
 # Import the new modules
 from app.services.token_tracker import token_tracker
 from app.services.memory_manager import memory_manager
+import time
 
 
 def match_parent_agent_by_keywords(user_input: str):
@@ -128,61 +129,118 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
         "base_url": groq_config["base_url"]
     }]
     
-    try:
-        # Execute agent
-        assistant = AssistantAgent(name=agent_name, llm_config={"config_list": config_list})
-        user_proxy = UserProxyAgent(name="user", human_input_mode="NEVER")
-        group_chat = GroupChat(agents=[user_proxy, assistant], messages=[], max_round=2)
-        manager = GroupChatManager(groupchat=group_chat, llm_config={"config_list": config_list})
-        
-        user_proxy.initiate_chat(manager, message=agent_prompt)
-        response = group_chat.messages[-1]["content"]
+    # Read execution guards from config
+    token_budget = agent_data.get("token_budget")
+    retry_cfg = agent_data.get("retry_policy") or {}
+    max_attempts = max(1, int(retry_cfg.get("max_attempts", 1)))
+    delay_seconds = max(0, int(retry_cfg.get("delay_seconds", 0)))
 
-        # Save response to cache with the cache key
-        save_to_cache(cache_key, response, tenant_id)
-        
-        # Track tokens for this agent
-        token_usage = token_tracker.track_agent_tokens(
-            agent_id=agent_name,
-            input_text=agent_prompt,
-            output_text=response,
-            model_name=model,
-            step=0
-        )
-        
-        # Save to memory with token info
-        memory_manager.save_agent_memory(
-            agent_id=agent_name,
-            job_id=job_id,
-            tenant_id=tenant_id,
-            step=0,
-            input_text=agent_prompt,
-            output_text=response,
-            token_usage=token_usage,
-            model_name=model
-        )
-        
-        return response, None
-        
-    except BadRequestError as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and hasattr(e.response, 'json'):
-            try:
-                error_json = e.response.json()
-                error_message = json.dumps(error_json)
-            except Exception:
-                pass
-        
-        logger.error(f"🚫 Agent {agent_name} failed due to OpenAI org/API key issue", extra={
-            "job_id": job_id,
-            "error": error_message,
-            "agent": agent_name
-        })
-        
-        return None, {
-            "error": f"Agent {agent_name} execution failed due to an issue with the API key or organization.",
-            "details": error_message
-        }
+    def remaining_budget() -> int | None:
+        if token_budget is None:
+            return None
+        summary = token_tracker.get_agent_token_summary(agent_name)
+        return max(0, int(token_budget) - int(summary.get("total_tokens", 0)))
+
+    # Retry loop
+    last_error_details = None
+    for attempt in range(1, max_attempts + 1):
+        rem = remaining_budget()
+        if rem is not None and rem <= 0:
+            return None, {
+                "error": f"Token budget exceeded for agent {agent_name}",
+                "code": "TOKEN_BUDGET_EXCEEDED",
+                "agent": agent_name
+            }
+        try:
+            # Execute agent
+            assistant = AssistantAgent(name=agent_name, llm_config={"config_list": config_list})
+            user_proxy = UserProxyAgent(name="user", human_input_mode="NEVER")
+            group_chat = GroupChat(agents=[user_proxy, assistant], messages=[], max_round=2)
+            manager = GroupChatManager(groupchat=group_chat, llm_config={"config_list": config_list})
+
+            user_proxy.initiate_chat(manager, message=agent_prompt)
+            response = group_chat.messages[-1]["content"]
+
+            # Validate success criteria before caching/saving
+            criteria = agent_data.get("success_criteria") or []
+            if criteria:
+                failures = []
+                lower_resp = (response or "").lower()
+                if any(c.lower() in ("must output json", "output must be json", "return json") for c in criteria):
+                    try:
+                        json.loads(response)
+                    except Exception:
+                        failures.append("Output is not valid JSON")
+                if any("include at least 2 charts" in c.lower() or "include at least two charts" in c.lower() for c in criteria):
+                    indicators = ["plot_type", "chart", "graph", "figure"]
+                    count = sum(lower_resp.count(ind) for ind in indicators)
+                    if count < 2:
+                        failures.append("Fewer than 2 chart indicators found in output")
+                if failures:
+                    raise ValueError(f"Success criteria failed: {failures}")
+
+            # Save response to cache with the cache key
+            save_to_cache(cache_key, response, tenant_id)
+
+            # Track tokens for this agent
+            token_usage = token_tracker.track_agent_tokens(
+                agent_id=agent_name,
+                input_text=agent_prompt,
+                output_text=response,
+                model_name=model,
+                step=0
+            )
+
+            # Save to memory with token info
+            memory_manager.save_agent_memory(
+                agent_id=agent_name,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                step=0,
+                input_text=agent_prompt,
+                output_text=response,
+                token_usage=token_usage,
+                model_name=model
+            )
+
+            return response, None
+
+        except BadRequestError as e:
+            error_message = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_json = e.response.json()
+                    error_message = json.dumps(error_json)
+                except Exception:
+                    pass
+            last_error_details = error_message
+            logger.error(f"🚫 Agent {agent_name} failed on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "error": error_message,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                return None, {
+                    "error": f"Agent {agent_name} execution failed after {attempt} attempts.",
+                    "details": error_message,
+                    "retries_exhausted": attempt >= max_attempts
+                }
+        except Exception as e:
+            last_error_details = str(e)
+            logger.exception(f"❌ Agent {agent_name} unhandled exception on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                return None, {
+                    "error": f"Agent {agent_name} crashed after {attempt} attempts.",
+                    "details": str(e),
+                    "retries_exhausted": attempt >= max_attempts
+                }
 
 def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str, 
                      input_text: str, job_id: str, tenant_id: str):
@@ -211,60 +269,116 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         "base_url": groq_config["base_url"]
     }]
     
-    try:
-        sub_assistant = AssistantAgent(name=agent_name, llm_config={"config_list": subagent_config_list})
-        sub_user_proxy = UserProxyAgent(name="sub_user", human_input_mode="NEVER")
-        sub_group_chat = GroupChat(agents=[sub_user_proxy, sub_assistant], messages=[], max_round=2)
-        sub_manager = GroupChatManager(groupchat=sub_group_chat, llm_config={"config_list": subagent_config_list})
-        
-        sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
-        subagent_response = sub_group_chat.messages[-1]["content"]
+    # Read execution guards from config
+    token_budget = sub_agent_config.get("token_budget")
+    retry_cfg = sub_agent_config.get("retry_policy") or {}
+    max_attempts = max(1, int(retry_cfg.get("max_attempts", 1)))
+    delay_seconds = max(0, int(retry_cfg.get("delay_seconds", 0)))
 
-        # Save response to cache with the cache key
-        save_to_cache(cache_key, subagent_response,tenant_id)
-        
-        # Track tokens for sub-agent
-        token_usage = token_tracker.track_agent_tokens(
-            agent_id=agent_name,
-            input_text=subagent_prompt,
-            output_text=subagent_response,
-            model_name=subagent_model,
-            step=0
-        )
-        
-        # Save to memory with token info
-        memory_manager.save_agent_memory(
-            agent_id=agent_name,
-            job_id=job_id,
-            tenant_id=tenant_id,
-            step=0,
-            input_text=subagent_prompt,
-            output_text=subagent_response,
-            token_usage=token_usage,
-            model_name=subagent_model
-        )
-        
-        return subagent_response, None
-        
-    except BadRequestError as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and hasattr(e.response, 'json'):
-            try:
-                error_json = e.response.json()
-                error_message = json.dumps(error_json)
-            except Exception:
-                pass
-        
-        logger.error(f"🚫 Sub-agent {agent_name} failed due to OpenAI org/API key issue", extra={
-            "job_id": job_id,
-            "error": error_message,
-            "agent": agent_name
-        })
-        
-        return None, {
-            "error": f"Sub-agent {agent_name} execution failed due to an issue with the API key or organization.",
-            "details": error_message
-        }
+    def remaining_budget() -> int | None:
+        if token_budget is None:
+            return None
+        summary = token_tracker.get_agent_token_summary(agent_name)
+        return max(0, int(token_budget) - int(summary.get("total_tokens", 0)))
+
+    last_error_details = None
+    for attempt in range(1, max_attempts + 1):
+        rem = remaining_budget()
+        if rem is not None and rem <= 0:
+            return None, {
+                "error": f"Token budget exceeded for sub-agent {agent_name}",
+                "code": "TOKEN_BUDGET_EXCEEDED",
+                "agent": agent_name
+            }
+        try:
+            sub_assistant = AssistantAgent(name=agent_name, llm_config={"config_list": subagent_config_list})
+            sub_user_proxy = UserProxyAgent(name="sub_user", human_input_mode="NEVER")
+            sub_group_chat = GroupChat(agents=[sub_user_proxy, sub_assistant], messages=[], max_round=2)
+            sub_manager = GroupChatManager(groupchat=sub_group_chat, llm_config={"config_list": subagent_config_list})
+
+            sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
+            subagent_response = sub_group_chat.messages[-1]["content"]
+
+            # Validate success criteria before caching/saving
+            criteria = sub_agent_config.get("success_criteria") or []
+            if criteria:
+                failures = []
+                lower_resp = (subagent_response or "").lower()
+                if any(c.lower() in ("must output json", "output must be json", "return json") for c in criteria):
+                    try:
+                        json.loads(subagent_response)
+                    except Exception:
+                        failures.append("Output is not valid JSON")
+                if any("include at least 2 charts" in c.lower() or "include at least two charts" in c.lower() for c in criteria):
+                    indicators = ["plot_type", "chart", "graph", "figure"]
+                    count = sum(lower_resp.count(ind) for ind in indicators)
+                    if count < 2:
+                        failures.append("Fewer than 2 chart indicators found in output")
+                if failures:
+                    raise ValueError(f"Success criteria failed: {failures}")
+
+            # Save response to cache with the cache key
+            save_to_cache(cache_key, subagent_response,tenant_id)
+
+            # Track tokens for sub-agent
+            token_usage = token_tracker.track_agent_tokens(
+                agent_id=agent_name,
+                input_text=subagent_prompt,
+                output_text=subagent_response,
+                model_name=subagent_model,
+                step=0
+            )
+
+            # Save to memory with token info
+            memory_manager.save_agent_memory(
+                agent_id=agent_name,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                step=0,
+                input_text=subagent_prompt,
+                output_text=subagent_response,
+                token_usage=token_usage,
+                model_name=subagent_model
+            )
+
+            return subagent_response, None
+
+        except BadRequestError as e:
+            error_message = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_json = e.response.json()
+                    error_message = json.dumps(error_json)
+                except Exception:
+                    pass
+            last_error_details = error_message
+            logger.error(f"🚫 Sub-agent {agent_name} failed on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "error": error_message,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                return None, {
+                    "error": f"Sub-agent {agent_name} execution failed after {attempt} attempts.",
+                    "details": error_message,
+                    "retries_exhausted": attempt >= max_attempts
+                }
+        except Exception as e:
+            last_error_details = str(e)
+            logger.exception(f"❌ Sub-agent {agent_name} unhandled exception on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                return None, {
+                    "error": f"Sub-agent {agent_name} crashed after {attempt} attempts.",
+                    "details": str(e),
+                    "retries_exhausted": attempt >= max_attempts
+                }
 
 
 create_cache_index_if_not_exists()

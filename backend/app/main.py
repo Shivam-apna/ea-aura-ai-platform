@@ -6,6 +6,8 @@ import sys
 # API v1 routes
 from app.dao.job_index import index_job
 from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, test_agent_run
+from app.api.v1.routes import status as status_routes
+from app.api.v1.routes import agents as agents_routes
 from app.core.index_manager import IndexManager
 from app.core.elastic import get_es_client
 from app.core.core_log import logger
@@ -40,6 +42,8 @@ app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(agent_job.router, prefix="/api/v1")
 app.include_router(sub_agent_chain.router, prefix="/api/v1")
 app.include_router(agent_memory.router, prefix="/api/v1")
+app.include_router(status_routes.router, prefix="/api/v1")
+app.include_router(agents_routes.router, prefix="/api/v1")
 
 # Only include test routes in development and testing
 if settings.is_development or settings.is_testing:
