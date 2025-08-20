@@ -6,9 +6,9 @@ def real_agent_response(agent_name: str, input_text: str, model: str = "gemma2-9
     try:
         agent_cfg = get_agent_config(agent_name)
         prompt_template = agent_cfg.get("prompt_template", "Analyze:\n\n{{input}}")
-        print()
+        
         config = get_groq_config()
-        #model = agent_cfg.get("model", config["model"])
+        # model = agent_cfg.get("model", config["model"])  # optional override
 
         prompt = prompt_template.replace("{{input}}", input_text)
 
@@ -23,21 +23,20 @@ def real_agent_response(agent_name: str, input_text: str, model: str = "gemma2-9
                 {"role": "system", "content": "You are a specialized sub-agent in the EA-AURA AI system."},
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 1000,  # Add this to prevent issues
-            "temperature": 0.7   # Add this for consistent behavior
+            "max_tokens": 1000,
+            "temperature": 0.7
         }
 
-        # Ensure correct URL - Groq uses this exact format
-        api_url = "https://api.pinguaicloud.com/v1/chat/completions"
+        # 🔑 Correct dynamic URL
+        api_url = f"{config['base_url'].rstrip('/')}/chat/completions"
         
         print(f"[DEBUG] Making request to: {api_url}")
         print(f"[DEBUG] Model: {model}")
-        print(f"[DEBUG] API Key present: {'api_key' in config and bool(config['api_key'])}")
+        print(f"[DEBUG] API Key present: {bool(config.get('api_key'))}")
         
         response = httpx.post(api_url, headers=headers, json=payload, timeout=30.0)
         
         print(f"[DEBUG] Response status: {response.status_code}")
-        
         if response.status_code != 200:
             print(f"[DEBUG] Response content: {response.text}")
             
@@ -47,8 +46,8 @@ def real_agent_response(agent_name: str, input_text: str, model: str = "gemma2-9
         return result["choices"][0]["message"]["content"]
         
     except httpx.HTTPStatusError as e:
-        print(f"[❌ Groq HTTP Error] {e.response.status_code}: {e.response.text}")
+        print(f"[❌ LLM HTTP Error] {e.response.status_code}: {e.response.text}")
         return f"[Error: HTTP {e.response.status_code}]"
     except Exception as e:
-        print(f"[❌ Groq Error] {e}")
+        print(f"[❌ LLM Error] {e}")
         return "[Error: LLM call failed]"

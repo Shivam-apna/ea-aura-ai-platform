@@ -6,7 +6,7 @@ def get_groq_config():
     Updated configuration to support both Groq and hosted LM Studio
     """
     # Check if we're using LM Studio or Groq
-    use_lm_studio = os.getenv("USE_LM_STUDIO", "true").lower() == "true"
+    use_lm_studio = os.getenv("USE_LM_STUDIO", "false").lower() == "true"
     
     if use_lm_studio:
         # Hosted LM Studio configuration
@@ -28,5 +28,5 @@ def get_groq_config():
         return {
             "model": os.getenv("GROQ_MODEL", "gemma2-9b-it"),
             "api_key": api_key,
-            "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+            "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com")
         }

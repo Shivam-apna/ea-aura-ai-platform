@@ -99,13 +99,14 @@ def get_enhanced_data_hash(enhanced_data: str) -> str:
 
 def get_llm_config_list(model: str) -> list:
     """Get LLM configuration list - supports both Groq and LM Studio"""
-    config = get_groq_config()  # This function now handles both providers
+    config = get_groq_config()  # unified config
     
     return [{
-        "model": model,
+        "model": model or config["model"],  # fallback to default from config
         "api_key": config["api_key"],
-        "base_url": "https://api.pinguaicloud.com/v1"
+        "base_url": config["base_url"]      # now dynamically uses Groq or LM Studio
     }]
+
 
 def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job_id: str, tenant_id: str):
     """Execute a single agent with enhanced token tracking"""
