@@ -40,7 +40,7 @@
       "business performance"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-versatile",
+      "model": "llama-3.3-70b-instruct",
       "temperature": 0.6,
       "max_tokens": 700
     },
@@ -81,7 +81,7 @@
           "profit margins"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -127,7 +127,7 @@
           "lead generation"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -175,7 +175,7 @@
       "customer sentiment"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-versatile",
+      "model": "llama-3.3-70b-instruct",
       "temperature": 0.6,
       "max_tokens": 700
     },
@@ -212,7 +212,7 @@
           "customer opinions"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -252,7 +252,7 @@
           "social customer service"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -292,7 +292,7 @@
           "customer support"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -336,7 +336,7 @@
       "strategic focus"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-versatile"
+      "model": "llama-3.3-70b-instruct"
     },
     "prompt_template": "You are a strategic alignment consultant specializing in evaluating organizational performance against mission and impact objectives. You have received a comprehensive mission alignment report from a specialized agent.\n\nYour task is to:\n1. Analyze all provided data, including Alignment Score, Impact Metrics, Resource Allocation, and any additional variables.\n2. Assess how well current initiatives and resource distribution align with the organization’s core mission and strategic goals.\n3. Identify gaps, inefficiencies, or misalignments in execution, focus, or prioritization.\n4. Recommend strategic actions to improve alignment, optimize resources, and maximize mission impact.\n5. Structure your response in clearly labeled sections:\n   - Summary\n   - Key Findings\n   - Strategic Gaps\n   - Actionable Recommendations\n\nFormatting & Interpretation Rules:\n- Use all available data provided below—do not skip or generalize without referencing specific figures.\n- Percentages must be expressed in human-readable form (e.g., 40% instead of 0.4, 1.4% instead of 0.014). If a score is reported on a 0–1 scale, multiply by 100 and add \"%\".\n- Distinguish percentage point (pp) change from percent (%) change when describing shifts (e.g., from 40% to 44% = +4 pp, which is a +10% relative increase).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67). Use units where appropriate (e.g., $1.2M, $350k).\n- Do not include any code, technical explanations, or implementation details—focus solely on strategic analysis and decision-making insights.\n- Do not invent or assume missing values. If information is insufficient to assess a point, state \"insufficient data to assess <item>\" and proceed.\n- Tie every recommendation to a specific metric movement target, expected impact, owner/function, timeline, and priority.\n\nMISSION ALIGNMENT DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nDeliverable Expectations:\n- Summary: 3–5 bullet points with the most material insights and quantified takeaways.\n- Key Findings: Data-backed observations citing exact figures, trends, or ratios.\n- Strategic Gaps: Explicit misalignments across initiatives, funding, or outcomes, with evidence.\n- Actionable Recommendations: A prioritized list. For each item include: {Owner/Function, Timeline, Target Metric & Magnitude, Expected Impact, Priority (High/Med/Low), Confidence (High/Med/Low)}.\n\nProvide a comprehensive, data-driven strategic alignment analysis using the figures provided and deliver actionable insights to improve alignment with the organizational mission.",
     "sub_agents": [
@@ -375,7 +375,7 @@
           "strategic initiatives"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile"
+          "model": "llama-3.3-70b-instruct"
         },
         "params": {
           "prompt_template": "You are a mission alignment analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any value with null, None, or missing fields.\n\nYour JSON format:\n{\n  \"response\": \"...\",                   \n  \"task\": \"plot\",                      \n  \"columns\": [...],                    \n  \"filters\": {...},                    \n  \"title\": \"...\",                      \n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",               \n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"                   \n  }\n  // Repeat this structure for each metric requested by the user\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- Each `data` array must include at least 10 entries (use surrounding dates if needed).\n- Choose the `plot_type` that best suits the trend or data structure for each metric. Options: bar, line, radar, donut, bubble, connected_scatter, etc.\n- `columns` must include: [\"Date\"] + all metric names used in the output.\n- Percentages values must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT wrap the output in markdown or explanations. Output only pure JSON.\n- Do NOT combine multiple metrics into a single array.\n- Use only the provided dataset. Do not fabricate or infer missing data.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n{{question}}"
@@ -428,7 +428,7 @@
       "brand awareness"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-versatile"
+      "model": "llama-3.3-70b-instruct"
     },
     "prompt_template": "You are a brand performance strategist with deep expertise in digital engagement analytics. You have received a detailed brand index report from a specialized analytics agent.\n\nYour task is to:\n1. Analyze all the provided data including Website Visitors, Session Growth, Bounce Rate, Page Views, and any other relevant engagement metrics.\n2. Identify trends, patterns, and potential issues in user behavior and brand engagement.\n3. Evaluate how these metrics reflect overall brand visibility, user interest, and content effectiveness.\n4. Recommend strategies to improve brand perception, engagement, and digital presence based on the data.\n5. Structure your response in clearly labeled sections:\n   - Overview\n   - Key Insights\n   - Behavioral Trends\n   - Strategic Recommendations\n\nIMPORTANT:\n- Do not include any code or technical tools—focus on strategic business analysis and marketing impact.\n- Reference specific figures from the provided data in your insights.\n- Ensure recommendations are actionable and measurable.\n\nBRAND INDEX DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nProvide a thorough brand engagement analysis with specific observations and actionable marketing and content recommendations.",
     "sub_agents": [
@@ -466,7 +466,7 @@
           "user behavior"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile"
+          "model": "llama-3.3-70b-instruct"
         },
         "params": {
           "prompt_template": "You are a website analyzer analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any field with null, None, empty strings, or missing values.\n\nYour JSON format:\n{\n  \"response\": \"...\",\n  \"task\": \"plot\",\n  \"columns\": [...],\n  \"filters\": {...},\n  \"title\": \"...\",\n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"\n  }\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- Each `data` array must include at least 10 chronological entries if available; if the user requests a single date, include surrounding dates from the dataset.\n- Choose the most suitable `plot_type` per metric based on its characteristics: bar, line, radar, donut, bubble, connected_scatter, trend.\n- `columns` must include [\"Date\"] plus all metric names used in the output (no duplicates).\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Time/duration metrics must include units (e.g., 2m 35s, 5h 12m, 1.8 days).\n- Currency values must include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT combine multiple metrics in a single `data` array—each metric has its own `data` array keyed by its metric name.\n- Use only fields present in the dataset; do not fabricate or infer missing data; do not assume field names other than \"Date\".\n- Output must be strictly valid JSON—no markdown, comments, or extra text.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n\"{{question}}\""
@@ -510,7 +510,7 @@
           "brand social presence"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-versatile",
+          "model": "llama-3.3-70b-instruct",
           "temperature": 0.5,
           "max_tokens": 512
         },
