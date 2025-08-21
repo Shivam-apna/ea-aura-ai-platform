@@ -14,6 +14,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - nifi
     networks:
       - ea-aura-staging
     restart: unless-stopped
@@ -66,15 +67,12 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=staging-postgres-password
-      # Fixed Keycloak hostname and proxy configuration
       - KC_HOSTNAME=staging.ea-aura.ai
       - KC_HOSTNAME_STRICT=true
       - KC_HOSTNAME_STRICT_HTTPS=true
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
-      # Add proper frontend URL configuration
       - KC_FRONTEND_URL=https://staging.ea-aura.ai/auth
-      # Ensure proper proxy headers are handled
       - KC_PROXY_HEADERS=xforwarded
     command: start-dev
     ports:
@@ -112,8 +110,8 @@ services:
       - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      SERVER_BASEPATH: "/kibana"           # Add this line
-      SERVER_REWRITEBASEPATH: "true"       # Add this line
+      SERVER_BASEPATH: "/kibana"
+      SERVER_REWRITEBASEPATH: "true"
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -148,7 +146,6 @@ services:
       - ENVIRONMENT=staging
       - VAULT_TOKEN=staging-vault-token
       - VAULT_ADDR=http://vault:8200
-      # Add Keycloak configuration for backend
       - KEYCLOAK_URL=https://staging.ea-aura.ai/auth
       - KEYCLOAK_REALM=ea_aura
     env_file:
@@ -207,7 +204,6 @@ services:
     environment:
       - CB_DATABASE=./data/cloudbeaver.db
       - CB_CUSTOM_CONFIG=./conf/cloudbeaver.conf
-      # Fixed DBeaver URL configuration
       - CB_SERVER_URL=https://staging.ea-aura.ai/dbeaver
       - CB_ROOT_URI=/dbeaver/
     volumes:
@@ -226,7 +222,6 @@ services:
       - NODE_ENV=production
       - VITE_API_BASE_URL=https://staging.ea-aura.ai/api
       - VITE_KEYCLOAK_URL=https://staging.ea-aura.ai/auth
-      # Add Keycloak realm configuration
       - VITE_KEYCLOAK_REALM=ea_aura
       - VITE_KEYCLOAK_CLIENT_ID=ea_aura
     networks:
@@ -234,26 +229,28 @@ services:
     restart: unless-stopped
 
   nifi:
-    image: apache/nifi:latest
+    image: apache/nifi:2.5.0
     container_name: nifi-staging
-    ports:
-      - "8085:8085"  # Changed from 8443 to 8080 for HTTP
     environment:
-      # HTTP configuration (removed HTTPS settings)
-      - NIFI_WEB_HTTP_PORT=8085
-      - NIFI_WEB_HTTP_HOST=0.0.0.0
-      - SINGLE_USER_CREDENTIALS_USERNAME=admin
-      - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password-123
-      - NIFI_SENSITIVE_PROPS_KEY=staging-nifi-key-12345678901234567890A
-      # Updated proxy configuration for HTTP
-      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai:443
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
-    restart: unless-stopped
+      - NIFI_SECURITY_KEYSTORE=/opt/nifi/nifi-current/conf/keystore.jks
+      - NIFI_SECURITY_KEYSTORE_TYPE=JKS
+      - NIFI_SECURITY_KEYSTORE_PASS=changeit
+      - NIFI_SECURITY_KEY_PASS=changeit
+      - NIFI_SECURITY_TRUSTSTORE=/opt/nifi/nifi-current/conf/truststore.jks
+      - NIFI_SECURITY_TRUSTSTORE_TYPE=JKS
+      - NIFI_SECURITY_TRUSTSTORE_PASS=changeit
+    ports:
+      - "8443:8443"
     volumes:
-      - nifi_data_staging:/opt/nifi/nifi-current/logs
-      - nifi_conf_staging:/opt/nifi/nifi-current/conf
+      - ./nifi/conf:/opt/nifi/nifi-current/conf
+      - ./nifi/data:/opt/nifi/nifi-current/data
     networks:
       - ea-aura-staging
+    restart: unless-stopped
 
 volumes:
   esdata_staging:
@@ -262,8 +259,6 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
-  nifi_data_staging:       
-  nifi_conf_staging: 
 
 networks:
   ea-aura-staging:
