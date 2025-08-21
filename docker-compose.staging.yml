@@ -275,8 +275,9 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
-  nifi_data_staging:       
-  nifi_conf_staging:
+  nifi_flowfile_staging:      
+  nifi_content_staging:         
+  nifi_provenance_staging: 
 
 networks:
   ea-aura-staging:
