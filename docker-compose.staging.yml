@@ -229,13 +229,11 @@ services:
     restart: unless-stopped
 
   nifi:
-    image: apache/nifi:2.5.0
+    image: apache/nifi:1.27.0
     container_name: nifi-staging
     environment:
-      - NIFI_WEB_HTTP_PORT=8085
-      - NIFI_WEB_HTTP_HOST=0.0.0.0
-      - NIFI_WEB_HTTPS_PORT=
-      - NIFI_WEB_HTTPS_HOST=
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - NIFI_WEB_HTTPS_PORT=8443
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
       - NIFI_SECURITY_KEYSTORE=/opt/nifi/nifi-current/conf/keystore.jks
@@ -248,9 +246,8 @@ services:
       - SINGLE_USER_CREDENTIALS_USERNAME=admin
       - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
     ports:
-      - "8085:8085"
+      - "8443:8443"
     volumes:
-      - ./conf:/opt/nifi/nifi-current/conf
       - ./nifi/data:/opt/nifi/nifi-current/data
     networks:
       - ea-aura-staging
