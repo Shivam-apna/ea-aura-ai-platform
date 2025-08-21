@@ -350,8 +350,6 @@ class NiFiUploader:
         except Exception as e:
             raise Exception(f"NiFi upload failed: {str(e)}")
 
-router = APIRouter()
-
 @router.post("/upload-to-nifi")
 async def upload_to_nifi(
     file: UploadFile = File(...),
