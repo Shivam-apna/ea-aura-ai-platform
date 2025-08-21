@@ -136,6 +136,56 @@ services:
       backend:
         condition: service_started
 
+  nifi:
+    image: apache/nifi:1.25.0
+    container_name: nifi-staging
+    ports:
+      - "8443:8443"
+      - "10000:10000"
+    environment:
+      # Basic NiFi configuration
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
+      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
+      
+      # Security configuration
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password
+      
+      # JVM configuration
+      - NIFI_JVM_HEAP_INIT=512m
+      - NIFI_JVM_HEAP_MAX=1g
+      
+      # Cluster configuration (single node)
+      - NIFI_CLUSTER_IS_NODE=false
+      - NIFI_ZK_CONNECT_STRING=
+      
+      # Integration with other services
+      - NIFI_VARIABLE_REGISTRY_PROPERTIES=/opt/nifi/custom_properties/nifi-variables.properties
+    volumes:
+      - nifi_data_staging:/opt/nifi/nifi-current/logs
+      - nifi_conf_staging:/opt/nifi/nifi-current/conf
+      - nifi_flowfile_staging:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_database_staging:/opt/nifi/nifi-current/database_repository
+      - nifi_content_staging:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance_staging:/opt/nifi/nifi-current/provenance_repository
+      # Mount custom properties for service integration
+      - ./nifi/custom_properties:/opt/nifi/custom_properties
+    networks:
+      - ea-aura-staging
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://localhost:8443/nifi", "-k"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   backend:
     build: ./backend
     container_name: backend-staging
@@ -240,8 +290,13 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
+  nifi_data_staging:
+  nifi_conf_staging:
+  nifi_flowfile_staging:
+  nifi_database_staging:
+  nifi_content_staging:
+  nifi_provenance_staging:
 
 networks:
   ea-aura-staging:
     driver: bridge
- 
