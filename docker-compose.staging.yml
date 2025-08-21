@@ -140,7 +140,7 @@ services:
     image: apache/nifi:1.25.0
     container_name: nifi-staging
     ports:
-      - "808:8085"
+      - "8085:8085"
       - "10000:10000"
     environment:
       # Basic NiFi configuration - using HTTP internally
