@@ -104,7 +104,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  
+
   kibana:
     image: docker.elastic.co/kibana/kibana:9.0.2
     container_name: kibana-staging
@@ -233,41 +233,6 @@ services:
       - ea-aura-staging
     restart: unless-stopped
 
-  nifi:
-    image: apache/nifi:latest
-    container_name: nifi-staging
-    ports:
-      - "8443:8443"
-    environment:
-      # Basic NiFi configuration
-      - NIFI_WEB_HTTPS_PORT=8443
-      - NIFI_WEB_HTTPS_HOST=0.0.0.0
-      - NIFI_WEB_HTTP_PORT=
-      - NIFI_WEB_HTTP_HOST=
-      
-      # Single user authentication
-      - SINGLE_USER_CREDENTIALS_USERNAME=admin
-      - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password-123
-      - NIFI_SENSITIVE_PROPS_KEY=staging-nifi-key-12345678901234567890A
-      
-      # Critical proxy settings for reverse proxy
-      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
-      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
-      
-      # JVM settings for proxy
-      - NIFI_JVM_HEAP_INIT=512m
-      - NIFI_JVM_HEAP_MAX=1g
-      
-    restart: unless-stopped
-    volumes:
-      - nifi_data_staging:/opt/nifi/nifi-current/logs
-      - nifi_conf_staging:/opt/nifi/nifi-current/conf
-      - nifi_flowfile_staging:/opt/nifi/nifi-current/flowfile_repository
-      - nifi_content_staging:/opt/nifi/nifi-current/content_repository
-      - nifi_provenance_staging:/opt/nifi/nifi-current/provenance_repository
-    networks:
-      - ea-aura-staging
-
 volumes:
   esdata_staging:
   filebeat-data_staging:
@@ -275,12 +240,8 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
-  nifi_data_staging:
-  nifi_conf_staging:
-  nifi_flowfile_staging:      
-  nifi_content_staging:         
-  nifi_provenance_staging: 
 
 networks:
   ea-aura-staging:
     driver: bridge
+ 
