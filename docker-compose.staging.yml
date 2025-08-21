@@ -143,14 +143,16 @@ services:
       - "8085:8085"
       - "10000:10000"
     environment:
-      # Basic NiFi configuration - using HTTP internally
+      # Basic NiFi configuration
       - NIFI_WEB_HTTP_PORT=8085
       - NIFI_WEB_HTTP_HOST=0.0.0.0
       - NIFI_WEB_HTTPS_PORT=
+      
+      # Proxy configuration for nginx
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai:443
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
       
-      # Security configuration
+      # Single user authentication
       - SINGLE_USER_CREDENTIALS_USERNAME=admin
       - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password
       
@@ -158,12 +160,13 @@ services:
       - NIFI_JVM_HEAP_INIT=512m
       - NIFI_JVM_HEAP_MAX=1g
       
-      # Cluster configuration (single node)
+      # Disable clustering for single node
       - NIFI_CLUSTER_IS_NODE=false
       - NIFI_ZK_CONNECT_STRING=
       
-      # Integration with other services
-      - NIFI_VARIABLE_REGISTRY_PROPERTIES=/opt/nifi/custom_properties/nifi-variables.properties
+      # REMOVE this problematic line that's causing the shutdown:
+      # - NIFI_VARIABLE_REGISTRY_PROPERTIES=/opt/nifi/custom_properties/nifi-variables.properties
+      
     volumes:
       - nifi_data_staging:/opt/nifi/nifi-current/logs
       - nifi_conf_staging:/opt/nifi/nifi-current/conf
@@ -171,8 +174,8 @@ services:
       - nifi_database_staging:/opt/nifi/nifi-current/database_repository
       - nifi_content_staging:/opt/nifi/nifi-current/content_repository
       - nifi_provenance_staging:/opt/nifi/nifi-current/provenance_repository
-      # Mount custom properties for service integration
-      - ./nifi/custom_properties:/opt/nifi/custom_properties
+      # Comment out this volume mount for now:
+      # - ./nifi/custom_properties:/opt/nifi/custom_properties
     networks:
       - ea-aura-staging
     depends_on:
@@ -186,7 +189,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
+      start_period: 60s
+      
   backend:
     build: ./backend
     container_name: backend-staging
