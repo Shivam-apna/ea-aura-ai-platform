@@ -16,6 +16,9 @@ from app.services.excel_to_elasticsearch import ExcelToElasticsearch
 import tempfile
 from app.services.avatar import generate_speech
 from fastapi.responses import JSONResponse, FileResponse
+import requests
+import tempfile
+
 
 
 router = APIRouter()
@@ -222,6 +225,7 @@ async def upload_file(
 
 
 @router.post("/text-to-speech")
+
 def convert_text_to_speech(payload: dict = Body(...), request: Request = None):
     text = payload.get("text")
     tenant_id = payload.get("tenant_id")
@@ -281,3 +285,202 @@ def convert_text_to_speech(payload: dict = Body(...), request: Request = None):
                 "details": str(e)
             }
         )
+    
+
+
+class NiFiUploader:
+    def __init__(self, nifi_url: str, username: str = None, password: str = None):
+        self.nifi_url = nifi_url
+        self.username = username
+        self.password = password
+        self.session = requests.Session()
+        
+        # Set up authentication if provided
+        if username and password:
+            from requests.auth import HTTPBasicAuth
+            self.session.auth = HTTPBasicAuth(username, password)
+    
+    def validate_nifi_connection(self) -> bool:
+        """Validate connection to NiFi"""
+        try:
+            # Test connection by hitting NiFi system diagnostics endpoint
+            test_url = self.nifi_url.replace('/upload', '/nifi-api/system-diagnostics')
+            response = self.session.get(test_url, timeout=10)
+            return response.status_code == 200
+        except Exception as e:
+            logger.error(f"NiFi connection validation failed: {str(e)}")
+            return False
+    
+    def upload_file_to_nifi(self, file_path: str, filename: str, 
+                           content_type: str = 'application/octet-stream',
+                           additional_attributes: dict = None) -> dict:
+        """Upload file to NiFi and return response"""
+        try:
+            headers = {
+                'Accept': 'application/json',
+            }
+            
+            # Add any additional attributes as headers
+            if additional_attributes:
+                for key, value in additional_attributes.items():
+                    headers[f'X-{key}'] = str(value)
+            
+            with open(file_path, 'rb') as file:
+                files = {
+                    'file': (filename, file, content_type)
+                }
+                
+                response = self.session.post(
+                    self.nifi_url,
+                    files=files,
+                    headers=headers,
+                    timeout=300  # 5 minutes timeout for large files
+                )
+                
+                return {
+                    'status_code': response.status_code,
+                    'response_text': response.text,
+                    'success': 200 <= response.status_code < 300
+                }
+                
+        except requests.exceptions.Timeout:
+            raise Exception("Upload to NiFi timed out")
+        except requests.exceptions.ConnectionError:
+            raise Exception("Failed to connect to NiFi")
+        except Exception as e:
+            raise Exception(f"NiFi upload failed: {str(e)}")
+
+@router.post("/upload-to-nifi")
+async def upload_to_nifi(
+    file: UploadFile = File(...),
+    nifi_url: str = Form(...),
+    tenant_id: str = Form(...),
+    process_name: str = Form(default="file_processing"),
+    nifi_username: str = Form(default="admin"),
+    nifi_password: str = Form(default="admin123456789"),
+    allowed_extensions: str = Form(default=".xlsx,.xls,.csv,.txt,.json,.xml")
+):
+    """
+    Upload file to NiFi for processing
+    """
+    temp_path = None
+    try:
+        # Parse allowed extensions
+        allowed_exts = [ext.strip() for ext in allowed_extensions.split(',')]
+        
+        # Validate file type
+        if not any(file.filename.lower().endswith(ext.lower()) for ext in allowed_exts):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": f"File type not supported. Allowed extensions: {', '.join(allowed_exts)}",
+                    "filename": file.filename
+                }
+            )
+
+        # Validate file size (optional - set your own limits)
+        MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "error": f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024):.0f}MB",
+                    "file_size_mb": len(content) / (1024*1024)
+                }
+            )
+
+        # Save uploaded file temporarily
+        file_extension = os.path.splitext(file.filename)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
+            temp_file.write(content)
+            temp_path = temp_file.name
+
+        logger.info(f"Processing file: {file.filename}, size: {len(content)} bytes")
+
+        # Initialize NiFi uploader
+        uploader = NiFiUploader(
+            nifi_url=nifi_url,
+            username=nifi_username,
+            password=nifi_password
+        )
+        
+        # Validate NiFi connection
+        if not uploader.validate_nifi_connection():
+            return JSONResponse(
+                status_code=503,
+                content={"error": "NiFi connection failed. Please check the NiFi URL and credentials."}
+            )
+
+        # Determine content type based on file extension
+        content_type_mapping = {
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.xls': 'application/vnd.ms-excel',
+            '.csv': 'text/csv',
+            '.txt': 'text/plain',
+            '.json': 'application/json',
+            '.xml': 'application/xml',
+            '.pdf': 'application/pdf'
+        }
+        
+        content_type = content_type_mapping.get(
+            file_extension.lower(), 
+            'application/octet-stream'
+        )
+
+        # Prepare additional attributes to send to NiFi
+        additional_attributes = {
+            'tenant-id': tenant_id,
+            'process-name': process_name,
+            'original-filename': file.filename,
+            'file-size': len(content),
+            'upload-timestamp': str(int(os.time.time()))
+        }
+
+        # Upload file to NiFi
+        upload_result = uploader.upload_file_to_nifi(
+            file_path=temp_path,
+            filename=file.filename,
+            content_type=content_type,
+            additional_attributes=additional_attributes
+        )
+
+        if not upload_result['success']:
+            return JSONResponse(
+                status_code=upload_result['status_code'],
+                content={
+                    "error": f"NiFi upload failed with status {upload_result['status_code']}",
+                    "nifi_response": upload_result['response_text'],
+                    "filename": file.filename
+                }
+            )
+
+        return {
+            "message": f"File '{file.filename}' uploaded to NiFi successfully.",
+            "filename": file.filename,
+            "tenant_id": tenant_id,
+            "process_name": process_name,
+            "file_size_bytes": len(content),
+            "nifi_url": nifi_url,
+            "upload_status": "success",
+            "nifi_response": upload_result['response_text']
+        }
+
+    except Exception as e:
+        logger.exception(f"Error uploading file {file.filename} to NiFi: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": f"Failed to upload file to NiFi: {str(e)}",
+                "filename": file.filename
+            }
+        )
+    finally:
+        # Clean up temporary file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+                logger.info(f"Temporary file {temp_path} cleaned up")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file: {str(e)}")
+

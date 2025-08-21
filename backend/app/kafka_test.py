@@ -12,7 +12,7 @@ def consume_thread():
 # Start consumer in background
 threading.Thread(target=consume_thread, daemon=True).start()
 
-# Send a test message
+# Send a test message 
 test_payload = {
     "event": "smoke_test",
     "origin": "ea-aura-backend",
