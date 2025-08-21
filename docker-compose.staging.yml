@@ -246,7 +246,6 @@ services:
     ports:
       - "8443:8443"
     volumes:
-      - ./nifi/conf:/opt/nifi/nifi-current/conf
       - ./nifi/data:/opt/nifi/nifi-current/data
     networks:
       - ea-aura-staging
