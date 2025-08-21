@@ -243,6 +243,8 @@ services:
       - NIFI_SECURITY_TRUSTSTORE=/opt/nifi/nifi-current/conf/truststore.jks
       - NIFI_SECURITY_TRUSTSTORE_TYPE=JKS
       - NIFI_SECURITY_TRUSTSTORE_PASS=changeit
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
     ports:
       - "8443:8443"
     volumes:
