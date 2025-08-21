@@ -234,26 +234,31 @@ services:
     restart: unless-stopped
 
   nifi:
-      image: apache/nifi:latest
-      container_name: nifi-staging
-      ports:
-        - "8443:8443"
-      environment:
-        - NIFI_WEB_HTTPS_PORT=8443
-        - NIFI_WEB_HTTPS_HOST=0.0.0.0
-        - SINGLE_USER_CREDENTIALS_USERNAME=admin
-        - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password-123
-        - NIFI_SENSITIVE_PROPS_KEY=staging-nifi-key-12345678901234567890A
-        # Add proper hostname configuration for staging
-        - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai:443
-        - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
-      restart: unless-stopped
-      volumes:
-        - nifi_data_staging:/opt/nifi/nifi-current/logs
-        - nifi_conf_staging:/opt/nifi/nifi-current/conf
-      networks:
-        - ea-aura-staging
+    image: apache/nifi:latest
+    container_name: nifi-staging
+    ports:
+      - "8443:8443"
+    environment:
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=staging-nifi-password-123
+      - NIFI_SENSITIVE_PROPS_KEY=staging-nifi-key-12345678901234567890A
+      # Critical proxy configuration for reverse proxy
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
+      - NIFI_WEB_HTTPS_NETWORK_INTERFACE=eth0
+      # Allow all proxy contexts
+      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi,/
+    restart: unless-stopped
+    volumes:
+      - nifi_data_staging:/opt/nifi/nifi-current/logs
+      - nifi_conf_staging:/opt/nifi/nifi-current/conf
+      # Mount custom nifi.properties if needed
+      - ./nifi/staging-nifi.properties:/opt/nifi/nifi-current/conf/nifi.properties:ro
+    networks:
+      - ea-aura-staging
 
+      
 volumes:
   esdata_staging:
   filebeat-data_staging:
