@@ -247,18 +247,15 @@ services:
       # Critical proxy configuration for reverse proxy
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
       - NIFI_WEB_HTTPS_NETWORK_INTERFACE=eth0
-      # Allow all proxy contexts
-      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi,/
+      # Java system properties for proxy configuration
+      - JAVA_OPTS=-Dnifi.web.proxy.host=staging.ea-aura.ai -Dnifi.web.proxy.context.path=/nifi
     restart: unless-stopped
     volumes:
       - nifi_data_staging:/opt/nifi/nifi-current/logs
       - nifi_conf_staging:/opt/nifi/nifi-current/conf
-      # Mount custom nifi.properties if needed
-      - ./nifi/staging-nifi.properties:/opt/nifi/nifi-current/conf/nifi.properties:ro
     networks:
       - ea-aura-staging
 
-      
 volumes:
   esdata_staging:
   filebeat-data_staging:
