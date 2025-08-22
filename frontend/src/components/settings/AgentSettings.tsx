@@ -15,7 +15,7 @@ const AgentSettings = () => {
 
   const fetchAgentData = async () => {
     try {
-      const response = await fetch(getApiEndpoint("v1/agents/summary"));
+      const response = await fetch(getApiEndpoint("/v1/agents/summary"));
       if (!response.ok) {
         throw new Error('Failed to fetch agent data');
       }
