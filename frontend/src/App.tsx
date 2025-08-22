@@ -63,14 +63,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   console.log("ProtectedRoute: Checking roles for path", location.pathname, "with roles:", clientRoles);
 
-  if (clientRoles.includes('admin')) {
+  if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
     console.log("ProtectedRoute: User is admin.");
     allowedPaths = allowedPaths.concat([
       '/settings', '/users', '/upload-data', '/dashboard', '/business-vitality',
       '/customer-analyzer', '/mission-alignment', '/brand-index',
     ]);
     defaultRedirectPath = '/settings';
-  } else if (clientRoles.includes('user') && !clientRoles.includes('admin')) {
+  } else if (clientRoles.some(role => role.toLowerCase() === 'user') && !clientRoles.some(role => role.toLowerCase() === 'admin')) {
     console.log("ProtectedRoute: User is a standard user (not admin).");
     allowedPaths = allowedPaths.concat([
       '/dashboard', '/business-vitality', '/customer-analyzer',

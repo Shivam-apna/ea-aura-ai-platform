@@ -28,5 +28,5 @@ def get_groq_config():
         return {
             "model": os.getenv("GROQ_MODEL", "gemma2-9b-it"),
             "api_key": api_key,
-            "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com")
+            "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
         }

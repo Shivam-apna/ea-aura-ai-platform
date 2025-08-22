@@ -1,102 +1,239 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from '@/components/ui/switch';
-import { Bot, Cpu, HardDrive, ToggleRight, Repeat } from 'lucide-react'; // Added new icons
+import { Bot, Cpu, HardDrive, ToggleRight, Clock, Target, Shield, CheckCircle, XCircle, Thermometer, Zap } from 'lucide-react';
+import { getApiEndpoint } from "@/config/environment";
+const AgentSettings = () => {
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [agentData, setAgentData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const AgentSettings: React.FC = () => {
-  const [agentSelector, setAgentSelector] = useState("Orchestrator Agent"); // Set a default from the new list
-  const [llmModel, setLlmModel] = useState("gpt-4");
-  const [maxTokenLimit, setMaxTokenLimit] = useState(4096);
-  const [agentStatus, setAgentStatus] = useState(true); // Enable/Disable
-  const [autoRetryOnFail, setAutoRetryOnFail] = useState(true);
+  useEffect(() => {
+    fetchAgentData();
+  }, []);
+
+  const fetchAgentData = async () => {
+    try {
+      const response = await fetch(getApiEndpoint("/v1/agents/summary"));
+      if (!response.ok) {
+        throw new Error('Failed to fetch agent data');
+      }
+      const data = await response.json();
+      setAgentData(data.agents || []);
+      if (data.agents && data.agents.length > 0) {
+        setSelectedAgent(data.agents[0].agent_id);
+      }
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-muted-foreground">Loading agent data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
+
+  const currentAgent = Array.isArray(agentData) 
+    ? agentData.find(agent => agent.agent_id === selectedAgent)
+    : null;
+
+  if (!currentAgent) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-muted-foreground">No agent data available</div>
+      </div>
+    );
+  }
+
+  const ReadOnlyField = ({ icon: Icon, label, value, className = "" }) => (
+    <div className="space-y-2">
+      <Label className="text-muted-foreground flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        {label}
+      </Label>
+      <div className={`p-3 bg-muted/50 rounded-md border border-border text-foreground ${className}`}>
+        {value}
+      </div>
+    </div>
+  );
+
+  const StatusBadge = ({ enabled, critical }) => (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        {enabled ? (
+          <CheckCircle className="h-4 w-4 text-green-500" />
+        ) : (
+          <XCircle className="h-4 w-4 text-red-500" />
+        )}
+        <span className={enabled ? "text-green-600" : "text-red-600"}>
+          {enabled ? "Enabled" : "Disabled"}
+        </span>
+      </div>
+      {critical && (
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-orange-500" />
+          <span className="text-orange-600">Critical</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 p-4 max-w-2xl">
       {/* Agent Selector */}
       <div className="space-y-2">
-        <Label htmlFor="agent-selector" className="text-muted-foreground flex items-center gap-2">
-          <Bot className="h-4 w-4" /> Agent Selector
+        <Label className="text-muted-foreground flex items-center gap-2">
+          <Bot className="h-4 w-4" />
+          Select Agent
         </Label>
-        <Select onValueChange={setAgentSelector} value={agentSelector}>
+        <Select onValueChange={setSelectedAgent} value={selectedAgent}>
           <SelectTrigger className="w-full bg-input border-border text-foreground">
-            <SelectValue placeholder="Select agent" />
+            <SelectValue placeholder="Select an agent" />
           </SelectTrigger>
-          <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card">
-            <SelectItem value="Orchestrator Agent">Orchestrator Agent</SelectItem>
-            <SelectItem value="Ad-Hoc Query Agent">Ad-Hoc Query Agent</SelectItem>
-            <SelectItem value="Graphical Changes Agent">Graphical Changes Agent</SelectItem>
-            <SelectItem value="Business Vitality Agent">Business Vitality Agent</SelectItem>
-            <SelectItem value="Customer Analyzer Agent">Customer Analyzer Agent</SelectItem>
-            <SelectItem value="Mission Alignment Agent">Mission Alignment Agent</SelectItem>
-            <SelectItem value="Brand Index Agent">Brand Index Agent</SelectItem>
-            <SelectItem value="Sales Agent">Sales Agent</SelectItem>
-            <SelectItem value="New Users Monitoring Agent">New Users Monitoring Agent</SelectItem>
-            <SelectItem value="Marketing Agent">Marketing Agent</SelectItem>
-            <SelectItem value="Customer Survey Agent">Customer Survey Agent</SelectItem>
-            <SelectItem value="Support Ticket Analyzer Agent">Support Ticket Analyzer Agent</SelectItem>
-            <SelectItem value="Social Media Response Analyzer Agent">Social Media Response Analyzer Agent</SelectItem>
-            <SelectItem value="Product Review Analyzer Agent">Product Review Analyzer Agent</SelectItem>
-            <SelectItem value="Social Engagement Analyzer Agent">Social Engagement Analyzer Agent</SelectItem>
-            <SelectItem value="Website Analyzer Agent">Website Analyzer Agent</SelectItem>
+          <SelectContent className="bg-card border border-border">
+            {Array.isArray(agentData) && agentData.map((agent) => (
+              <SelectItem key={agent.agent_id} value={agent.agent_id}>
+                {agent.agent_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* LLM Model */}
-      <div className="space-y-2">
-        <Label htmlFor="llm-model" className="text-muted-foreground flex items-center gap-2">
-          <Cpu className="h-4 w-4" /> LLM Model
-        </Label>
-        <Select onValueChange={setLlmModel} value={llmModel}>
-          <SelectTrigger className="w-full bg-input border-border text-foreground">
-            <SelectValue placeholder="Select LLM model" />
-          </SelectTrigger>
-          <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card">
-            <SelectItem value="gpt-4">GPT-4</SelectItem>
-            <SelectItem value="gpt-3.5">GPT-3.5</SelectItem>
-            <SelectItem value="claude-3">Claude 3</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Agent Details */}
+      <div className="grid gap-6">
+        {/* Agent ID & Type */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ReadOnlyField 
+            icon={Bot} 
+            label="Agent ID" 
+            value={currentAgent.agent_id}
+          />
+          <ReadOnlyField 
+            icon={Target} 
+            label="Type" 
+            value={currentAgent.type?.toUpperCase() || 'N/A'}
+            className={currentAgent.type === 'main' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}
+          />
+        </div>
 
-      {/* Max Token Limit */}
-      <div className="space-y-2">
-        <Label htmlFor="max-token-limit" className="text-muted-foreground flex items-center gap-2">
-          <HardDrive className="h-4 w-4" /> Max Token Limit
-        </Label>
-        <Input
-          id="max-token-limit"
-          type="number"
-          value={maxTokenLimit}
-          onChange={(e) => setMaxTokenLimit(parseInt(e.target.value) || 0)}
-          className="bg-input border-border text-foreground"
-        />
-      </div>
+        {/* Parent Agent */}
+        {currentAgent.parent_agent && (
+          <ReadOnlyField 
+            icon={Bot} 
+            label="Parent Agent" 
+            value={currentAgent.parent_agent}
+          />
+        )}
 
-      {/* Agent Status (Enable/Disable) */}
-      <div className="flex items-center justify-between space-x-2">
-        <Label htmlFor="agent-status" className="text-muted-foreground flex items-center gap-2">
-          <ToggleRight className="h-4 w-4" /> Agent Status (Enable/Disable)
-        </Label>
-        <Switch
-          id="agent-status"
-          checked={agentStatus}
-          onCheckedChange={setAgentStatus}
-        />
-      </div>
+        {/* Model & Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ReadOnlyField 
+            icon={Cpu} 
+            label="LLM Model" 
+            value={currentAgent.model || 'N/A'}
+          />
+          <div className="space-y-2">
+            <Label className="text-muted-foreground flex items-center gap-2">
+              <ToggleRight className="h-4 w-4" />
+              Status
+            </Label>
+            <div className="p-3 bg-muted/50 rounded-md border border-border">
+              <StatusBadge enabled={currentAgent.enabled} critical={currentAgent.critical} />
+            </div>
+          </div>
+        </div>
 
-      {/* Auto Retry on Fail */}
-      <div className="flex items-center justify-between space-x-2">
-        <Label htmlFor="auto-retry" className="text-muted-foreground flex items-center gap-2">
-          <Repeat className="h-4 w-4" /> Auto Retry on Fail
-        </Label>
-        <Switch
-          id="auto-retry"
-          checked={autoRetryOnFail}
-          onCheckedChange={setAutoRetryOnFail}
+        {/* Temperature & Max Tokens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ReadOnlyField 
+            icon={Thermometer} 
+            label="Temperature" 
+            value={currentAgent.temperature !== null ? currentAgent.temperature : 'Auto'}
+          />
+          <ReadOnlyField 
+            icon={HardDrive} 
+            label="Max Tokens" 
+            value={currentAgent.max_tokens || 'Auto'}
+          />
+        </div>
+
+        {/* Input/Output Types */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ReadOnlyField 
+            icon={Target} 
+            label="Input Type" 
+            value={currentAgent.input_type || 'N/A'}
+          />
+          <ReadOnlyField 
+            icon={Target} 
+            label="Output Type" 
+            value={currentAgent.output_type || 'N/A'}
+            className={currentAgent.output_type === 'json' ? 'bg-green-50 border-green-200' : ''}
+          />
+        </div>
+
+        {/* Token Budget */}
+        <ReadOnlyField 
+          icon={Zap} 
+          label="Token Budget" 
+          value={currentAgent.token_budget ? currentAgent.token_budget.toLocaleString() : 'N/A'}
         />
+
+        {/* Goal */}
+        <ReadOnlyField 
+          icon={Target} 
+          label="Goal" 
+          value={currentAgent.goal || 'No goal specified'}
+          className="min-h-[60px]"
+        />
+
+        {/* Success Criteria */}
+        {currentAgent.success_criteria && currentAgent.success_criteria.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-muted-foreground flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Success Criteria
+            </Label>
+            <div className="p-3 bg-muted/50 rounded-md border border-border">
+              <ul className="list-disc list-inside space-y-1">
+                {currentAgent.success_criteria.map((criteria, index) => (
+                  <li key={index} className="text-foreground">{criteria}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Retry Policy */}
+        {currentAgent.retry_policy && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ReadOnlyField 
+              icon={Clock} 
+              label="Max Retry Attempts" 
+              value={currentAgent.retry_policy.max_attempts}
+            />
+            <ReadOnlyField 
+              icon={Clock} 
+              label="Retry Delay (seconds)" 
+              value={currentAgent.retry_policy.delay_seconds}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

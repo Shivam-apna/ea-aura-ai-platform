@@ -1,7 +1,7 @@
 from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 from app.utils.agent_config_loader import get_all_agent_configs
 from app.services.general_agent import GeneralAgent
-from app.groq_config import get_groq_config  # This now supports both Groq and LM Studio
+from app.groq_config import get_groq_config
 from datetime import datetime
 import uuid
 import json
@@ -14,9 +14,40 @@ from app.services.es_cache import search_cache, save_to_cache, create_cache_inde
 from app.services.response_parser import parse_json_response, restructure_multimetric_data
 from app.services.data_enhancer import get_enhanced_data_for_agent
 
+
 # Import the new modules
 from app.services.token_tracker import token_tracker
 from app.services.memory_manager import memory_manager
+from app.core.kafka import send_event
+import time
+
+
+
+
+def emit_orchestrator_event(event_type: str, agent_id: str, job_id: str, tenant_id: str,
+                          status: str, step: int, extra_data: dict = None):
+    """Emit Kafka event for orchestrator agent execution"""
+    event = {
+        "event_type": event_type,
+        "agent_id": agent_id,
+        "job_id": job_id,
+        "tenant_id": tenant_id,
+        "status": status,
+        "step": step,
+        "timestamp": datetime.utcnow().isoformat(),
+        **(extra_data or {})
+    }
+   
+    # Send to orchestrator topic
+    send_event("orchestrator.events", event)
+   
+    logger.info(f"📡 Orchestrator Kafka event: {event_type} for {agent_id}", extra={
+        "job_id": job_id,
+        "agent_id": agent_id,
+        "event_type": event_type
+    })
+
+
 
 
 def match_parent_agent_by_keywords(user_input: str):
@@ -30,13 +61,17 @@ def match_parent_agent_by_keywords(user_input: str):
     return None, None
 
 
+
+
 def get_agent_by_name(agent_name: str):
     """Get agent configuration by name (supports both main and sub-agents)"""
     configs = get_all_agent_configs()
 
+
     # First check if it's a main agent
     if agent_name in configs:
         return configs[agent_name]
+
 
     # Now check within sub-agents of each main agent
     for parent_name, parent_data in configs.items():
@@ -45,52 +80,59 @@ def get_agent_by_name(agent_name: str):
                 if sub_agent.get("agent_id") == agent_name:
                     return sub_agent  # Return sub-agent config
 
+
     # Not found
     return None
+
+
 
 
 def select_best_subagent(parent_agent_data, user_input: str):
     """Select the best sub-agent based on user input keywords"""
     sub_agents = parent_agent_data.get("sub_agents", [])
-    
+   
     # Try to match sub-agent keywords first
     for sub_agent in sub_agents:
         if "keywords" in sub_agent:
             for kw in sub_agent["keywords"]:
                 if kw.lower() in user_input.lower():
                     return sub_agent
-    
+   
     # If no specific match, return the first available sub-agent
     return sub_agents[0] if sub_agents else None
+
 
 def prepare_agent_prompt(agent_data: dict, input_text: str, enhanced_data: str) -> str:
     """Prepare agent prompt with template replacement"""
     prompt_template = agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
     agent_prompt = prompt_template.replace("{{input}}", enhanced_data)
-    
+   
     if "{{question}}" in agent_prompt:
         agent_prompt = agent_prompt.replace("{{question}}", input_text)
     elif 'USER QUESTION:\n""' in agent_prompt:
         agent_prompt = agent_prompt.replace('USER QUESTION:\n""', f'USER QUESTION:\n"{input_text}"')
     elif 'USER QUESTION:' in agent_prompt:
-        agent_prompt = f"{agent_prompt}\n\"{input_text}\""
+        agent_prompt = f"{agent_prompt}\n\nUser question: {input_text}"
     else:
         agent_prompt = f"{agent_prompt}\n\nUser question: {input_text}"
-    
+   
     return agent_prompt
+
+
 
 
 def create_cache_key(user_input: str, agent_name: str, enhanced_data_hash: str = None) -> str:
     """Create a cache key based on user input and agent context"""
     import hashlib
-    
+   
     # Create a unique key combining user input and agent context
     key_components = [user_input, agent_name]
     if enhanced_data_hash:
         key_components.append(enhanced_data_hash)
-    
+   
     cache_key = "|".join(key_components)
     return cache_key
+
 
 def get_enhanced_data_hash(enhanced_data: str) -> str:
     """Get a hash of enhanced data to detect changes"""
@@ -110,180 +152,426 @@ def get_llm_config_list(model: str) -> list:
 
 def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job_id: str, tenant_id: str):
     """Execute a single agent with enhanced token tracking"""
-    
+    groq_config = get_groq_config()
+   
+    # Emit agent started event
+    emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "STARTED", 0, {
+        "model": agent_data.get("llm_config", {}).get("model"),
+        "input_length": len(input_text)
+    })
+   
     # Get enhanced data for the agent
     enhanced_data = get_enhanced_data_for_agent(agent_name, input_text, tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
-    
+   
     # Create cache key based on user input + agent + data context
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
-    
+   
     # Check cache with the cache key
     cached_response = search_cache(cache_key, tenant_id)
     if cached_response:
         print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
         logger.info(f"✅ Cache hit for agent {agent_name}. Skipping LLM call.")
+       
+        # Emit cache hit event
+        emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+            "cache_hit": True,
+            "tokens_used": 0
+        })
+       
         return cached_response, None
-    
+   
     # Prepare agent prompt
     agent_prompt = prepare_agent_prompt(agent_data, input_text, enhanced_data)
 
+
     print("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", agent_prompt)
 
-    # Configure agent with updated config method
+
+    # Configure agent
     model = agent_data["llm_config"]["model"]
-    config_list = get_llm_config_list(model)
-    
-    try:
-        # Execute agent
-        assistant = AssistantAgent(name=agent_name, llm_config={"config_list": config_list})
-        user_proxy = UserProxyAgent(name="user", human_input_mode="NEVER")
-        group_chat = GroupChat(agents=[user_proxy, assistant], messages=[], max_round=2)
-        manager = GroupChatManager(groupchat=group_chat, llm_config={"config_list": config_list})
-        
-        user_proxy.initiate_chat(manager, message=agent_prompt)
-        response = group_chat.messages[-1]["content"]
+    config_list = [{
+        "model": model,
+        "api_key": groq_config["api_key"],
+        "base_url": groq_config["base_url"]
+    }]
+   
+    # Read execution guards from config
+    token_budget = agent_data.get("token_budget")
+    retry_cfg = agent_data.get("retry_policy") or {}
+    max_attempts = max(1, int(retry_cfg.get("max_attempts", 1)))
+    delay_seconds = max(0, int(retry_cfg.get("delay_seconds", 0)))
 
-        # Save response to cache with the cache key
-        save_to_cache(cache_key, response, tenant_id)
-        
-        # Track tokens for this agent
-        token_usage = token_tracker.track_agent_tokens(
-            agent_id=agent_name,
-            input_text=agent_prompt,
-            output_text=response,
-            model_name=model,
-            step=0
-        )
-        
-        # Save to memory with token info
-        memory_manager.save_agent_memory(
-            agent_id=agent_name,
-            job_id=job_id,
-            tenant_id=tenant_id,
-            step=0,
-            input_text=agent_prompt,
-            output_text=response,
-            token_usage=token_usage,
-            model_name=model
-        )
-        
-        return response, None
-        
-    except BadRequestError as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and hasattr(e.response, 'json'):
-            try:
-                error_json = e.response.json()
-                error_message = json.dumps(error_json)
-            except Exception:
-                pass
-        
-        logger.error(f"🚫 Agent {agent_name} failed due to LLM API issue", extra={
-            "job_id": job_id,
-            "error": error_message,
-            "agent": agent_name
-        })
-        
-        return None, {
-            "error": f"Agent {agent_name} execution failed due to an issue with the LLM API.",
-            "details": error_message
-        }
 
-def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str, 
+    def remaining_budget() -> int | None:
+        if token_budget is None:
+            return None
+        summary = token_tracker.get_agent_token_summary(agent_name)
+        return max(0, int(token_budget) - int(summary.get("total_tokens", 0)))
+
+
+    # Retry loop
+    last_error_details = None
+    for attempt in range(1, max_attempts + 1):
+        rem = remaining_budget()
+        if rem is not None and rem <= 0:
+            error_msg = f"Token budget exceeded for agent {agent_name}"
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                "error": error_msg,
+                "code": "TOKEN_BUDGET_EXCEEDED"
+            })
+            return None, {
+                "error": error_msg,
+                "code": "TOKEN_BUDGET_EXCEEDED",
+                "agent": agent_name
+            }
+       
+        # Emit retry event if not first attempt
+        if attempt > 1:
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "RETRYING", 0, {
+                "attempt": attempt,
+                "max_attempts": max_attempts,
+                "error": last_error_details
+            })
+       
+        try:
+            # Execute agent
+            assistant = AssistantAgent(name=agent_name, llm_config={"config_list": config_list})
+            user_proxy = UserProxyAgent(name="user", human_input_mode="NEVER")
+            group_chat = GroupChat(agents=[user_proxy, assistant], messages=[], max_round=2)
+            manager = GroupChatManager(groupchat=group_chat, llm_config={"config_list": config_list})
+
+
+            user_proxy.initiate_chat(manager, message=agent_prompt)
+            response = group_chat.messages[-1]["content"]
+
+
+            # Validate success criteria before caching/saving
+            criteria = agent_data.get("success_criteria") or []
+            if criteria:
+                failures = []
+                lower_resp = (response or "").lower()
+                if any(c.lower() in ("must output json", "output must be json", "return json") for c in criteria):
+                    try:
+                        json.loads(response)
+                    except Exception:
+                        failures.append("Output is not valid JSON")
+                if any("include at least 2 charts" in c.lower() or "include at least two charts" in c.lower() for c in criteria):
+                    indicators = ["plot_type", "chart", "graph", "figure"]
+                    count = sum(lower_resp.count(ind) for ind in indicators)
+                    if count < 2:
+                        failures.append("Fewer than 2 chart indicators found in output")
+                if failures:
+                    raise ValueError(f"Success criteria failed: {failures}")
+
+
+            # Save response to cache with the cache key
+            save_to_cache(cache_key, response, tenant_id)
+
+
+            # Track tokens for this agent
+            token_usage = token_tracker.track_agent_tokens(
+                agent_id=agent_name,
+                input_text=agent_prompt,
+                output_text=response,
+                model_name=model,
+                step=0
+            )
+
+
+            # Save to memory with token info
+            memory_manager.save_agent_memory(
+                agent_id=agent_name,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                step=0,
+                input_text=agent_prompt,
+                output_text=response,
+                token_usage=token_usage,
+                model_name=model
+            )
+           
+            # Emit success event
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+                "tokens_used": token_usage.total_tokens,
+                "input_tokens": token_usage.input_tokens,
+                "output_tokens": token_usage.output_tokens,
+                "model": model,
+                "output_length": len(response)
+            })
+
+
+            return response, None
+
+
+        except BadRequestError as e:
+            error_message = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_json = e.response.json()
+                    error_message = json.dumps(error_json)
+                except Exception:
+                    pass
+            last_error_details = error_message
+            logger.error(f"🚫 Agent {agent_name} failed on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "error": error_message,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                    "error": error_message,
+                    "attempts": attempt,
+                    "final_attempt": True
+                })
+                return None, {
+                    "error": f"Agent {agent_name} execution failed after {attempt} attempts.",
+                    "details": error_message,
+                    "retries_exhausted": attempt >= max_attempts
+                }
+        except Exception as e:
+            last_error_details = str(e)
+            logger.exception(f"❌ Agent {agent_name} unhandled exception on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                    "error": str(e),
+                    "attempts": attempt,
+                    "final_attempt": True
+                })
+                return None, {
+                    "error": f"Agent {agent_name} crashed after {attempt} attempts.",
+                    "details": str(e),
+                    "retries_exhausted": attempt >= max_attempts
+                }
+
+
+def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str,
                      input_text: str, job_id: str, tenant_id: str):
     """Execute a sub-agent with token tracking"""
-    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text, tenant_id)
+    groq_config = get_groq_config()
+   
+    # Emit sub-agent started event
+    emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "STARTED", 0, {
+        "parent_agent": parent_agent,
+        "model": sub_agent_config.get("llm_config", {}).get("model"),
+        "input_length": len(input_text)
+    })
+   
+    enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text,tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
-    
+   
     # Create cache key for sub-agent
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
-    
+   
     # Check cache with the cache key
-    cached_response = search_cache(cache_key, tenant_id)
+    cached_response = search_cache(cache_key,tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for sub-agent {agent_name}. Skipping LLM call.")
+       
+        # Emit cache hit event
+        emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+            "parent_agent": parent_agent,
+            "cache_hit": True,
+            "tokens_used": 0
+        })
+       
         return cached_response, None
-    
+   
     # Prepare sub-agent prompt
     subagent_prompt_template = sub_agent_config["params"]["prompt_template"]
     subagent_prompt = prepare_agent_prompt({"prompt_template": subagent_prompt_template}, input_text, enhanced_data)
-    
+   
     subagent_model = sub_agent_config["llm_config"]["model"]
-    subagent_config_list = get_llm_config_list(subagent_model)
-    
-    try:
-        sub_assistant = AssistantAgent(name=agent_name, llm_config={"config_list": subagent_config_list})
-        sub_user_proxy = UserProxyAgent(name="sub_user", human_input_mode="NEVER")
-        sub_group_chat = GroupChat(agents=[sub_user_proxy, sub_assistant], messages=[], max_round=2)
-        sub_manager = GroupChatManager(groupchat=sub_group_chat, llm_config={"config_list": subagent_config_list})
-        
-        sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
-        subagent_response = sub_group_chat.messages[-1]["content"]
+    subagent_config_list = [{
+        "model": subagent_model,
+        "api_key": groq_config["api_key"],
+        "base_url": groq_config["base_url"]
+    }]
+   
+    # Read execution guards from config
+    token_budget = sub_agent_config.get("token_budget")
+    retry_cfg = sub_agent_config.get("retry_policy") or {}
+    max_attempts = max(1, int(retry_cfg.get("max_attempts", 1)))
+    delay_seconds = max(0, int(retry_cfg.get("delay_seconds", 0)))
 
-        # Save response to cache with the cache key
-        save_to_cache(cache_key, subagent_response, tenant_id)
-        
-        # Track tokens for sub-agent
-        token_usage = token_tracker.track_agent_tokens(
-            agent_id=agent_name,
-            input_text=subagent_prompt,
-            output_text=subagent_response,
-            model_name=subagent_model,
-            step=0
-        )
-        
-        # Save to memory with token info
-        memory_manager.save_agent_memory(
-            agent_id=agent_name,
-            job_id=job_id,
-            tenant_id=tenant_id,
-            step=0,
-            input_text=subagent_prompt,
-            output_text=subagent_response,
-            token_usage=token_usage,
-            model_name=subagent_model
-        )
-        
-        return subagent_response, None
-        
-    except BadRequestError as e:
-        error_message = str(e)
-        if hasattr(e, 'response') and hasattr(e.response, 'json'):
-            try:
-                error_json = e.response.json()
-                error_message = json.dumps(error_json)
-            except Exception:
-                pass
-        
-        logger.error(f"🚫 Sub-agent {agent_name} failed due to LLM API issue", extra={
-            "job_id": job_id,
-            "error": error_message,
-            "agent": agent_name
-        })
-        
-        return None, {
-            "error": f"Sub-agent {agent_name} execution failed due to an issue with the LLM API.",
-            "details": error_message
-        }
+
+    def remaining_budget() -> int | None:
+        if token_budget is None:
+            return None
+        summary = token_tracker.get_agent_token_summary(agent_name)
+        return max(0, int(token_budget) - int(summary.get("total_tokens", 0)))
+
+
+    last_error_details = None
+    for attempt in range(1, max_attempts + 1):
+        rem = remaining_budget()
+        if rem is not None and rem <= 0:
+            error_msg = f"Token budget exceeded for sub-agent {agent_name}"
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                "parent_agent": parent_agent,
+                "error": error_msg,
+                "code": "TOKEN_BUDGET_EXCEEDED"
+            })
+            return None, {
+                "error": error_msg,
+                "code": "TOKEN_BUDGET_EXCEEDED",
+                "agent": agent_name
+            }
+       
+        # Emit retry event if not first attempt
+        if attempt > 1:
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "RETRYING", 0, {
+                "parent_agent": parent_agent,
+                "attempt": attempt,
+                "max_attempts": max_attempts,
+                "error": last_error_details
+            })
+       
+        try:
+            sub_assistant = AssistantAgent(name=agent_name, llm_config={"config_list": subagent_config_list})
+            sub_user_proxy = UserProxyAgent(name="sub_user", human_input_mode="NEVER")
+            sub_group_chat = GroupChat(agents=[sub_user_proxy, sub_assistant], messages=[], max_round=2)
+            sub_manager = GroupChatManager(groupchat=sub_group_chat, llm_config={"config_list": subagent_config_list})
+
+
+            sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
+            subagent_response = sub_group_chat.messages[-1]["content"]
+
+
+            # Validate success criteria before caching/saving
+            criteria = sub_agent_config.get("success_criteria") or []
+            if criteria:
+                failures = []
+                lower_resp = (subagent_response or "").lower()
+                if any(c.lower() in ("must output json", "output must be json", "return json") for c in criteria):
+                    try:
+                        json.loads(subagent_response)
+                    except Exception:
+                        failures.append("Output is not valid JSON")
+                if any("include at least 2 charts" in c.lower() or "include at least two charts" in c.lower() for c in criteria):
+                    indicators = ["plot_type", "chart", "graph", "figure"]
+                    count = sum(lower_resp.count(ind) for ind in indicators)
+                    if count < 2:
+                        failures.append("Fewer than 2 chart indicators found in output")
+                if failures:
+                    raise ValueError(f"Success criteria failed: {failures}")
+
+
+            # Save response to cache with the cache key
+            save_to_cache(cache_key, subagent_response,tenant_id)
+
+
+            # Track tokens for sub-agent
+            token_usage = token_tracker.track_agent_tokens(
+                agent_id=agent_name,
+                input_text=subagent_prompt,
+                output_text=subagent_response,
+                model_name=subagent_model,
+                step=0
+            )
+
+
+            # Save to memory with token info
+            memory_manager.save_agent_memory(
+                agent_id=agent_name,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                step=0,
+                input_text=subagent_prompt,
+                output_text=subagent_response,
+                token_usage=token_usage,
+                model_name=subagent_model
+            )
+           
+            # Emit success event
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+                "parent_agent": parent_agent,
+                "tokens_used": token_usage.total_tokens,
+                "input_tokens": token_usage.input_tokens,
+                "output_tokens": token_usage.output_tokens,
+                "model": subagent_model,
+                "output_length": len(subagent_response)
+            })
+
+
+            return subagent_response, None
+
+
+        except BadRequestError as e:
+            error_message = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_json = e.response.json()
+                    error_message = json.dumps(error_json)
+                except Exception:
+                    pass
+            last_error_details = error_message
+            logger.error(f"🚫 Sub-agent {agent_name} failed on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "error": error_message,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                    "parent_agent": parent_agent,
+                    "error": error_message,
+                    "attempts": attempt,
+                    "final_attempt": True
+                })
+                return None, {
+                    "error": f"Sub-agent {agent_name} execution failed after {attempt} attempts.",
+                    "details": error_message,
+                    "retries_exhausted": attempt >= max_attempts
+                }
+        except Exception as e:
+            last_error_details = str(e)
+            logger.exception(f"❌ Sub-agent {agent_name} unhandled exception on attempt {attempt}/{max_attempts}", extra={
+                "job_id": job_id,
+                "agent": agent_name
+            })
+            if attempt < max_attempts and delay_seconds:
+                time.sleep(delay_seconds)
+            else:
+                emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                    "parent_agent": parent_agent,
+                    "error": str(e),
+                    "attempts": attempt,
+                    "final_attempt": True
+                })
+                return None, {
+                    "error": f"Sub-agent {agent_name} crashed after {attempt} attempts.",
+                    "details": str(e),
+                    "retries_exhausted": attempt >= max_attempts
+                }
+
+
 
 
 create_cache_index_if_not_exists()
 def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent_type: str = None):
     """Run a specific agent individually with detailed token tracking"""
     job_id = str(uuid.uuid4())
-    
+   
     # Reset token tracking for new job
     token_tracker.reset_tracking()
-    
+   
     logger.info("🚀 Individual agent execution started", extra={
-        "tenant_id": tenant_id, 
-        "job_id": job_id, 
+        "tenant_id": tenant_id,
+        "job_id": job_id,
         "agent_name": agent_name,
         "agent_type": agent_type,
         "input": input_text
     })
-    
+   
     try:
         # Get agent configuration
         agent_data = get_agent_by_name(agent_name)
@@ -296,26 +584,26 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                 "job_id": job_id,
                 "error": f"Agent '{agent_name}' not found in configuration"
             }
-        
+       
         # Handle different agent types
         if agent_data.get("type") == "main":
             # If it's a main agent, run it directly
             response, error = execute_single_agent(agent_name, agent_data, input_text, job_id, tenant_id)
             if error:
                 return {"job_id": job_id, **error}
-            
+           
             # Parse JSON response if possible
             parsed_response = restructure_multimetric_data(parse_json_response(response))
-            
+           
             # Get token summary
             token_summary = token_tracker.get_job_token_summary(job_id)
-            
+           
             logger.info("✅ Individual main agent completed", extra={
                 "job_id": job_id,
                 "agent_name": agent_name,
                 "token_summary": token_summary
             })
-            
+           
             return {
                 "job_id": job_id,
                 "agent_name": agent_name,
@@ -324,13 +612,13 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                 "parsed_response": parsed_response,
                 "token_usage": token_summary
             }
-        
+       
         elif agent_data.get("type") == "sub":
             # Handle sub-agent execution with token tracking
             configs = get_all_agent_configs()
             parent_agent = None
             sub_agent_config = None
-            
+           
             for parent_name, parent_data in configs.items():
                 if parent_data.get("type") == "main":
                     for sub_agent in parent_data.get("sub_agents", []):
@@ -340,32 +628,32 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                             break
                     if sub_agent_config:
                         break
-            
+           
             if not sub_agent_config:
                 return {
                     "job_id": job_id,
                     "error": f"Sub-agent '{agent_name}' not found in any parent agent configuration"
                 }
-            
+           
             # Execute sub-agent
             subagent_response, error = execute_sub_agent(
                 agent_name, sub_agent_config, parent_agent, input_text, job_id, tenant_id
             )
             if error:
                 return {"job_id": job_id, **error}
-            
+           
             subagent_response_json = parse_json_response(subagent_response)
-            
+           
             # Get token summary
             token_summary = token_tracker.get_job_token_summary(job_id)
-            
+           
             logger.info("✅ Individual sub-agent completed", extra={
                 "job_id": job_id,
                 "agent_name": agent_name,
                 "parent_agent": parent_agent,
                 "token_summary": token_summary
             })
-            
+           
             return {
                 "job_id": job_id,
                 "agent_name": agent_name,
@@ -375,13 +663,17 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
                 "parsed_response": subagent_response_json,
                 "token_usage": token_summary
             }
-        
+       
+       
+
+
+       
         else:
             return {
                 "job_id": job_id,
                 "error": f"Unknown agent type for '{agent_name}'"
             }
-    
+   
     except Exception as e:
         logger.exception("❌ Unhandled exception during individual agent execution", extra={
             "job_id": job_id,
@@ -396,42 +688,61 @@ def run_individual_agent(input_text: str, tenant_id: str, agent_name: str, agent
             "details": str(e)
         }
 
+
 create_cache_index_if_not_exists()
 # Add this function to handle parent agent execution with caching
-def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict, 
+def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
                         subagent_response: str, input_text: str, job_id: str, tenant_id: str):
     """Execute parent agent with caching support"""
-    
+    groq_config = get_groq_config()
+   
+    # Emit parent agent started event
+    emit_orchestrator_event("agent.execution", parent_agent_name, job_id, tenant_id, "STARTED", 1, {
+        "input_length": len(input_text),
+        "subagent_response_length": len(subagent_response)
+    })
+   
     # Create parent agent prompt
     parent_prompt_template = parent_agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
     parent_prompt = parent_prompt_template.replace("{{input}}", subagent_response).replace("{{question}}", input_text)
-    
+   
     # Create cache key for parent agent (include subagent response in hash)
     subagent_hash = get_enhanced_data_hash(subagent_response)
     cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash)
-    
+   
     # Check cache first
-    cached_response = search_cache(cache_key, tenant_id)
+    cached_response = search_cache(cache_key,tenant_id)
     if cached_response:
         logger.info(f"✅ Cache hit for parent agent {parent_agent_name}. Skipping LLM call.")
+       
+        # Emit cache hit event
+        emit_orchestrator_event("agent.execution", parent_agent_name, job_id, tenant_id, "COMPLETED", 1, {
+            "cache_hit": True,
+            "tokens_used": 0
+        })
+       
         return cached_response, None
-    
+   
     # Execute parent agent if not in cache
     parent_model = parent_agent_data["llm_config"]["model"]
-    parent_config_list = get_llm_config_list(parent_model)
-    
+    parent_config_list = [{
+        "model": parent_model,
+        "api_key": groq_config["api_key"],
+        "base_url": groq_config["base_url"]
+    }]
+   
     try:
         parent_assistant = AssistantAgent(name=parent_agent_name, llm_config={"config_list": parent_config_list})
         parent_user_proxy = UserProxyAgent(name="parent_user", human_input_mode="NEVER")
         parent_group_chat = GroupChat(agents=[parent_user_proxy, parent_assistant], messages=[], max_round=2)
         parent_manager = GroupChatManager(groupchat=parent_group_chat, llm_config={"config_list": parent_config_list})
-        
+       
         parent_user_proxy.initiate_chat(parent_manager, message=parent_prompt)
         parent_response = parent_group_chat.messages[-1]["content"]
-        
+       
         # Save to cache
-        save_to_cache(cache_key, parent_response, tenant_id)
-        
+        save_to_cache(cache_key, parent_response,tenant_id)
+       
         # Track tokens
         parent_token_usage = token_tracker.track_agent_tokens(
             agent_id=parent_agent_name,
@@ -440,7 +751,7 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
             model_name=parent_model,
             step=1
         )
-        
+       
         # Save to memory
         memory_manager.save_agent_memory(
             agent_id=parent_agent_name,
@@ -452,9 +763,18 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
             token_usage=parent_token_usage,
             model_name=parent_model
         )
-        
+       
+        # Emit success event
+        emit_orchestrator_event("agent.execution", parent_agent_name, job_id, tenant_id, "COMPLETED", 1, {
+            "tokens_used": parent_token_usage.total_tokens,
+            "input_tokens": parent_token_usage.input_tokens,
+            "output_tokens": parent_token_usage.output_tokens,
+            "model": parent_model,
+            "output_length": len(parent_response)
+        })
+       
         return parent_response, None
-        
+       
     except BadRequestError as e:
         error_message = str(e)
         if hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -463,26 +783,32 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
                 error_message = json.dumps(error_json)
             except Exception:
                 pass
-        
-        logger.error(f"🚫 Parent agent {parent_agent_name} failed due to LLM API issue", extra={
+       
+        logger.error(f"🚫 Parent agent {parent_agent_name} failed due to OpenAI org/API key issue", extra={
             "job_id": job_id,
             "error": error_message,
             "agent": parent_agent_name
         })
-        
+       
+        emit_orchestrator_event("agent.execution", parent_agent_name, job_id, tenant_id, "FAILED", 1, {
+            "error": error_message,
+            "code": "API_KEY_ERROR"
+        })
+       
         return None, {
-            "error": f"Parent agent {parent_agent_name} execution failed due to an issue with the LLM API.",
+            "error": f"Parent agent {parent_agent_name} execution failed due to an issue with the API key or organization.",
             "details": error_message
         }
+
 
 # Add this function for orchestrator-level caching
 def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
     """Execute orchestrator with full workflow caching"""
     # Create a cache key for the entire orchestration workflow
     workflow_cache_key = create_cache_key(input_text, "full_orchestration")
-    
+   
     # Check if we have a cached result for the entire workflow
-    cached_workflow = search_cache(workflow_cache_key, tenant_id)
+    cached_workflow = search_cache(workflow_cache_key,tenant_id)
     if cached_workflow:
         logger.info("✅ Full orchestration cache HIT - returning complete cached workflow")
         try:
@@ -492,7 +818,7 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
             # Add a new job_id for this request
             cached_result["job_id"] = str(uuid.uuid4())
             cached_result["from_cache"] = True
-            
+           
             # Overwrite token usage fields to indicate no new tokens were used
             cached_result["token_usage"] = {
                 "total_tokens": 0,
@@ -503,7 +829,7 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
                 "parent_agent": {"total_tokens": 0},
                 "orchestrator": {"total_tokens": 0}
             }
-                        
+                       
             return cached_result
         except json.JSONDecodeError:
             # If not JSON, treat as regular response
@@ -512,37 +838,49 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
                 "response": cached_workflow,
                 "from_cache": True
             }
-    
+   
     return None  # No cache hit, proceed with normal execution
+
 
 # Modified run_autogen_agent function
 def run_autogen_agent(input_text: str, tenant_id: str):
     """Main orchestration function with comprehensive token tracking and caching"""
-    
+   
     # First check for full workflow cache
     cached_result = execute_orchestrator_with_cache(input_text, tenant_id)
     if cached_result:
         return cached_result
-    
+   
     job_id = str(uuid.uuid4())
-    
+    groq_config = get_groq_config()
+   
     # Reset token tracking for new job
     token_tracker.reset_tracking()
+   
+    # Emit orchestration started event
+    emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "STARTED", 0, {
+        "input_length": len(input_text),
+        "workflow_type": "autogen_orchestration"
+    })
+
 
     logger.info("🚀 Agent orchestration started", extra={
-        "tenant_id": tenant_id, 
-        "job_id": job_id, 
+        "tenant_id": tenant_id,
+        "job_id": job_id,
         "input": input_text
     })
+
 
     try:
         # Step 1: Match Parent Agent
         parent_agent_name, parent_agent_data = match_parent_agent_by_keywords(input_text)
 
+
         if not parent_agent_name:
             general_agent = GeneralAgent()
             general_response = general_agent.run(input_text)
             full_output = "No matching agent found. Handing over to my general agent friend...\n\n" + general_response
+
 
             # Track tokens for GeneralAgent
             token_tracker.track_agent_tokens(
@@ -553,10 +891,18 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 step=0
             )
 
+
             logger.warning("⚠️ No matching parent agent found. Using GeneralAgent fallback.", extra={
                 "job_id": job_id,
                 "token_summary": token_tracker.get_job_token_summary(job_id)
             })
+           
+            # Emit fallback event
+            emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "COMPLETED", 0, {
+                "fallback_agent": "GeneralAgent",
+                "tokens_used": token_tracker.get_job_token_summary(job_id).get("job_total", {}).get("total_tokens", 0)
+            })
+
 
             memory_manager.save_orchestrator_memory(
                 job_id=job_id,
@@ -566,6 +912,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 output_text=full_output
             )
 
+
             return {
                 "job_id": job_id,
                 "selected_agent": "GeneralAgent",
@@ -573,52 +920,78 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 "token_usage": token_tracker.get_job_token_summary(job_id)
             }
 
+
         # Step 2: Select Sub-Agent
         selected_subagent = select_best_subagent(parent_agent_data, input_text)
         if not selected_subagent:
             logger.error("❌ No sub-agent matched for selected parent agent.", extra={
-                "job_id": job_id, 
+                "job_id": job_id,
                 "parent_agent": parent_agent_name
             })
+           
+            emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "FAILED", 0, {
+                "error": f"No sub-agent found for parent agent: {parent_agent_name}"
+            })
+           
             return {
                 "job_id": job_id,
                 "error": f"No sub-agent found for parent agent: {parent_agent_name}"
             }
 
+
         logger.info("🧠 Agents selected", extra={
-            "job_id": job_id, 
-            "parent_agent": parent_agent_name, 
+            "job_id": job_id,
+            "parent_agent": parent_agent_name,
+            "sub_agent": selected_subagent["agent_id"]
+        })
+       
+        # Emit agents selected event
+        emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "PROGRESS", 0, {
+            "parent_agent": parent_agent_name,
             "sub_agent": selected_subagent["agent_id"]
         })
 
+
         # Step 3: Execute Sub-Agent (already has caching)
         subagent_response, error = execute_sub_agent(
-            selected_subagent["agent_id"], selected_subagent, parent_agent_name, 
+            selected_subagent["agent_id"], selected_subagent, parent_agent_name,
             input_text, job_id, tenant_id
         )
         if error:
+            emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "FAILED", 0, {
+                "error": error.get("error", "Sub-agent execution failed"),
+                "step": "sub_agent_execution"
+            })
             return {"job_id": job_id, **error}
+
 
         subagent_response_json = parse_json_response(subagent_response)
 
+
         # Step 4: Execute Parent Agent (now with caching)
         logger.info("▶️ Executing parent agent", extra={
-            "job_id": job_id, 
+            "job_id": job_id,
             "agent": parent_agent_name
         })
-        
+       
         parent_response, error = execute_parent_agent(
-            parent_agent_name, parent_agent_data, subagent_response, 
+            parent_agent_name, parent_agent_data, subagent_response,
             input_text, job_id, tenant_id
         )
         if error:
+            emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "FAILED", 0, {
+                "error": error.get("error", "Parent agent execution failed"),
+                "step": "parent_agent_execution"
+            })
             return {"job_id": job_id, **error}
+
 
         # Step 5: Orchestrator Agent Summary
         orchestrator_summary = (
             f"Here is the final summary based on your query:\n\n"
             f"{parent_response.strip()}"
         )
+
 
         # Track tokens for orchestrator
         orchestrator_token_usage = token_tracker.track_agent_tokens(
@@ -629,6 +1002,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             step=2
         )
 
+
         # Step 6: Save All Memory Records
         memory_manager.save_orchestrator_memory(
             job_id=job_id,
@@ -637,6 +1011,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             input_text=input_text,
             output_text=f"Selected Parent: {parent_agent_name}, Selected Sub-Agent: {selected_subagent['agent_id']}"
         )
+
 
         memory_manager.save_agent_memory(
             agent_id="orchestrator_agent",
@@ -649,6 +1024,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             model_name=parent_agent_data["llm_config"]["model"]
         )
 
+
         # Save chain records
         memory_manager.save_chain_record(
             job_id=job_id,
@@ -659,6 +1035,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             token_usage=token_tracker.get_agent_token_summary(selected_subagent["agent_id"])
         )
 
+
         memory_manager.save_chain_record(
             job_id=job_id,
             step=1,
@@ -667,6 +1044,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             log=parent_response,
             token_usage=token_tracker.get_agent_token_summary(parent_agent_name)
         )
+
 
         memory_manager.save_chain_record(
             job_id=job_id,
@@ -677,9 +1055,18 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             token_usage=token_tracker.get_agent_token_summary("orchestrator_agent")
         )
 
+
         # Get comprehensive token summary
         token_summary = token_tracker.get_job_token_summary(job_id)
-        
+       
+        # Emit orchestration completed event
+        emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "COMPLETED", 2, {
+            "parent_agent": parent_agent_name,
+            "sub_agent": selected_subagent["agent_id"],
+            "total_tokens": token_summary.get("job_total", {}).get("total_tokens", 0),
+            "final_output_length": len(orchestrator_summary)
+        })
+       
         # Create final result
         final_result = {
             "job_id": job_id,
@@ -696,11 +1083,11 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 "orchestrator": token_tracker.get_agent_token_summary("orchestrator_agent")
             }
         }
-        
+       
         # Cache the entire workflow result
         workflow_cache_key = create_cache_key(input_text, "full_orchestration")
-        save_to_cache(workflow_cache_key, json.dumps(final_result), tenant_id)
-        
+        save_to_cache(workflow_cache_key, json.dumps(final_result),tenant_id)
+       
         logger.info("✅ Agent orchestration completed", extra={
             "job_id": job_id,
             "parent_agent": parent_agent_name,
@@ -708,9 +1095,16 @@ def run_autogen_agent(input_text: str, tenant_id: str):
             "token_summary": token_summary
         })
 
+
         return final_result
 
+
     except Exception as e:
+        emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "FAILED", 0, {
+            "error": str(e),
+            "step": "unhandled_exception"
+        })
+       
         logger.exception("❌ Unhandled exception during agent orchestration", extra={
             "job_id": job_id,
             "tenant_id": tenant_id,

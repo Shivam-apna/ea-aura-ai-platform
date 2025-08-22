@@ -26,7 +26,7 @@ const allAgents = [
   { id: 'brand-index', name: 'Brand Index', icon: Award, path: '/brand-index', requiredRoles: ['user'] },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/settings', requiredRoles: ['admin'] },
   { id: 'users', name: 'Users', icon: Users, path: '/users', requiredRoles: ['admin'] },
-  { id: 'upload-data', name: 'Upload Data', icon: UploadCloud, path: '/upload-data', requiredRoles: ['admin'] }, // New tab
+  { id: 'upload-data', name: 'Upload Data', icon: UploadCloud, path: '/upload-data', requiredRoles: ['admin'] },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollapsed, onToggleCollapse }) => {
@@ -42,20 +42,32 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
     console.log("Sidebar - Authenticated:", isAuthenticated, "Auth Loading:", authLoading, "Client Roles:", clientRoles); // Changed Keycloak Loading to Auth Loading
   }, [isAuthenticated, authLoading, clientRoles]); // Changed keycloakLoading to authLoading
 
-  // Modified hasRequiredRole to implement stricter role-based visibility
+  // Modified hasRequiredRole to implement proper role-based visibility
   const hasRequiredRole = (required: string[], userRoles: string[]) => {
     if (!isAuthenticated || authLoading) return false; // Use authLoading here
 
-    const isAdmin = userRoles.includes('admin');
-    const isUser = userRoles.includes('user');
+    // Convert all roles to lowercase for case-insensitive comparison
+    const normalizedUserRoles = userRoles.map(role => role.toLowerCase());
+    const normalizedRequiredRoles = required.map(role => role.toLowerCase());
+
+    const isAdmin = normalizedUserRoles.includes('admin');
+    const isUser = normalizedUserRoles.includes('user');
+
+    // Debug logging
+    console.log("hasRequiredRole Debug:", {
+      required: normalizedRequiredRoles,
+      userRoles: normalizedUserRoles,
+      isAdmin,
+      isUser
+    });
 
     // If the tab requires 'admin' and the user is an admin, show it.
-    if (required.includes('admin') && isAdmin) {
+    if (normalizedRequiredRoles.includes('admin') && isAdmin) {
       return true;
     }
-    // If the tab requires 'user' AND the user is a user AND NOT an admin, show it.
-    // This ensures that if a user has both roles, they only see admin tabs.
-    if (required.includes('user') && isUser && !isAdmin) {
+    // If the tab requires 'user' and the user has user role, show it.
+    // Admin users can also see user tabs (they have access to everything)
+    if (normalizedRequiredRoles.includes('user') && isUser) {
       return true;
     }
     return false;
@@ -88,6 +100,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   }
 
   const visibleAgents = allAgents.filter(agent => hasRequiredRole(agent.requiredRoles, clientRoles));
+
+  // Debug logging
+  console.log("Sidebar Debug:", {
+    clientRoles,
+    visibleAgents: visibleAgents.map(agent => ({ id: agent.id, name: agent.name, path: agent.path })),
+    allAgents: allAgents.map(agent => ({ id: agent.id, name: agent.name, requiredRoles: agent.requiredRoles }))
+  });
 
   // Determine if any of the non-dashboard routes are currently active
   const isNonDashboardRouteActive = ['/profile', '/settings', '/users', '/upload-data'].includes(location.pathname); // Added /upload-data

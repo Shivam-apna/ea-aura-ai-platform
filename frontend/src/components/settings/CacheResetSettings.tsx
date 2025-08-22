@@ -33,9 +33,9 @@ const CacheResetSettings: React.FC = () => {
     <div className="space-y-6 p-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Clear UI Cache Button */}
-        <Button variant="outline" onClick={handleClearUICache} className="w-full flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+        {/* <Button variant="outline" onClick={handleClearUICache} className="w-full flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
           <Trash2 className="h-4 w-4" /> Clear UI Cache
-        </Button>
+        </Button> */}
 
         {/* Reset All Agent Cache Button */}
         <Button variant="outline" onClick={handleResetAllAgentCache} className="w-full flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
@@ -43,9 +43,9 @@ const CacheResetSettings: React.FC = () => {
         </Button>
 
         {/* Re-Index Agent Data Button */}
-        <Button variant="outline" onClick={handleReIndexAgentData} className="w-full flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+        {/* <Button variant="outline" onClick={handleReIndexAgentData} className="w-full flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
           <Database className="h-4 w-4" /> Re-Index Agent Data
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

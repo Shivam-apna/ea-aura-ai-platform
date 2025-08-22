@@ -3,13 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
 
+
 # API v1 routes
 from app.dao.job_index import index_job
 from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, test_agent_run
+from app.api.v1.routes import status as status_routes
+from app.api.v1.routes import agents as agents_routes
+from app.api.v1.routes import kafka_status as kafka_status_routes
 from app.core.index_manager import IndexManager
 from app.core.elastic import get_es_client
 from app.core.core_log import logger
 from app.core.config import settings, get_environment_config
+
 
 # Configure logging based on environment
 env_config = get_environment_config()
@@ -22,10 +27,12 @@ logging.basicConfig(
     ]
 )
 
+
 logger.info(f"✅ EA-AURA backend logging initialized for {settings.environment} environment")
 logger.info(f"🔧 Environment: {settings.environment}")
 logger.info(f"🐛 Debug mode: {settings.debug}")
 logger.info(f"📊 Log level: {env_config['log_level']}")
+
 
 # Create FastAPI app with environment-specific settings
 app = FastAPI(
@@ -35,16 +42,22 @@ app = FastAPI(
     debug=env_config["debug"]
 )
 
+
 # Include all API routers
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(agent_job.router, prefix="/api/v1")
 app.include_router(sub_agent_chain.router, prefix="/api/v1")
 app.include_router(agent_memory.router, prefix="/api/v1")
+app.include_router(status_routes.router, prefix="/api/v1")
+app.include_router(agents_routes.router, prefix="/api/v1")
+app.include_router(kafka_status_routes.router, prefix="/api/v1/kafka", tags=["Kafka"])
+
 
 # Only include test routes in development and testing
 if settings.is_development or settings.is_testing:
     app.include_router(test_agent_run.router, tags=["Debug"])
     logger.info("🧪 Test routes enabled for development/testing")
+
 
 # Startup event for ES + Index init
 @app.on_event("startup")
@@ -54,10 +67,21 @@ async def startup_event():
         get_es_client()
         IndexManager.create_indices()
         logger.info("✅ Elasticsearch and indices initialized successfully")
+       
+        # Start Kafka event monitoring
+        try:
+            from app.services.kafka_event_monitor import start_kafka_monitoring
+            start_kafka_monitoring()
+            logger.info("✅ Kafka event monitoring started successfully")
+        except Exception as kafka_error:
+            logger.warning(f"⚠️ Kafka monitoring failed to start: {kafka_error}")
+            logger.info("ℹ️ Agent events will still be logged to file/Kibana")
+           
     except Exception as e:
         logger.error(f"❌ Failed to initialize Elasticsearch: {e}")
         if settings.is_production:
             raise e
+
 
 # CORS middleware with environment-specific origins
 app.add_middleware(
@@ -68,6 +92,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -77,6 +102,7 @@ async def root():
         "version": "1.0.0",
         "status": "running"
     }
+
 
 # Health check endpoint
 @app.get("/health")
