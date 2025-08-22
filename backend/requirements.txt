@@ -1,21 +1,58 @@
+# fastapi==0.115.2
+# uvicorn[standard]
+# hvac==2.3.0
+# pyautogen==0.9.0
+# elasticsearch>=9.0.2
+# pydantic>=2.7.4
+# openai>=1.99.9
+# langchain-groq==0.3.7
+# langchain==0.3.27
+# filebeat==0.0.2
+# python-json-logger==3.3.0
+# kafka-python==2.2.14
+# PyMuPDF==1.23.1
+# langchain-community==0.3.27
+# sentence-transformers>=2.2.2
+# dateparser==1.2.1
+# pandas==2.2.2
+# python-multipart==0.0.20
+# openpyxl==3.1.5
+# pydantic-settings>=2.0.0
+# langchain-openai==0.3.30
+
+# Core framework
 fastapi==0.115.2
 uvicorn[standard]
+
+# Vault & Security
 hvac==2.3.0
-pyautogen==0.9.0
-elasticsearch>=9.0.2
-pydantic>=2.7.4
-openai>=1.99.9
-langchain-groq==0.3.7
-langchain==0.3.27
-filebeat==0.0.2
 python-json-logger==3.3.0
-kafka-python==2.2.14
-PyMuPDF==1.23.1
+
+# AI & LLMs
+pyautogen==0.9.0
+openai>=1.99.9
+langchain==0.3.27
+langchain-groq==0.3.7
 langchain-community==0.3.27
-sentence-transformers>=2.2.2
-dateparser==1.2.1
-pandas==2.2.2
-python-multipart==0.0.20
-openpyxl==3.1.5
-pydantic-settings>=2.0.0
 langchain-openai==0.3.30
+sentence-transformers>=2.2.2
+
+# ML / Torch (CPU-only to avoid huge CUDA wheels)
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==2.3.1+cpu
+torchvision==0.18.1+cpu
+torchaudio==2.3.1+cpu
+
+# Search & Logging
+elasticsearch>=9.0.2
+filebeat==0.0.2
+kafka-python==2.2.14
+
+# Data handling
+pydantic>=2.7.4
+pydantic-settings>=2.0.0
+pandas==2.2.2
+dateparser==1.2.1
+openpyxl==3.1.5
+python-multipart==0.0.20
+PyMuPDF==1.23.1

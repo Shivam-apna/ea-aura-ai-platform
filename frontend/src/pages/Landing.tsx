@@ -33,6 +33,8 @@ const Landing: React.FC = () => {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Removed automatic redirect - let user manually click buttons
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedTimestamp = localStorage.getItem('last_activity_timestamp');
@@ -53,11 +55,21 @@ const Landing: React.FC = () => {
   const handleGetStarted = () => {
     localStorage.setItem('is_returning_user', 'true');
     setIsNewUser(false);
-    navigate('/dashboard'); // Redirect to dashboard after "Get Started"
+    // Redirect based on user role (case-insensitive)
+    if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
+      navigate('/settings');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleContinue = () => {
-    navigate('/dashboard'); // Redirect to dashboard for returning users
+    // Redirect based on user role (case-insensitive)
+    if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
+      navigate('/settings');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   if (authLoading) {

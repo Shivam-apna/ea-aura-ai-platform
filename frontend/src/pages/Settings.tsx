@@ -7,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import ThemeSettings from '@/components/settings/ThemeSettings.tsx';
 import CacheResetSettings from '@/components/settings/CacheResetSettings.tsx';
 import QueueExecutionSettings from '@/components/settings/QueueExecutionSettings.tsx';
-import AdvancedSettings from '@/components/settings/AdvancedSettings.tsx';
+// import AdvancedSettings from '@/components/settings/AdvancedSettings.tsx';
 import AgentSettings from '@/components/settings/AgentSettings.tsx';
 
 const Settings = () => {
@@ -39,7 +39,7 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
-          {/* Queue & Execution */}
+          {/* Queue & Execution
           <AccordionItem value="item-3" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
             <AccordionTrigger className="px-6 py-4 text-lg font-semibold text-foreground hover:no-underline">
               Queue & Execution
@@ -47,9 +47,9 @@ const Settings = () => {
             <AccordionContent className="border-t border-border/50">
               <QueueExecutionSettings />
             </AccordionContent>
-          </AccordionItem>
+          </AccordionItem> */}
 
-          {/* Advanced Settings */}
+          {/* Advanced Settings
           <AccordionItem value="item-4" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
             <AccordionTrigger className="px-6 py-4 text-lg font-semibold text-foreground hover:no-underline">
               Advanced Settings
@@ -57,7 +57,7 @@ const Settings = () => {
             <AccordionContent className="border-t border-border/50">
               <AdvancedSettings />
             </AccordionContent>
-          </AccordionItem>
+          </AccordionItem> */}
 
           {/* Agent Settings */}
           <AccordionItem value="item-5" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">

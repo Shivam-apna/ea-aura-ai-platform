@@ -2,6 +2,14 @@
   "business_vitality_agent": {
     "type": "main",
     "enabled": true,
+    "input_type": "text",
+    "output_type": "text",
+    "goal": "Synthesize sub-agent analyses into executive-level business insights and recommendations",
+    "success_criteria": ["Provide actionable insights", "Reference specific dataset values"],
+    "token_budget": 5000,
+    "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+    "critical": true,
+    "params": {},
     "description": "Evaluates the financial and operational strength of the business.",
     "capabilities": [
       "kpi_analysis",
@@ -32,7 +40,7 @@
       "business performance"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-instruct",
+      "model": "llama-3.3-70b-versatile",
       "temperature": 0.6,
       "max_tokens": 700
     },
@@ -42,6 +50,13 @@
         "agent_id": "sales_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "business_vitality_agent",
         "description": "Analyzes sales volume, revenue trends, and growth indicators to support business vitality.",
         "capabilities": [
@@ -66,7 +81,7 @@
           "profit margins"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -84,6 +99,13 @@
         "agent_id": "marketing_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "business_vitality_agent",
         "description": "Analyzes marketing campaign performance including ROI, spend, and lead metrics.",
         "capabilities": [
@@ -105,7 +127,7 @@
           "lead generation"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -118,6 +140,14 @@
   "customer_analyzer_agent": {
     "type": "main",
     "enabled": true,
+    "input_type": "text",
+    "output_type": "text",
+    "goal": "Synthesize sub-agent analyses into customer experience insights and recommendations",
+    "success_criteria": ["Provide actionable insights", "Reference specific dataset values"],
+    "token_budget": 5000,
+    "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+    "critical": true,
+    "params": {},
     "description": "Analyzes customer survey data to extract key sentiments and satisfaction trends.",
     "capabilities": [
       "nlp",
@@ -145,7 +175,7 @@
       "customer sentiment"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-instruct",
+      "model": "llama-3.3-70b-versatile",
       "temperature": 0.6,
       "max_tokens": 700
     },
@@ -155,6 +185,13 @@
         "agent_id": "customer_survey_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "customer_survey_agent",
         "description": "Processes individual survey entries and extracts actionable insights.",
         "capabilities": [
@@ -175,7 +212,7 @@
           "customer opinions"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -187,6 +224,13 @@
         "agent_id": "social_media_analyzer_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "customer_analyzer_agent",
         "description": "Analyzes social media content and engagement to assess customer sentiment and brand perception across platforms.",
         "capabilities": [
@@ -208,7 +252,7 @@
           "social customer service"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -220,6 +264,13 @@
         "agent_id": "support_tickets_analyzer_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "customer_analyzer_agent",
         "description": "Analyzes support tickets to evaluate responsiveness, agent efficiency, and common issues.",
         "capabilities": [
@@ -241,7 +292,7 @@
           "customer support"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
@@ -254,6 +305,14 @@
   "strategic_alignment_agent": {
     "type": "main",
     "enabled": true,
+    "input_type": "text",
+    "output_type": "text",
+    "goal": "Synthesize mission alignment analysis into strategic recommendations",
+    "success_criteria": ["Provide actionable insights", "Reference specific dataset values"],
+    "token_budget": 5000,
+    "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+    "critical": true,
+    "params": {},
     "description": "Evaluates how well strategies and initiatives align with the startup’s mission.",
     "capabilities": [
       "mission_analysis",
@@ -277,7 +336,7 @@
       "strategic focus"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-instruct"
+      "model": "llama-3.3-70b-versatile"
     },
     "prompt_template": "You are a strategic alignment consultant specializing in evaluating organizational performance against mission and impact objectives. You have received a comprehensive mission alignment report from a specialized agent.\n\nYour task is to:\n1. Analyze all provided data, including Alignment Score, Impact Metrics, Resource Allocation, and any additional variables.\n2. Assess how well current initiatives and resource distribution align with the organization’s core mission and strategic goals.\n3. Identify gaps, inefficiencies, or misalignments in execution, focus, or prioritization.\n4. Recommend strategic actions to improve alignment, optimize resources, and maximize mission impact.\n5. Structure your response in clearly labeled sections:\n   - Summary\n   - Key Findings\n   - Strategic Gaps\n   - Actionable Recommendations\n\nFormatting & Interpretation Rules:\n- Use all available data provided below—do not skip or generalize without referencing specific figures.\n- Percentages must be expressed in human-readable form (e.g., 40% instead of 0.4, 1.4% instead of 0.014). If a score is reported on a 0–1 scale, multiply by 100 and add \"%\".\n- Distinguish percentage point (pp) change from percent (%) change when describing shifts (e.g., from 40% to 44% = +4 pp, which is a +10% relative increase).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67). Use units where appropriate (e.g., $1.2M, $350k).\n- Do not include any code, technical explanations, or implementation details—focus solely on strategic analysis and decision-making insights.\n- Do not invent or assume missing values. If information is insufficient to assess a point, state \"insufficient data to assess <item>\" and proceed.\n- Tie every recommendation to a specific metric movement target, expected impact, owner/function, timeline, and priority.\n\nMISSION ALIGNMENT DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nDeliverable Expectations:\n- Summary: 3–5 bullet points with the most material insights and quantified takeaways.\n- Key Findings: Data-backed observations citing exact figures, trends, or ratios.\n- Strategic Gaps: Explicit misalignments across initiatives, funding, or outcomes, with evidence.\n- Actionable Recommendations: A prioritized list. For each item include: {Owner/Function, Timeline, Target Metric & Magnitude, Expected Impact, Priority (High/Med/Low), Confidence (High/Med/Low)}.\n\nProvide a comprehensive, data-driven strategic alignment analysis using the figures provided and deliver actionable insights to improve alignment with the organizational mission.",
     "sub_agents": [
@@ -285,6 +344,13 @@
         "agent_id": "mission_alignment_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "mission_alignment_agent",
         "description": "Compares mission statements with company goals to determine alignment.",
         "capabilities": [
@@ -309,7 +375,7 @@
           "strategic initiatives"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct"
+          "model": "llama-3.3-70b-versatile"
         },
         "params": {
           "prompt_template": "You are a mission alignment analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any value with null, None, or missing fields.\n\nYour JSON format:\n{\n  \"response\": \"...\",                   \n  \"task\": \"plot\",                      \n  \"columns\": [...],                    \n  \"filters\": {...},                    \n  \"title\": \"...\",                      \n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",               \n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"                   \n  }\n  // Repeat this structure for each metric requested by the user\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- Each `data` array must include at least 10 entries (use surrounding dates if needed).\n- Choose the `plot_type` that best suits the trend or data structure for each metric. Options: bar, line, radar, donut, bubble, connected_scatter, etc.\n- `columns` must include: [\"Date\"] + all metric names used in the output.\n- Percentages values must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT wrap the output in markdown or explanations. Output only pure JSON.\n- Do NOT combine multiple metrics into a single array.\n- Use only the provided dataset. Do not fabricate or infer missing data.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n{{question}}"
@@ -320,6 +386,14 @@
   "brand_index_agent": {
     "type": "main",
     "enabled": true,
+    "input_type": "text",
+    "output_type": "text",
+    "goal": "Synthesize website and social engagement analyses into brand insights",
+    "success_criteria": ["Provide actionable insights", "Reference specific dataset values"],
+    "token_budget": 5000,
+    "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+    "critical": true,
+    "params": {},
     "description": "Assesses brand perception across digital presence and user feedback.",
     "capabilities": [
       "branding",
@@ -354,7 +428,7 @@
       "brand awareness"
     ],
     "llm_config": {
-      "model": "llama-3.3-70b-instruct"
+      "model": "llama-3.3-70b-versatile"
     },
     "prompt_template": "You are a brand performance strategist with deep expertise in digital engagement analytics. You have received a detailed brand index report from a specialized analytics agent.\n\nYour task is to:\n1. Analyze all the provided data including Website Visitors, Session Growth, Bounce Rate, Page Views, and any other relevant engagement metrics.\n2. Identify trends, patterns, and potential issues in user behavior and brand engagement.\n3. Evaluate how these metrics reflect overall brand visibility, user interest, and content effectiveness.\n4. Recommend strategies to improve brand perception, engagement, and digital presence based on the data.\n5. Structure your response in clearly labeled sections:\n   - Overview\n   - Key Insights\n   - Behavioral Trends\n   - Strategic Recommendations\n\nIMPORTANT:\n- Do not include any code or technical tools—focus on strategic business analysis and marketing impact.\n- Reference specific figures from the provided data in your insights.\n- Ensure recommendations are actionable and measurable.\n\nBRAND INDEX DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nProvide a thorough brand engagement analysis with specific observations and actionable marketing and content recommendations.",
     "sub_agents": [
@@ -362,6 +436,13 @@
         "agent_id": "website_analyzer_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "brand_index_agent",
         "description": "Analyzes website content for tone, professionalism, and brand messaging.",
         "capabilities": [
@@ -385,7 +466,7 @@
           "user behavior"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct"
+          "model": "llama-3.3-70b-versatile"
         },
         "params": {
           "prompt_template": "You are a website analyzer analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any field with null, None, empty strings, or missing values.\n\nYour JSON format:\n{\n  \"response\": \"...\",\n  \"task\": \"plot\",\n  \"columns\": [...],\n  \"filters\": {...},\n  \"title\": \"...\",\n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"\n  }\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- Each `data` array must include at least 10 chronological entries if available; if the user requests a single date, include surrounding dates from the dataset.\n- Choose the most suitable `plot_type` per metric based on its characteristics: bar, line, radar, donut, bubble, connected_scatter, trend.\n- `columns` must include [\"Date\"] plus all metric names used in the output (no duplicates).\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Time/duration metrics must include units (e.g., 2m 35s, 5h 12m, 1.8 days).\n- Currency values must include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT combine multiple metrics in a single `data` array—each metric has its own `data` array keyed by its metric name.\n- Use only fields present in the dataset; do not fabricate or infer missing data; do not assume field names other than \"Date\".\n- Output must be strictly valid JSON—no markdown, comments, or extra text.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n\"{{question}}\""
@@ -395,6 +476,13 @@
         "agent_id": "social_media_engagement_agent",
         "type": "sub",
         "enabled": true,
+        "input_type": "text",
+        "output_type": "json",
+        "goal": "Generate insights from dataset and produce charts",
+        "success_criteria": ["Must output JSON", "Include at least 2 charts"],
+        "token_budget": 5000,
+        "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+        "critical": true,
         "parent_agent": "brand_index_agent",
         "description": "Analyzes individual social media post performance to assess brand reach and audience interaction.",
         "capabilities": [
@@ -422,12 +510,12 @@
           "brand social presence"
         ],
         "llm_config": {
-          "model": "llama-3.3-70b-instruct",
+          "model": "llama-3.3-70b-versatile",
           "temperature": 0.5,
           "max_tokens": 512
         },
         "params": {
-          "prompt_template": "You are a social media engagement analyst assistant focused on EA-AURA. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any value with null, None, empty strings, or missing fields.\n\nYour JSON format:\n{\n  \"response\": \"...\",                // concise answer to the user's question (1–2 sentences)\n  \"summary\": \"...\",                 // brief natural-language summary of the key insight (1–3 sentences)\n  \"task\": \"plot\",                   // always \"plot\"\n  \"columns\": [...],                  // list of data column names used (e.g., Date, Platform, Post ID, Likes, Reach)\n  \"filters\": {...},                  // filters derived from the user’s query (e.g., {\"platform\":\"X\",\"date_from\":\"YYYY-MM-DD\",\"date_to\":\"YYYY-MM-DD\"})\n  \"title\": \"...\",                   // Title of the analysis or chart\n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",            // chosen from: bar, line, donut, radar, bubble, connected_scatter, trend\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"Platform\": \"...\", \"Post ID\": \"...\", \"<Metric Name>\": value},\n      ...                              // at least 10 chronological rows if available; if dataset has <10 rows, include all rows\n    ],\n    \"summary\": \"...\"               // 1–2 sentence interpretation of the metric trend and key signals\n  }\n  // Repeat the metric object for each metric explicitly requested by the user (e.g., Reach, Impressions, Likes, Shares, Comments, Engagement Rate)\n}\n\nRules:\n- Only include metrics explicitly requested by the user. Do not add unsolicited metrics.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- `columns` must contain: [\"Date\", \"Platform\", \"Post ID\"] + every metric name used (no duplicates).\n- `data` arrays must contain at least 10 entries when available; if the full dataset has fewer than 10 rows, include all available rows but never fabricate rows.\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014). Include calculation basis when relevant (e.g., \"Engagement Rate = (likes+shares+comments)/impressions = 2.4% (24/1000)\").\n- Normalise engagement metrics by audience/follower size when follower/audience is provided; state the normalization in the metric `summary` (e.g., \"Likes per 1k followers = 12.4\").\n- Include units for time/duration metrics (e.g., 2m 35s). Currency values must include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT hardcode or assume additional field names other than Date, Platform, and Post ID.\n- Do NOT fabricate, infer, or fill missing values. If a requested metric cannot be computed due to missing fields, return an `response` and `summary` that state the missing fields and stop — do not include empty metric objects.\n- Output must be strictly valid JSON — no markdown, comments, or extra text outside the JSON object.\n- Keep `response` concise and `summary` insight-focused. Each metric `summary` must link to specific numbers in `data` (e.g., \"Engagement Rate rose from 1.2% on 2025-07-01 to 2.4% on 2025-08-01, a +1.2 pp change\").\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n\"{{question}}\"\n\nNote: This template is for use within EA-AURA. Always include the flag `ea-aura-social-engagement-json-v1` with every response when invoking this template."
+          "prompt_template": "You are a social media engagement analyst assistant focused on EA-AURA. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap your response in markdown or return Python code. Do not include any value with null, None, empty strings, or missing fields.\n\nYour JSON format:\n{\n  \"response\": \"...\",                // concise answer to the user's question (1–2 sentences)\n  \"summary\": \"...\",                 // brief natural-language summary of the key insight (1–3 sentences)\n  \"task\": \"plot\",                   // always \"plot\"\n  \"columns\": [...],                  // list of data column names used (e.g., Date, Platform, Post ID, Likes, Reach)\n  \"filters\": {...},                  // filters derived from the user’s query (e.g., {\"platform\":\"X\",\"date_from\":\"YYYY-MM-DD\",\"date_to\":\"YYYY-MM-DD\"})\n  \"title\": \"...\",                   // Title of the analysis or chart\n  \"<Metric Name>\": {\n    \"plot_type\": \"bar\",            // chosen from: bar, line, donut, radar, bubble, connected_scatter, trend\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"Platform\": \"...\", \"Post ID\": \"...\", \"<Metric Name>\": value},\n      ...                              // at least 10 chronological rows if available; if dataset has <10 rows, include all rows\n    ],\n    \"summary\": \"...\"               // 1–2 sentence interpretation of the metric trend and key signals\n  }\n  // Repeat the metric object for each metric explicitly requested by the user (e.g., Reach, Impressions, Likes, Shares, Comments, Engagement Rate)\n}\n\nRules:\n- Only include metrics explicitly requested by the user. Do not add unsolicited metrics.\n- Each metric must be an object with `plot_type`, `data`, and `summary`.\n- `columns` must contain: [\"Date\", \"Platform\", \"Post ID\"] + every metric name used (no duplicates).\n- `data` arrays must contain at least 10 entries when available; if the full dataset has fewer than 10 rows, include all available rows but never fabricate rows.\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014). Include calculation basis when relevant (e.g., \"Engagement Rate = (likes+shares+comments)/impressions = 2.4% (24/1000)\").\n- Normalise engagement metrics by audience/follower size when follower/audience is provided; state the normalization in the metric `summary` (e.g., \"Likes per 1k followers = 12.4\").\n- Include units for time/duration metrics (e.g., 2m 35s). Currency values must include symbols and thousand separators (e.g., $12,345.67).\n- Do NOT hardcode or assume additional field names other than Date, Platform, and Post ID.\n- Do NOT fabricate, infer, or fill missing values. If a requested metric cannot be computed due to missing fields, return an `response` and `summary` that state the missing fields and stop — do not include empty metric objects.\n- Output must be strictly valid JSON — no markdown, comments, or  extra text outside the JSON object.\n- Keep `response` concise and `summary` insight-focused. Each metric `summary` must link to specific numbers in `data` (e.g., \"Engagement Rate rose from 1.2% on 2025-07-01 to 2.4% on 2025-08-01, a +1.2 pp change\").\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n\"{{question}}\"\n\nNote: This template is for use within EA-AURA. Always include the flag `ea-aura-social-engagement-json-v1` with every response when invoking this template."
         }
       }
     ]
