@@ -2,11 +2,11 @@
     "metric_groups": {
         "Mission_Alignment": [
             {
-                "key": "Alignment_Score_(%)",
+                "key": "Alignment Score (%)",
                 "label": "Alignment Score"
             },
             {
-                "key": "Resource_Allocation",
+                "key": "Resource Allocation",
                 "label": "Resource Allocation"
             },
             {
