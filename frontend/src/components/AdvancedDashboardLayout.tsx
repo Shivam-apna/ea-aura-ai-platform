@@ -20,8 +20,7 @@ import { Speech } from "lucide-react";
 import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
-
-
+import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
 
 // Type definitions
 interface KpiItem {
@@ -93,6 +92,13 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
 
   const iconColorClass = theme === 'dark' ? 'text-white' : 'text-primary'; // Conditional class
+
+  useEffect(() => {
+    // Debug the KPI color mapping
+    const kpiNames = dynamicKpiKeys.map(kpi => kpi.key);
+    debugKpiColors(kpiNames);
+  }, [dynamicKpiKeys]);
+
 
   // Detect if the current theme is dark
   const isDarkTheme = theme === 'dark' ||
@@ -385,31 +391,108 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
+          const kpiValue = chart?.y?.at(-1);
+
+          // Get dynamic background color based on KPI name and value
+          const dynamicBgColor = getKpiBgColor(
+            kpi.key, // Use kpi.key directly since it matches your JSON
+            kpiValue,
+            kpi.bgColor || '#E5E7EB' // Fallback to original bgColor or gray
+          );
+
+
+          // Check if we're using dynamic colors or default colors
+          const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#E5E7EB');
+
+          // Get contrast text color only for dynamic colors
+          const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
+
+          // Get additional color info for debugging/tooltips
+          const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
+
+
           const icons = [BarChart2, LineChart];
           const Icon = icons[idx % icons.length];
+
           return (
             <Card
               key={idx}
-              style={{ backgroundColor: kpi.bgColor || '#fff' }}
+              style={{
+                backgroundColor: dynamicBgColor,
+                border: 'none'
+              }}
               className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg p-0 overflow-hidden group min-h-[90px]"}
+              title={colorInfo ? `${colorInfo.label}` : undefined} // Tooltip showing range
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black")} style={{ fontSize: "0.90rem" }}>{kpi.originalKey || kpi.key}</span>
-                  {idx % 2 === 0 ? <BarChart2 className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} /> : <LineChart className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} />}
+                  <span
+                    className={cn("text-xs font-medium",
+                      // Use original Tailwind classes when not using dynamic colors
+                      !isUsingDynamicColor && theme === 'dark' && "text-black"
+                    )}
+                    style={{
+                      fontSize: "0.90rem",
+                      // Only use inline color when we have dynamic colors
+                      ...(isUsingDynamicColor && { color: textColor })
+                    }}
+                  >
+                    {kpi.key}
+                  </span>
+                  {idx % 2 === 0 ? (
+                    <BarChart2
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")}
+                    />
+                  ) : (
+                    <LineChart
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")}
+                    />
+                  )}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
-                  {chart?.y?.at(-1) !== undefined ? (
-                    <span className={cn("text-lg font-bold text-foreground transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
+                  {kpiValue !== undefined ? (
+                    <span
+                      className={cn("text-lg font-bold text-foreground transition-colors",
+                        theme === 'dark' && "text-black"
+                      )}
+                      style={{
+                        ...(isUsingDynamicColor && { color: textColor })
+                      }}
+                    >
+                      {kpiValue.toLocaleString()}
+                    </span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
-                      <Icon className={cn("w-7 h-7 mb-0.5", theme === 'dark' ? "text-black" : "text-muted-foreground")} />
-                      <span className={cn("text-[10px] mt-0.5 font-medium", theme === 'dark' ? "text-black" : "text-muted-foreground")}>No data</span>
+                      <Icon
+                        className={cn("w-7 h-7 mb-0.5",
+                          theme === 'dark' ? "text-black" : "text-muted-foreground"
+                        )}
+                        style={{
+                          ...(isUsingDynamicColor && { color: textColor })
+                        }}
+                      />
+                      <span
+                        className={cn("text-[10px] mt-0.5 font-medium",
+                          theme === 'dark' ? "text-black" : "text-muted-foreground"
+                        )}
+                        style={{
+                          ...(isUsingDynamicColor && { color: textColor })
+                        }}
+                      >
+                        No data
+                      </span>
                     </span>
                   )}
                 </span>
                 <span
-                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" : chart?.delta < 0 ? "text-red-500" : "text-muted-foreground"}`}
+                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" :
+                    chart?.delta < 0 ? "text-red-500" :
+                      "text-muted-foreground"
+                    }`}
+                  style={{
+                    // Only override for neutral delta when using dynamic colors
+                    ...((chart?.delta === undefined || chart?.delta === null || chart?.delta === 0) && isUsingDynamicColor && { color: textColor })
+                  }}
                 >
                   {chart?.delta === undefined || chart?.delta === null
                     ? ""
