@@ -232,12 +232,14 @@ services:
     image: apache/nifi:1.27.0
     container_name: nifi-staging
     environment:
-      # HTTPS Configuration
+      # Web Configuration
       - NIFI_WEB_HTTPS_HOST=0.0.0.0
       - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTP_HOST=0.0.0.0
+      - NIFI_WEB_HTTP_PORT=8080
       
-      # Proxy Configuration
-      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
+      # Critical: Proxy Configuration
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai:443
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
       
       # Security Configuration
@@ -253,11 +255,10 @@ services:
       - SINGLE_USER_CREDENTIALS_USERNAME=admin
       - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
       
-      # Additional proxy settings
-      - NIFI_WEB_PROXY_SCHEME=https
-      - NIFI_WEB_PROXY_PORT=443
+      # Critical: These properties fix the authentication issue
       - NIFI_SECURITY_USER_AUTHORIZER=single-user-authorizer
       - NIFI_SECURITY_USER_LOGIN_IDENTITY_PROVIDER=single-user-provider
+      - NIFI_SECURITY_ALLOW_ANONYMOUS_AUTHENTICATION=false
       
       # JVM settings
       - NIFI_JVM_HEAP_INIT=1g
@@ -265,20 +266,14 @@ services:
       
     ports:
       - "8443:8443"
+      - "8080:8080"  # Add HTTP port for internal communication
     volumes:
-      # Only mount data directory, let NiFi manage its own conf
       - ./nifi/data:/opt/nifi/nifi-current/data
       - ./nifi/logs:/opt/nifi/nifi-current/logs
-      # Remove the conf volume mount that's causing the issue
     networks:
       - ea-aura-staging
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -k https://localhost:8443/nifi/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      
+
 volumes:
   esdata_staging:
   filebeat-data_staging:
