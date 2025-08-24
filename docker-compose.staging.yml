@@ -259,16 +259,17 @@ services:
       - NIFI_SECURITY_USER_AUTHORIZER=single-user-authorizer
       - NIFI_SECURITY_USER_LOGIN_IDENTITY_PROVIDER=single-user-provider
       
-      # JVM settings for better performance
+      # JVM settings
       - NIFI_JVM_HEAP_INIT=1g
       - NIFI_JVM_HEAP_MAX=2g
       
     ports:
       - "8443:8443"
     volumes:
+      # Only mount data directory, let NiFi manage its own conf
       - ./nifi/data:/opt/nifi/nifi-current/data
       - ./nifi/logs:/opt/nifi/nifi-current/logs
-      - ./nifi/conf:/opt/nifi/nifi-current/conf
+      # Remove the conf volume mount that's causing the issue
     networks:
       - ea-aura-staging
     restart: unless-stopped
@@ -277,7 +278,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
+      
 volumes:
   esdata_staging:
   filebeat-data_staging:
