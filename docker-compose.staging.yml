@@ -266,7 +266,7 @@ services:
       
     ports:
       - "8443:8443"
-      - "8080:8080"  # Add HTTP port for internal communication
+      - "8085:8085"  # Add HTTP port for internal communication
     volumes:
       - ./nifi/data:/opt/nifi/nifi-current/data
       - ./nifi/logs:/opt/nifi/nifi-current/logs
