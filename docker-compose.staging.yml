@@ -232,22 +232,28 @@ services:
     image: apache/nifi:1.27.0
     container_name: nifi-staging
     environment:
-      - NIFI_WEB_HTTP_HOST=0.0.0.0
-      - NIFI_WEB_HTTP_PORT=8085
-      - SINGLE_USER_CREDENTIALS_USERNAME=admin
-      - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
-      - NIFI_JVM_HEAP_INIT=512m
-      - NIFI_JVM_HEAP_MAX=1g
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
+      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
+      - NIFI_SECURITY_KEYSTORE=/opt/nifi/nifi-current/conf/keystore.jks
+      - NIFI_SECURITY_KEYSTORE_TYPE=JKS
+      - NIFI_SECURITY_KEYSTORE_PASS=changeit
+      - NIFI_SECURITY_KEY_PASS=changeit
+      - NIFI_SECURITY_TRUSTSTORE=/opt/nifi/nifi-current/conf/truststore.jks
+      - NIFI_SECURITY_TRUSTSTORE_TYPE=JKS
+      - NIFI_SECURITY_TRUSTSTORE_PASS=changeit
+      - SINGLE_USER_USERNAME=admin
+      - SINGLE_USER_PASSWORD=admin123456789
+
     ports:
-      - "8085:8085"
+      - "8443:8443"
     volumes:
       - ./nifi/data:/opt/nifi/nifi-current/data
-      - ./nifi/logs:/opt/nifi/nifi-current/logs
     networks:
       - ea-aura-staging
     restart: unless-stopped
 
-    
 volumes:
   esdata_staging:
   filebeat-data_staging:
