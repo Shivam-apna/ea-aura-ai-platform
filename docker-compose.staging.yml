@@ -236,7 +236,7 @@ services:
       - NIFI_WEB_HTTPS_HOST=0.0.0.0
       - NIFI_WEB_HTTPS_PORT=8443
       - NIFI_WEB_HTTP_HOST=0.0.0.0
-      - NIFI_WEB_HTTP_PORT=8080
+      - NIFI_WEB_HTTP_PORT=8085
       
       # Critical: Proxy Configuration
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai:443
