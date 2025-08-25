@@ -229,55 +229,55 @@ services:
     restart: unless-stopped
 
   nifi:
-  image: apache/nifi:1.27.0
-  container_name: nifi-staging
-  environment:
-    # Enable both HTTP and HTTPS
-    - NIFI_WEB_HTTPS_HOST=0.0.0.0
-    - NIFI_WEB_HTTPS_PORT=8443
-    - NIFI_WEB_HTTP_HOST=0.0.0.0
-    - NIFI_WEB_HTTP_PORT=8080
-    - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
-    - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
-    
-    # Disable clustering for single-node setup
-    - NIFI_CLUSTER_IS_NODE=false
-    - NIFI_ZK_CONNECT_STRING=
-    - NIFI_ELECTION_MAX_WAIT=30 sec
-    - NIFI_ELECTION_MAX_CANDIDATES=
-    
-    # Single-user authentication
-    - SINGLE_USER_CREDENTIALS_USERNAME=admin
-    - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
-    
-    # JVM Settings (adjust based on your server resources)
-    - NIFI_JVM_HEAP_INIT=512m
-    - NIFI_JVM_HEAP_MAX=1g
-    
-    # Remove SSL keystore/truststore requirements for HTTP
-    - NIFI_SECURITY_KEYSTORE=
-    - NIFI_SECURITY_KEYSTORE_TYPE=
-    - NIFI_SECURITY_KEYSTORE_PASS=
-    - NIFI_SECURITY_KEY_PASS=
-    - NIFI_SECURITY_TRUSTSTORE=
-    - NIFI_SECURITY_TRUSTSTORE_TYPE=
-    - NIFI_SECURITY_TRUSTSTORE_PASS=
-  ports:
-    - "8080:8080"  # HTTP port
-    - "8443:8443"  # HTTPS port (optional)
-  volumes:
-    - ./nifi/data:/opt/nifi/nifi-current/data
-    - ./nifi/logs:/opt/nifi/nifi-current/logs
-    - ./nifi/conf:/opt/nifi/nifi-current/conf
-  networks:
-    - ea-aura-staging
-  restart: unless-stopped
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:8080/nifi/", "||", "exit", "1"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 90s  # Give NiFi more time to start
+    image: apache/nifi:1.27.0
+    container_name: nifi-staging
+    environment:
+      # Enable both HTTP and HTTPS
+      - NIFI_WEB_HTTPS_HOST=0.0.0.0
+      - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTP_HOST=0.0.0.0
+      - NIFI_WEB_HTTP_PORT=8080
+      - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
+      - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
+      
+      # Disable clustering for single-node setup
+      - NIFI_CLUSTER_IS_NODE=false
+      - NIFI_ZK_CONNECT_STRING=
+      - NIFI_ELECTION_MAX_WAIT=30 sec
+      - NIFI_ELECTION_MAX_CANDIDATES=
+      
+      # Single-user authentication
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
+      
+      # JVM Settings (adjust based on your server resources)
+      - NIFI_JVM_HEAP_INIT=512m
+      - NIFI_JVM_HEAP_MAX=1g
+      
+      # Remove SSL keystore/truststore requirements for HTTP
+      - NIFI_SECURITY_KEYSTORE=
+      - NIFI_SECURITY_KEYSTORE_TYPE=
+      - NIFI_SECURITY_KEYSTORE_PASS=
+      - NIFI_SECURITY_KEY_PASS=
+      - NIFI_SECURITY_TRUSTSTORE=
+      - NIFI_SECURITY_TRUSTSTORE_TYPE=
+      - NIFI_SECURITY_TRUSTSTORE_PASS=
+    ports:
+      - "8080:8080"  # HTTP port
+      - "8443:8443"  # HTTPS port (optional)
+    volumes:
+      - ./nifi/data:/opt/nifi/nifi-current/data
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
+      - ./nifi/conf:/opt/nifi/nifi-current/conf
+    networks:
+      - ea-aura-staging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/nifi/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # Give NiFi more time to start
 
 
 volumes:
