@@ -232,11 +232,11 @@ services:
     image: apache/nifi:1.27.0
     container_name: nifi-staging
     environment:
-      # Enable both HTTP and HTTPS
+      # Use different ports to avoid conflict with Keycloak (8080)
       - NIFI_WEB_HTTPS_HOST=0.0.0.0
       - NIFI_WEB_HTTPS_PORT=8443
       - NIFI_WEB_HTTP_HOST=0.0.0.0
-      - NIFI_WEB_HTTP_PORT=8080
+      - NIFI_WEB_HTTP_PORT=8082  # Changed from 8080 to 8082
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
       
@@ -250,11 +250,11 @@ services:
       - SINGLE_USER_CREDENTIALS_USERNAME=admin
       - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
       
-      # JVM Settings (adjust based on your server resources)
+      # JVM Settings
       - NIFI_JVM_HEAP_INIT=512m
       - NIFI_JVM_HEAP_MAX=1g
       
-      # Remove SSL keystore/truststore requirements for HTTP
+      # Remove SSL requirements
       - NIFI_SECURITY_KEYSTORE=
       - NIFI_SECURITY_KEYSTORE_TYPE=
       - NIFI_SECURITY_KEYSTORE_PASS=
@@ -263,8 +263,8 @@ services:
       - NIFI_SECURITY_TRUSTSTORE_TYPE=
       - NIFI_SECURITY_TRUSTSTORE_PASS=
     ports:
-      - "8080:8080"  # HTTP port
-      - "8443:8443"  # HTTPS port (optional)
+      - "8082:8082"  # Changed from 8080 to 8082
+      - "8443:8443"  # Keep HTTPS port
     volumes:
       - ./nifi/data:/opt/nifi/nifi-current/data
       - ./nifi/logs:/opt/nifi/nifi-current/logs
@@ -273,11 +273,11 @@ services:
       - ea-aura-staging
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/nifi/", "||", "exit", "1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/nifi/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s  # Give NiFi more time to start
+      start_period: 90s
 
 
 volumes:
