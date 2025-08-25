@@ -13,6 +13,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
+      - nifi
     networks:
       - ea-aura-staging
     restart: unless-stopped
@@ -266,7 +267,6 @@ services:
     volumes:
       - ./nifi/data:/opt/nifi/nifi-current/data
       - ./nifi/logs:/opt/nifi/nifi-current/logs
-      - ./nifi/conf:/opt/nifi/nifi-current/conf
     networks:
       - ea-aura-staging
     restart: unless-stopped
