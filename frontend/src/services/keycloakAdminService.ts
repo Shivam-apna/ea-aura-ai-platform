@@ -1,4 +1,5 @@
 import { config } from '@/config/environment';
+import { getApiEndpoint } from '@/config/environment';
 import { authService } from './authService';
 
 interface OrganizationData {
@@ -15,11 +16,11 @@ interface UserData {
   firstName: string;
   lastName: string;
   organizationId?: string;
+  enabled?: boolean; // Added enabled property
+  attributes?: { [key: string]: string[] }; // Added attributes for custom fields
 }
 
 class KeycloakAdminService {
-  private baseUrl = `${config.keycloakUrl}/admin/realms/${config.keycloakRealm}`;
-
   private async getAdminToken(): Promise<string> {
     // For now, we'll use the current user's token
     // In production, you might want to use a service account
@@ -33,13 +34,15 @@ class KeycloakAdminService {
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
     const token = await this.getAdminToken();
     
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+    // Call API using your specified pattern
+    const response = await fetch(getApiEndpoint(`/v1/keycloak${endpoint}`), {
+      method: options.method || "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
         ...options.headers,
       },
+      body: options.body,
     });
 
     if (!response.ok) {
@@ -80,10 +83,20 @@ class KeycloakAdminService {
 
     try {
       // Try Organizations API first
-      const result = await this.makeRequest('/organizations', {
-        method: 'POST',
-        body: JSON.stringify(organizationData)
+      const response = await fetch(getApiEndpoint("/v1/keycloak/organizations"), {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+        body: JSON.stringify(organizationData),
       });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
       console.log('Organization created via Organizations API:', result);
       return result;
     } catch (error) {
@@ -100,10 +113,20 @@ class KeycloakAdminService {
         }
       };
 
-      const result = await this.makeRequest('/groups', {
-        method: 'POST',
-        body: JSON.stringify(groupData)
+      const response = await fetch(getApiEndpoint("/v1/keycloak/groups"), {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+        body: JSON.stringify(groupData),
       });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
       console.log('Organization created via Groups API:', result);
       return result;
     }
@@ -112,7 +135,19 @@ class KeycloakAdminService {
   async getOrganizations(): Promise<any[]> {
     try {
       // Try Organizations API first
-      const organizations = await this.makeRequest('/organizations');
+      const response = await fetch(getApiEndpoint("/v1/keycloak/organizations"), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      const organizations = await response.json();
       return organizations.map((org: any) => ({
         id: org.id,
         name: org.name,
@@ -124,7 +159,19 @@ class KeycloakAdminService {
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      const groups = await this.makeRequest('/groups');
+      const response = await fetch(getApiEndpoint("/v1/keycloak/groups"), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      const groups = await response.json();
       return groups.filter((group: any) => 
         group.attributes?.type?.[0] === 'organization'
       ).map((group: any) => ({
@@ -142,13 +189,37 @@ class KeycloakAdminService {
     try {
       console.log('Getting organization members via Organizations API for org:', organizationId);
       // Try Organizations API first
-      const members = await this.makeRequest(`/organizations/${organizationId}/members`);
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${organizationId}/members`), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      const members = await response.json();
       console.log('Organization members via Organizations API:', members);
       return members;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      const members = await this.makeRequest(`/groups/${organizationId}/members`);
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/groups/${organizationId}/members`), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      const members = await response.json();
       console.log('Organization members via Groups API:', members);
       return members;
     }
@@ -167,11 +238,35 @@ class KeycloakAdminService {
   async getOrganization(id: string): Promise<any> {
     try {
       // Try Organizations API first
-      return await this.makeRequest(`/organizations/${id}`);
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${id}`), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      return await this.makeRequest(`/groups/${id}`);
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/groups/${id}`), {
+        method: "GET",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      return await response.json();
     }
   }
 
@@ -192,10 +287,20 @@ class KeycloakAdminService {
 
     try {
       // Try Organizations API first
-      return await this.makeRequest(`/organizations/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(organizationData)
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${id}`), {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+        body: JSON.stringify(organizationData),
       });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
@@ -210,25 +315,55 @@ class KeycloakAdminService {
         }
       };
 
-      return await this.makeRequest(`/groups/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(groupData)
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/groups/${id}`), {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+        body: JSON.stringify(groupData),
       });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      return await response.json();
     }
   }
 
   async deleteOrganization(id: string): Promise<void> {
     try {
       // Try Organizations API first
-      return await this.makeRequest(`/organizations/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${id}`), {
+        method: "DELETE",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Organizations API failed: ${response.status}`);
+      }
+
+      return;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      return await this.makeRequest(`/groups/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/groups/${id}`), {
+        method: "DELETE",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Groups API failed: ${response.status}`);
+      }
+
+      return;
     }
   }
 
@@ -239,17 +374,27 @@ class KeycloakAdminService {
       email: data.email,
       firstName: data.firstName,
       lastName: data.lastName,
-      enabled: true,
-      emailVerified: false
+      enabled: data.enabled !== undefined ? data.enabled : true, // Handle enabled property
+      emailVerified: false,
+      attributes: data.attributes || {} // Include custom attributes
     };
 
     console.log('Creating user with data:', userData);
 
-    const result = await this.makeRequest('/users', {
-      method: 'POST',
-      body: JSON.stringify(userData)
+    const response = await fetch(getApiEndpoint("/v1/keycloak/users"), {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify(userData),
     });
 
+    if (!response.ok) {
+      throw new Error(`User creation failed: ${response.status}`);
+    }
+
+    const result = await response.json();
     console.log('User created successfully:', result);
 
     // If user was created and has an organization, add them to the organization
@@ -271,69 +416,190 @@ class KeycloakAdminService {
   }
 
   async getUsers(): Promise<any[]> {
-    return await this.makeRequest('/users');
+    const response = await fetch(getApiEndpoint("/v1/keycloak/users"), {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Get users failed: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async getUser(id: string): Promise<any> {
-    return await this.makeRequest(`/users/${id}`);
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${id}`), {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Get user failed: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async updateUser(id: string, data: Partial<UserData>): Promise<any> {
     const userData = {
       ...data,
-      enabled: true
+      // Keep enabled property handling - this is crucial for suspend/activate functionality
+      enabled: data.enabled !== undefined ? data.enabled : true
     };
 
-    return await this.makeRequest(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData)
+    console.log('Updating user with data:', userData);
+
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${id}`), {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify(userData),
     });
+
+    if (!response.ok) {
+      throw new Error(`Update user failed: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async deleteUser(id: string): Promise<void> {
-    return await this.makeRequest(`/users/${id}`, {
-      method: 'DELETE'
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${id}`), {
+      method: "DELETE",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
     });
+
+    if (!response.ok) {
+      throw new Error(`Delete user failed: ${response.status}`);
+    }
+
+    return;
+  }
+
+  // User enable/disable methods for better control
+  async enableUser(userId: string): Promise<void> {
+    return await this.updateUser(userId, { enabled: true });
+  }
+
+  async disableUser(userId: string): Promise<void> {
+    return await this.updateUser(userId, { enabled: false });
   }
 
   async addUserToOrganization(userId: string, organizationId: string): Promise<void> {
     try {
       console.log('Attempting to add user to organization via Organizations API');
-      // Try Organizations API first
-      return await this.makeRequest(`/organizations/${organizationId}/members/${userId}`, {
-        method: 'PUT'
+      // Try Organizations API first - Updated to use the special handling in your Python proxy
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${organizationId}/members`), {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
+        body: JSON.stringify(userId), // Send as raw JSON string as handled in your Python proxy
       });
+
+      if (!response.ok) {
+        throw new Error(`Add user to organization failed: ${response.status}`);
+      }
+
+      return;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      return await this.makeRequest(`/users/${userId}/groups/${organizationId}`, {
-        method: 'PUT'
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/groups/${organizationId}`), {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Add user to group failed: ${response.status}`);
+      }
+
+      return;
     }
   }
 
   async removeUserFromOrganization(userId: string, organizationId: string): Promise<void> {
     try {
       // Try Organizations API first
-      return await this.makeRequest(`/organizations/${organizationId}/members/${userId}`, {
-        method: 'DELETE'
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/organizations/${organizationId}/members/${userId}`), {
+        method: "DELETE",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Remove user from organization failed: ${response.status}`);
+      }
+
+      return;
     } catch (error) {
       console.log('Organizations API not available, falling back to groups');
       // Fallback to groups
-      return await this.makeRequest(`/users/${userId}/groups/${organizationId}`, {
-        method: 'DELETE'
+      const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/groups/${organizationId}`), {
+        method: "DELETE",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${await this.getAdminToken()}`
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Remove user from group failed: ${response.status}`);
+      }
+
+      return;
     }
   }
 
   // Role Management
   async getRoles(): Promise<any[]> {
-    return await this.makeRequest('/roles');
+    const response = await fetch(getApiEndpoint("/v1/keycloak/roles"), {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Get roles failed: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async getUserRoles(userId: string): Promise<any[]> {
-    return await this.makeRequest(`/users/${userId}/role-mappings/realm`);
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/role-mappings/realm`), {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Get user roles failed: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async getCurrentUserRoles(): Promise<any[]> {
@@ -374,10 +640,20 @@ class KeycloakAdminService {
       throw new Error(`Role '${roleName}' not found`);
     }
 
-    return await this.makeRequest(`/users/${userId}/role-mappings/realm`, {
-      method: 'POST',
-      body: JSON.stringify([role])
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/role-mappings/realm`), {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify([role]),
     });
+
+    if (!response.ok) {
+      throw new Error(`Assign role failed: ${response.status}`);
+    }
+
+    return;
   }
 
   async removeRoleFromUser(userId: string, roleName: string): Promise<void> {
@@ -388,11 +664,79 @@ class KeycloakAdminService {
       throw new Error(`Role '${roleName}' not found`);
     }
 
-    return await this.makeRequest(`/users/${userId}/role-mappings/realm`, {
-      method: 'DELETE',
-      body: JSON.stringify([role])
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/role-mappings/realm`), {
+      method: "DELETE",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify([role]),
     });
+
+    if (!response.ok) {
+      throw new Error(`Remove role failed: ${response.status}`);
+    }
+
+    return;
+  }
+
+  // Password management
+  async resetUserPassword(userId: string, temporary: boolean = true): Promise<void> {
+    // Generate a temporary password or use Keycloak's reset functionality
+    const passwordData = {
+      type: 'password',
+      temporary: temporary,
+      value: this.generateTemporaryPassword()
+    };
+
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/reset-password`), {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reset password failed: ${response.status}`);
+    }
+
+    return;
+  }
+
+  private generateTemporaryPassword(): string {
+    // Generate a secure temporary password
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  // Execute required actions (like email verification, password reset)
+  async executeActionsEmail(userId: string, actions: string[], redirectUri?: string): Promise<void> {
+    const requestData = {
+      actions: actions,
+      ...(redirectUri && { redirect_uri: redirectUri })
+    };
+
+    const response = await fetch(getApiEndpoint(`/v1/keycloak/users/${userId}/execute-actions-email`), {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${await this.getAdminToken()}`
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Execute actions failed: ${response.status}`);
+    }
+
+    return;
   }
 }
 
-export const keycloakAdminService = new KeycloakAdminService(); 
+export const keycloakAdminService = new KeycloakAdminService();

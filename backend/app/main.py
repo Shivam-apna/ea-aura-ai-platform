@@ -10,10 +10,12 @@ from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, 
 from app.api.v1.routes import status as status_routes
 from app.api.v1.routes import agents as agents_routes
 from app.api.v1.routes import kafka_status as kafka_status_routes
+from app.api.v1.routes.keycloak_job import keycloak_job as keycloak_router
 from app.core.index_manager import IndexManager
 from app.core.elastic import get_es_client
 from app.core.core_log import logger
 from app.core.config import settings, get_environment_config
+
 
 
 # Configure logging based on environment
@@ -51,6 +53,7 @@ app.include_router(agent_memory.router, prefix="/api/v1")
 app.include_router(status_routes.router, prefix="/api/v1")
 app.include_router(agents_routes.router, prefix="/api/v1")
 app.include_router(kafka_status_routes.router, prefix="/api/v1/kafka", tags=["Kafka"])
+app.include_router(keycloak_router.router, prefix="/api/v1")
 
 
 # Only include test routes in development and testing
