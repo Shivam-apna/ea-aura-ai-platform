@@ -22,7 +22,7 @@ class GeneralAgent:
             self.llm = ChatGroq(
                 groq_api_key=groq_config["api_key"],
                 model_name=groq_config["model"],
-                base_url=groq_config["base_url"],
+                base_url="https://api.groq.com",
                 temperature=0.7,
                 max_tokens=500
             )
