@@ -13,8 +13,6 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
-      - frontend
-      - nifi
     networks:
       - ea-aura-staging
     restart: unless-stopped
