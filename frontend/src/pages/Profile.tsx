@@ -57,7 +57,7 @@ console.log("Initials:", initials); // Log initials for debugging
   const position = "Software Engineer";
 
   return (
-    <div className="p-2 grid grid-cols-1 gap-4 bg-background h-full flex flex-col"> {/* Apply background, h-full, and flex-col */}
+    <div className="p-2 grid-cols-1 gap-4 bg-background h-full flex flex-col"> {/* Apply background, h-full, and flex-col */}
       <HolographicCard className="col-span-full neumorphic-card flex-grow"> {/* Apply neumorphic styling and flex-grow */}
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">

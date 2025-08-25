@@ -124,7 +124,7 @@ const OrganizationForm: React.FC<OrganizationFormProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building className="h-5 w-5" />
-            Add Organization
+            Create Organization
           </DialogTitle>
         </DialogHeader>
         
@@ -248,4 +248,4 @@ const OrganizationForm: React.FC<OrganizationFormProps> = ({
   );
 };
 
-export default OrganizationForm; 
+export default OrganizationForm;

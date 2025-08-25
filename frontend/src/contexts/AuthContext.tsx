@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService, UserInfo } from '@/services/authService'; // Import UserInfo type
+import { authService, UserInfo, AuthTokens } from '@/services/authService'; // Import UserInfo and AuthTokens
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: UserInfo | null; // Use UserInfo type
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<AuthTokens | { status: 'REQUIRED_ACTION', action: 'UPDATE_PASSWORD' }>; // Updated return type
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -46,15 +46,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string): Promise<AuthTokens | { status: 'REQUIRED_ACTION', action: 'UPDATE_PASSWORD' }> => {
     setLoading(true);
     try {
       console.log("AuthContext: Attempting login...");
-      await authService.login(username, password);
+      const result = await authService.login(username, password); // Capture the result
+      
+      // If it's a required action, return it directly
+      if ('status' in result && result.status === 'REQUIRED_ACTION') { // Added 'status' in result check
+        return result;
+      }
+
+      // Otherwise, it's a successful login with tokens
       const userInfo = await authService.getUserInfo();
       setUser(userInfo);
       setIsAuthenticated(true);
       console.log("AuthContext: Login successful. isAuthenticated:", true);
+      return result; // Return the tokens
     } catch (error) {
       console.error("AuthContext: Login failed:", error);
       setIsAuthenticated(false);

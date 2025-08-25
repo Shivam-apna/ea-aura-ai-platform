@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils'; // Import cn for conditional classes
+
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -117,6 +118,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       await login(formData.username, formData.password);
+      // Successful login
       if (onLoginSuccess) onLoginSuccess();
       navigate(redirectTo);
     } catch (err: any) {
@@ -125,13 +127,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       // Check for specific Keycloak error messages if available
       if (backendErrorMessage.includes("invalid_grant") || backendErrorMessage.includes("invalid username or password")) {
-        // This is a credential mismatch.
-        // As per request, highlight password field and show specific message for Case 3.
-        // For Case 4 (both incorrect), the general error message will also be shown.
         setPasswordError("Incorrect Password");
         setGeneralError("Access denied. Only registered and authorized users can log in to EA-AURA. Please contact your admin for access.");
       } else {
-        // Other types of errors (network, server issues, etc.)
         setGeneralError(backendErrorMessage);
       }
       setShowGeneralErrorMessage(true); // Trigger shake and visibility for the general error

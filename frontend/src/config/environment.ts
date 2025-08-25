@@ -7,6 +7,8 @@ interface EnvironmentConfig {
   keycloakUrl: string;
   keycloakRealm: string;
   keycloakClientId: string;
+  keycloakAdminClientId: string; // Added for admin service account
+  keycloakAdminClientSecret: string; // Added for admin service account
 }
  
 const getEnvironmentConfig = (): EnvironmentConfig => {
@@ -34,19 +36,23 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
     detectedEnvironment: environment,
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
   });
+  let resolvedConfig: EnvironmentConfig;
   switch (environment) {
     case 'staging':
-      return {
+      resolvedConfig = {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://staging.ea-aura.ai/api',
         environment: 'staging',
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://staging.ea-aura.ai/auth',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
+        keycloakAdminClientId: 'myclient', // Using 'myclient' as per your setup
+        keycloakAdminClientSecret: '5ahtCMZjoBpa4YzHzDSj4MAZlRlMPuTO', // Using the secret from proxy.js
       };
+      break;
     case 'production':
-      return {
+      resolvedConfig = {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.ea-aura.ai',
         environment: 'production',
         debugMode: false,
@@ -54,9 +60,12 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://auth.ea-aura.ai',
         keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
         keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
+        keycloakAdminClientId: 'myclient', // Using 'myclient' as per your setup
+        keycloakAdminClientSecret: '5ahtCMZjoBpa4YzHzDSj4MAZlRlMPuTO', // Using the secret from proxy.js
       };
+      break;
     case 'testing':
-      return {
+      resolvedConfig = {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://test-api.ea-aura.ai',
         environment: 'testing',
         debugMode: true,
@@ -64,19 +73,27 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'https://test-auth.ea-aura.ai',
         keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
         keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
+        keycloakAdminClientId: 'myclient', // Using 'myclient' as per your setup
+        keycloakAdminClientSecret: '5ahtCMZjoBpa4YzHzDSj4MAZlRlMPuTO', // Using the secret from proxy.js
       };
+      break;
     case 'development':
     default:
-      return {
+      resolvedConfig = {
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api',
         environment: 'development',
         debugMode: true,
         logLevel: 'debug',
         keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'ea_aura',
-        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'ea_aura',
+        keycloakRealm: import.meta.env.VITE_KEYCLOAK_REALM || 'myrealm',
+        keycloakClientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'myclient',
+        keycloakAdminClientId: 'myclient', // Using 'myclient' as per your setup
+        keycloakAdminClientSecret: '5ahtCMZjoBpa4YzHzDSj4MAZlRlMPuTO', // Using the secret from proxy.js
       };
+      break;
   }
+  console.log('Resolved Environment Config:', resolvedConfig);
+  return resolvedConfig;
 };
  
 export const config = getEnvironmentConfig();

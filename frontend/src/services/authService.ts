@@ -28,7 +28,7 @@ class AuthService {
   private clientSecret = ''; // For confidential client, if needed
 
   // Login with username and password
-  async login(username: string, password: string): Promise<AuthTokens> {
+  async login(username: string, password: string): Promise<AuthTokens> { // Changed return type
     const formData = new URLSearchParams();
     formData.append('grant_type', 'password');
     formData.append('client_id', this.clientId);
@@ -52,6 +52,7 @@ class AuthService {
         // If we can't parse the error response, use the status text
         errorMessage = response.statusText || 'Login failed';
       }
+      // No special handling for "Account is not fully set up" - it's now a regular login failure
       throw new Error(errorMessage);
     }
 
@@ -195,14 +196,44 @@ class AuthService {
     return tokenData.exp > currentTime;
   }
 
-  // Get access token
+  // Get access token (synchronous)
   getAccessToken(): string | null {
     return localStorage.getItem('access_token');
+  }
+
+  // Alias method for compatibility (same as getAccessToken)
+  getToken(): string | null {
+    return this.getAccessToken();
   }
 
   // Get refresh token
   getRefreshToken(): string | null {
     return localStorage.getItem('refresh_token');
+  }
+
+  // Check if token needs refresh (expires within 5 minutes)
+  shouldRefreshToken(): boolean {
+    const token = this.getAccessToken();
+    if (!token) return false;
+
+    const tokenData = this.parseJwt(token);
+    const currentTime = Math.floor(Date.now() / 1000);
+    const fiveMinutesFromNow = currentTime + (5 * 60); // 5 minutes in seconds
+
+    return tokenData.exp < fiveMinutesFromNow;
+  }
+
+  // Get token with automatic refresh if needed
+  async getTokenWithRefresh(): Promise<string | null> {
+    if (this.shouldRefreshToken()) {
+      try {
+        await this.refreshToken();
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        return null;
+      }
+    }
+    return this.getAccessToken();
   }
 
   // Store tokens in localStorage
@@ -219,16 +250,101 @@ class AuthService {
     localStorage.removeItem('token_expires');
   }
 
-  // Parse JWT token (basic implementation)
+  // Parse JWT token (robust Base64Url decoding)
   private parseJwt(token: string): any {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token payload:', payload);
+      const base64Url = token.split('.')[1];
+      // Convert Base64Url to standard Base64
+      let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      
+      // Add padding if necessary
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+
+      // Decode Base64 string to a binary string, then map to URL-encoded characters
+      // and finally decode the URI component to get the original string.
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      const payload = JSON.parse(jsonPayload);
       return payload;
     } catch (e) {
       console.error('Failed to parse JWT token:', e);
       return {};
     }
+  }
+
+  // Get token expiration time
+  getTokenExpiration(): Date | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+
+    const tokenData = this.parseJwt(token);
+    if (!tokenData.exp) return null;
+
+    return new Date(tokenData.exp * 1000);
+  }
+
+  // Get user roles from token
+  getUserRoles(): string[] {
+    const token = this.getAccessToken();
+    if (!token) return [];
+
+    const tokenData = this.parseJwt(token);
+    return tokenData.realm_access?.roles || [];
+  }
+
+  // Check if user has specific role
+  hasRole(roleName: string): boolean {
+    return this.getUserRoles().includes(roleName);
+  }
+
+  // Check if user has admin role
+  isAdmin(): boolean {
+    return this.hasRole('admin') || this.hasRole('realm-admin');
+  }
+
+  // Method to update password for the currently authenticated user (if needed for other flows)
+  async updatePassword(newPassword: string): Promise<void> {
+    const token = this.getAccessToken();
+    if (!token) {
+      throw new Error('No access token available for password update. Please log in again.');
+    }
+
+    const userInfo = this.parseJwt(token);
+    const userId = userInfo.sub;
+
+    if (!userId) {
+      throw new Error('Could not determine user ID from token.');
+    }
+
+    const response = await fetch(`${config.keycloakUrl}/admin/realms/${config.keycloakRealm}/users/${userId}/reset-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        type: 'password',
+        value: newPassword,
+        temporary: false, // Always set to false for permanent password
+      }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to update password';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error_description || errorData.error || errorMessage;
+      } catch (e) {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+    // Password updated successfully, clear old tokens and force re-login
+    this.clearTokens();
   }
 }
 
