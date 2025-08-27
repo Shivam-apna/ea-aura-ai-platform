@@ -18,6 +18,9 @@ from app.services.avatar import generate_speech
 from fastapi.responses import JSONResponse, FileResponse
 import requests
 import tempfile
+from app.services.predictive_analysis import  get_predictive_analysis,generate_predictive_report
+
+
 
 
 
@@ -484,3 +487,41 @@ async def upload_to_nifi(
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary file: {str(e)}")
 
+@router.post("/predictive-analysis")
+def run_predictive_analysis(payload: dict = Body(...), request: Request = None):
+    """
+    Accept chart_data and analysis_type ('quick' or 'full').
+    Returns chart_data with predictions, optionally saves a full report.
+    """
+    try:
+        chart_data = payload.get("chart_data")
+        print("chart_datachart_datachart_datachart_data",chart_data)
+        tenant_id = payload.get("tenant_id", "default_tenant")
+        metric_key = payload.get("metric_key", chart_data.get("title", "metric"))
+        chart_type = chart_data.get("plotType", "line")
+        analysis_type = payload.get("analysis_type", "quick")  # "quick" or "full"
+
+        if not chart_data:
+            return {"status": "error", "message": "chart_data is required"}
+
+        if analysis_type == "quick":
+            # Quick predictive summary (returns chart with predictions)
+            predicted_chart = get_predictive_analysis(chart_data)
+            return {"status": "success", "chart_data": predicted_chart}
+
+        elif analysis_type == "full":
+            # Full report: save to file and return chart + report path
+            predicted_chart = get_predictive_analysis(chart_data)
+            report_path = generate_predictive_report(
+                chart_data=predicted_chart,
+                tenant_id=tenant_id,
+                metric_key=metric_key,
+                chart_type=chart_type
+            )
+            return {"status": "success", "chart_data": predicted_chart, "report_path": report_path}
+
+        else:
+            return {"status": "error", "message": f"Unknown analysis_type: {analysis_type}"}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
