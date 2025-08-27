@@ -302,7 +302,7 @@ export class PredictiveAnalysis {
 
             const payload = {
                 chart_data: currentChartData,
-                tenant_id: tenantId,
+                tenant_id: tenantId || "demo232",
                 metric_key: chartKey,
                 chart_type: chartType || currentChartData.plotType || "line",
                 analysis_type: "quick",
