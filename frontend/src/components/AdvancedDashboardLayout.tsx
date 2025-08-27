@@ -4,13 +4,14 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Plot from "react-plotly.js";
+import { toast } from 'sonner';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3 } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
@@ -21,6 +22,8 @@ import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
 import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
+import { PredictiveAnalysis } from "@/utils/predictiveJson";
+import { PredictiveModal } from '@/components/PredectiveModal';
 
 // Type definitions
 interface KpiItem {
@@ -70,6 +73,8 @@ interface AdvancedDashboardLayoutProps {
   onTabChange?: (tab: string) => void;
   tabNames?: string[];
   hideTabsList?: boolean; // New prop
+  tenantId?: string;
+  onRefreshCharts?: () => void;
 }
 
 const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
@@ -87,7 +92,8 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   activeTab,
   onTabChange,
   tabNames,
-  hideTabsList = false // Default to false
+  hideTabsList = false,// Default to false
+  onRefreshCharts
 }) => {
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
 
@@ -146,6 +152,14 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
   const [ttsLoadingMap, setTtsLoadingMap] = useState<Record<string, boolean>>({});
   const [isSpeakingMap, setIsSpeakingMap] = useState<Record<string, boolean>>({});
+  const [predictiveMode, setPredictiveMode] = useState<Record<string, boolean>>({});
+  const [predictiveLoading, setPredictiveLoading] = useState<Record<string, boolean>>({});
+  const [predictiveCharts, setPredictiveCharts] = useState<Record<string, any>>({});
+  const [predictiveModalOpen, setPredictiveModalOpen] = useState(false);
+  const [predictiveModalData, setPredictiveModalData] = useState<any>(null);
+  const [predictiveModalMetricKey, setPredictiveModalMetricKey] = useState<string>('');
+
+
 
   const handleTTSClick = (chartKey: string, chartLabel: string) => {
     // ✅ Set loading to true for this specific chart
@@ -240,6 +254,97 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const handleChartColorChangeInternal = (key: string, color: string) => {
     setChartColors(prev => ({ ...prev, [key]: color }));
     onChartColorChange(key, color); // Also call the prop function
+  };
+
+  // Update the handlePredictiveAnalysis function - replace the existing function with this:
+  const handlePredictiveAnalysis = async (chartKey: string, chartLabel: string) => {
+
+    setPredictiveLoading(prev => ({ ...prev, [chartKey]: true }));
+
+    try {
+      // Debug storage to see what's available
+      PredictiveAnalysis.debugStorage();
+
+      // Get tenant ID - update this with your actual tenant ID source
+      const tenantId = "demo232"; // or get from your app context/props
+      const chartType = chartTypes[chartKey] || charts[chartKey]?.plotType || "line";
+
+      // console.log(`Analysis params:`, {
+      //   chartKey,
+      //   currentTab,
+      //   tenantId,
+      //   chartType
+      // });
+
+      // Use the updated getPredictiveData method
+      const result = await PredictiveAnalysis.getPredictiveData(
+        chartKey,
+        currentTab,
+        tenantId,
+        chartType,
+        true // use cache
+      ) as any;
+
+      if (result) {
+        // Handle the new data structure: {prediction_result: {...}, popup: {...}}
+        const chartData = result.prediction_result || result.chart_data || result;
+        const popupData = result.popup;
+
+        // Check if this is successful prediction data
+        if (chartData && (chartData.status === "success" || chartData.x && chartData.y)) {
+
+          // Merge popup data into chart data for the modal
+          const modalData = {
+            ...chartData,
+            popup: popupData
+          };
+
+          // Open modal with prediction data
+          setPredictiveModalData(modalData);
+          setPredictiveModalMetricKey(chartKey);
+          setPredictiveModalOpen(true);
+
+          // Display success message
+          const predictionMetadata = chartData._prediction_metadata || chartData.prediction_metadata || result.predictionmetadata;
+          if (predictionMetadata) {
+            PredictiveAnalysis.displayPredictionResults({
+              status: "success",
+              trend: predictionMetadata.trend,
+              confidence: predictionMetadata.confidence,
+              predictions: predictionMetadata.predictions || [],
+              key_insight: predictionMetadata.key_insight,
+              analysis_type: predictionMetadata.analysis_type,
+              metric_key: chartKey
+            });
+          } else {
+            toast.success(`Predictive analysis completed for ${chartLabel}`);
+          }
+
+        } else if (result.status) {
+          console.warn(`Prediction status: ${result.status}`, result.key_insight);
+          PredictiveAnalysis.displayPredictionResults(result);
+        } else {
+          console.error('Invalid prediction result structure:', result);
+          toast.error('Invalid prediction data received');
+        }
+      } else {
+        console.error('No prediction result returned');
+        toast.error('Failed to generate predictions. Check console for details.');
+      }
+
+    } catch (error) {
+      console.error('Prediction failed:', error);
+      toast.error(`Prediction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setPredictiveLoading(prev => ({ ...prev, [chartKey]: false }));
+    }
+  };
+
+  // Add this helper function to close the modal
+  const handleClosePredictiveModal = () => {
+    setPredictiveModalOpen(false);
+    setPredictiveModalData(null);
+    setPredictiveModalMetricKey('');
   };
 
   const currentTab = activeTab || Object.keys(dynamicMetricGroups)[0];
@@ -630,7 +735,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             const visibleMetrics = (cardOrder[currentTab] || metrics.filter(metric => !hiddenCharts.has(metric.key)).map(m => m.key))
               .map(key => metrics.find(m => m.key === key)).filter((m): m is MetricItem => Boolean(m));
 
-            return (
+            return (<>
               <DragDropContext onDragEnd={handleDragEnd(currentTab)}>
                 <Droppable droppableId={`cards-${currentTab}`} direction="horizontal">
                   {(provided) => (
@@ -691,6 +796,39 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 </p>
                                               </TooltipContent>
                                             </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handlePredictiveAnalysis(metric.key, metric.label)}
+                                                  disabled={predictiveLoading[metric.key]}
+                                                >
+                                                  {predictiveLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <TrendingUp className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Predictive Analysis</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {predictiveLoading[metric.key]
+                                                    ? 'Generating predictions...'
+                                                    : 'Predictive Analysis'
+                                                  }
+                                                </p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+
                                             <Popover>
                                               <PopoverTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
@@ -825,6 +963,15 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   )}
                 </Droppable>
               </DragDropContext>
+              <PredictiveModal
+                isOpen={predictiveModalOpen}
+                onClose={handleClosePredictiveModal}
+                chartData={predictiveModalData}
+                metricKey={predictiveModalMetricKey}
+                chartType={predictiveModalData ? (chartTypes[predictiveModalMetricKey] || predictiveModalData.plotType) : undefined}
+                chartColor={predictiveModalData ? (chartColors[predictiveModalMetricKey] || predictiveModalData.marker?.color) : undefined}
+              />
+            </>
             );
           })()}
         </TabsContent>
