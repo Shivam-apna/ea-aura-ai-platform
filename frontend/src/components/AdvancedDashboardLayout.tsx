@@ -91,6 +91,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   loading = false,
   activeTab,
   onTabChange,
+  tenantId,
   tabNames,
   hideTabsList = false,// Default to false
   onRefreshCharts
@@ -265,16 +266,8 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       // Debug storage to see what's available
       PredictiveAnalysis.debugStorage();
 
-      // Get tenant ID - update this with your actual tenant ID source
-      const tenantId = "demo232"; // or get from your app context/props
       const chartType = chartTypes[chartKey] || charts[chartKey]?.plotType || "line";
 
-      // console.log(`Analysis params:`, {
-      //   chartKey,
-      //   currentTab,
-      //   tenantId,
-      //   chartType
-      // });
 
       // Use the updated getPredictiveData method
       const result = await PredictiveAnalysis.getPredictiveData(
