@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     enable_agent_chaining: bool = Field(default=True, env="ENABLE_AGENT_CHAINING")
     enable_memory_management: bool = Field(default=True, env="ENABLE_MEMORY_MANAGEMENT")
     enable_token_tracking: bool = Field(default=True, env="ENABLE_TOKEN_TRACKING")
+    enable_llm_guard: bool = Field(default=True, env="ENABLE_LLM_GUARD")
     
     class Config:
         env_file = ".env"
