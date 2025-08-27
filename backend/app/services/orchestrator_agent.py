@@ -2,6 +2,8 @@ from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 from app.utils.agent_config_loader import get_all_agent_configs
 from app.services.general_agent import GeneralAgent
 from app.groq_config import get_groq_config
+from app.core.config import settings
+from app.services.llm_guard import validate_prompt, validate_response, SAFE_FALLBACK_MESSAGE
 from datetime import datetime, timedelta
 import uuid
 import json
@@ -663,6 +665,18 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
         return cached_response, None
    
     agent_prompt = prepare_agent_prompt(agent_data, input_text, enhanced_data)
+
+    # LLM Guard: pre-validate prompt
+    if settings.enable_llm_guard:
+        ok, reason = validate_prompt(agent_prompt)
+        if not ok:
+            logger.warning(f"[LLM-GUARD] Blocked prompt for {agent_name}: {reason}")
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+                "cache_hit": False,
+                "guard_block": True,
+                "reason": reason
+            })
+            return SAFE_FALLBACK_MESSAGE, None
     model = agent_data["llm_config"]["model"]
     config_list = [{
         "model": model,
@@ -715,6 +729,13 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
 
             user_proxy.initiate_chat(manager, message=agent_prompt)
             response = group_chat.messages[-1]["content"]
+
+            # LLM Guard: post-validate response
+            if settings.enable_llm_guard:
+                ok, reason = validate_response(response)
+                if not ok:
+                    logger.warning(f"[LLM-GUARD] Blocked response for {agent_name}: {reason}")
+                    response = SAFE_FALLBACK_MESSAGE
 
             # Validate success criteria
             criteria = agent_data.get("success_criteria") or []
@@ -856,6 +877,19 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
    
     subagent_prompt_template = sub_agent_config["params"]["prompt_template"]
     subagent_prompt = prepare_agent_prompt({"prompt_template": subagent_prompt_template}, input_text, enhanced_data)
+
+    # LLM Guard: pre-validate sub-agent prompt
+    if settings.enable_llm_guard:
+        ok, reason = validate_prompt(subagent_prompt)
+        if not ok:
+            logger.warning(f"[LLM-GUARD] Blocked sub-agent prompt for {agent_name}: {reason}")
+            emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "COMPLETED", 0, {
+                "parent_agent": parent_agent,
+                "cache_hit": False,
+                "guard_block": True,
+                "reason": reason
+            })
+            return SAFE_FALLBACK_MESSAGE, None
    
     subagent_model = sub_agent_config["llm_config"]["model"]
     subagent_config_list = [{
@@ -911,6 +945,13 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
 
             sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
             subagent_response = sub_group_chat.messages[-1]["content"]
+
+            # LLM Guard: post-validate sub-agent response
+            if settings.enable_llm_guard:
+                ok, reason = validate_response(subagent_response)
+                if not ok:
+                    logger.warning(f"[LLM-GUARD] Blocked sub-agent response for {agent_name}: {reason}")
+                    subagent_response = SAFE_FALLBACK_MESSAGE
 
             # Validate success criteria
             criteria = sub_agent_config.get("success_criteria") or []
@@ -1183,8 +1224,27 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
         parent_group_chat = GroupChat(agents=[parent_user_proxy, parent_assistant], messages=[], max_round=2)
         parent_manager = GroupChatManager(groupchat=parent_group_chat, llm_config={"config_list": parent_config_list})
        
+        # LLM Guard: pre-validate parent prompt
+        if settings.enable_llm_guard:
+            ok, reason = validate_prompt(parent_prompt)
+            if not ok:
+                logger.warning(f"[LLM-GUARD] Blocked parent prompt for {parent_agent_name}: {reason}")
+                emit_orchestrator_event("agent.execution", parent_agent_name, job_id, tenant_id, "COMPLETED", 1, {
+                    "cache_hit": False,
+                    "guard_block": True,
+                    "reason": reason
+                })
+                return SAFE_FALLBACK_MESSAGE, None
+
         parent_user_proxy.initiate_chat(parent_manager, message=parent_prompt)
         parent_response = parent_group_chat.messages[-1]["content"]
+
+        # LLM Guard: post-validate parent response
+        if settings.enable_llm_guard:
+            ok, reason = validate_response(parent_response)
+            if not ok:
+                logger.warning(f"[LLM-GUARD] Blocked parent response for {parent_agent_name}: {reason}")
+                parent_response = SAFE_FALLBACK_MESSAGE
        
         save_to_cache(cache_key, parent_response, tenant_id)
        

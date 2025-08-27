@@ -18,7 +18,7 @@ def get_groq_config():
             api_key = os.getenv("LM_STUDIO_API_KEY", "lm-studio")
         
         return {
-            "model": os.getenv("LM_STUDIO_MODEL", "llama-3.3-70b-instruct"),
+            "model": os.getenv("LM_STUDIO_MODEL", "qwen/qwen3-coder-30b"),
             "api_key": api_key,
             "base_url": os.getenv("LM_STUDIO_BASE_URL", "https://api.pinguaicloud.com/v1")
         }
