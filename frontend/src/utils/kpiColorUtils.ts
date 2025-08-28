@@ -5,12 +5,14 @@ interface ColorRange {
     max: number;
     color: string;
     label: string;
+    strokeColor: string;
 }
 
 interface StringColorRule {
     value: string;
     color: string;
     label: string;
+    strokeColor: string;
 }
 
 interface KpiColorConfig {
@@ -26,9 +28,9 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     'CES Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 4, color: '#FFD4D4', label: 'Poor' },
-            { min: 4, max: 8, color: '#FFD8A8', label: 'Good' },
-            { min: 8, max: 10, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 4, max: 8, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 8, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
@@ -37,9 +39,9 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     'NPS Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 4, color: '#FFD4D4', label: 'Poor' },
-            { min: 4, max: 7, color: '#FFD8A8', label: 'Positive' },
-            { min: 7, max: 10, color: '#E4F8C2', label: 'Very Positive' }
+            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 4, max: 7, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
+            { min: 7, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
         defaultColor: '#E5E7EB'
     },
@@ -48,9 +50,9 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     'Sentiment Score (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Positive' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Very Positive' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
         defaultColor: '#E5E7EB'
     },
@@ -59,139 +61,148 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     'CSAT (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Gross Margin (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Net Profit Margin (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 10, color: '#FFD4D4', label: 'Poor' },
-            { min: 10, max: 20, color: '#FFD8A8', label: 'Good' },
-            { min: 20, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
+    // Add both variations of Conversion Rate to handle data inconsistencies
     'Conversion Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 10, color: '#FFD4D4', label: 'Poor' },
-            { min: 10, max: 20, color: '#FFD8A8', label: 'Good' },
-            { min: 20, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+        ],
+        defaultColor: '#E5E7EB'
+    },
+    'Conversion Rate': {
+        type: 'numeric',
+        ranges: [
+            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'GMROI': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 1, color: '#FFD4D4', label: 'Poor' },
-            { min: 1, max: 2, color: '#FFD8A8', label: 'Good' },
-            { min: 2, max: 10, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 1, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 1, max: 2, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 2, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Engagement Rate + Reach': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Avg Sentiment Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Positive' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Very Positive' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Alignment Score (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Positive' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Very Positive' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Resource Allocation': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 30000, color: '#FFD4D4', label: 'Poor' },
-            { min: 30000, max: 70000, color: '#FFD8A8', label: 'Good' },
-            { min: 70000, max: 100000000, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 30000, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 30000, max: 70000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70000, max: 100000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Impact Metrics': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Risks Identified': {
         type: 'string',
         stringRules: [
-            { value: 'No Risks Identified', color: '#E4F8C2', label: 'No Risks' },
+            { value: 'No Risks Identified', color: '#D4F0A4', strokeColor: '#7BB13D', label: 'No Risks' },
             // For any other string value, it will fall back to defaultColor (red)
         ],
-        defaultColor: '#FFD4D4' // Red for any risks identified
+        defaultColor: '#FFE8E8' // Red for any risks identified
     },
     'Page Views': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 3000, color: '#FFD4D4', label: 'Poor' },
-            { min: 3000, max: 7000, color: '#FFD8A8', label: 'Good' },
-            { min: 7000, max: 1000000000, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 3000, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 3000, max: 7000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 7000, max: 1000000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Audience Growth': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 20, color: '#FFD4D4', label: 'Poor' },
-            { min: 20, max: 50, color: '#FFD8A8', label: 'Good' },
-            { min: 50, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 20, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 20, max: 50, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 50, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Engagement Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     },
     'Bounce Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFD4D4', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFD8A8', label: 'Good' },
-            { min: 70, max: 100, color: '#E4F8C2', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
         defaultColor: '#E5E7EB'
     }
 };
-
 
 /**
  * Normalizes a KPI name by extracting only letters for matching
@@ -221,9 +232,27 @@ function getKpiKey(kpiName: string): string {
         }
     }
 
+    console.warn("❌ No match found for:", kpiName);
     // No match found
     return kpiName;
 }
+
+/**
+ * Helper function to extract numeric value from string or number
+ */
+function extractNumericValue(value: number | string): number | undefined {
+    if (typeof value === 'number') {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const match = value.match(/-?\d+(\.\d+)?/); // find first number, including decimals and negative
+        if (match) {
+            return parseFloat(match[0]);
+        }
+    }
+    return undefined;
+}
+
 /**
  * Gets the background color for a KPI based on its name and value (supports both string and numeric values)
  */
@@ -241,7 +270,7 @@ export function getKpiBgColor(
     const config = KPI_COLOR_CONFIGS[kpiKey];
 
     if (!config) {
-        console.warn(`No color configuration found for KPI: "${kpiName}"`)
+        console.warn(`No color configuration found for KPI: "${kpiName}"`);
         return fallbackColor;
     }
 
@@ -260,16 +289,7 @@ export function getKpiBgColor(
 
     // Handle numeric KPIs
     if (config.type === 'numeric') {
-        let numericValue: number | undefined;
-
-        if (typeof value === 'number') {
-            numericValue = value;
-        } else if (typeof value === 'string') {
-            const match = value.match(/-?\d+(\.\d+)?/); // find first number, including decimals and negative
-            if (match) {
-                numericValue = parseFloat(match[0]);
-            }
-        }
+        const numericValue = extractNumericValue(value);
 
         if (numericValue !== undefined && config.ranges) {
             for (const range of config.ranges) {
@@ -282,7 +302,6 @@ export function getKpiBgColor(
         return config.defaultColor || fallbackColor;
     }
 
-
     // Type mismatch or invalid value
     return config.defaultColor || fallbackColor;
 }
@@ -293,7 +312,7 @@ export function getKpiBgColor(
 export function getKpiColorInfo(
     kpiName: string,
     value: number | string | undefined
-): { color: string; label: string; range?: string; value?: string } | null {
+): { color: string; label: string; range?: string; value?: string; strokeColor?: string } | null {
     if (value === undefined || value === null) {
         return null;
     }
@@ -302,6 +321,7 @@ export function getKpiColorInfo(
     const config = KPI_COLOR_CONFIGS[kpiKey];
 
     if (!config) {
+        console.warn(`No color configuration found for KPI: "${kpiName}"`);
         return null;
     }
 
@@ -313,7 +333,8 @@ export function getKpiColorInfo(
                     return {
                         color: rule.color,
                         label: rule.label,
-                        value: rule.value
+                        value: rule.value,
+                        strokeColor: rule.strokeColor
                     };
                 }
             }
@@ -322,20 +343,23 @@ export function getKpiColorInfo(
         return {
             color: config.defaultColor,
             label: 'Risk Identified',
-            value: value.trim()
+            value: value.trim(),
+            strokeColor: '#FF0000'
         };
     }
 
-    // Handle numeric KPIs
-    // Handle numeric KPIs
-    if (config.type === 'numeric' && typeof value === 'number' && !isNaN(value)) {
-        if (config.ranges) {
+    // Handle numeric KPIs - updated to use extractNumericValue helper
+    if (config.type === 'numeric') {
+        const numericValue = extractNumericValue(value);
+
+        if (numericValue !== undefined && !isNaN(numericValue) && config.ranges) {
             for (const range of config.ranges) {
-                if (value >= range.min && value <= range.max) {
+                if (numericValue >= range.min && numericValue <= range.max) {
                     return {
                         color: range.color,
                         label: range.label,
-                        range: `${range.min}-${range.max}`
+                        range: `${range.min}-${range.max}`,
+                        strokeColor: range.strokeColor
                     };
                 }
             }
@@ -380,19 +404,15 @@ export function getContrastTextColor(backgroundColor: string): string {
  * Debug function to test KPI color mapping
  */
 export function debugKpiColors(kpiKeys: string[]): void {
-
-
     kpiKeys.forEach(key => {
-        const config = KPI_COLOR_CONFIGS[key];
+        const kpiKey = getKpiKey(key);
+        const config = KPI_COLOR_CONFIGS[kpiKey];
         if (config) {
             if (config.type === 'numeric' && config.ranges) {
-
             } else if (config.type === 'string' && config.stringRules) {
-
             }
         }
     });
 }
-
 
 export type { ColorRange, KpiColorConfig, StringColorRule };
