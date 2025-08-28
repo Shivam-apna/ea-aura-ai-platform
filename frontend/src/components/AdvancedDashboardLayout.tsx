@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
@@ -24,6 +24,7 @@ import ClipLoader from "react-spinners/ClipLoader";
 import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
 import { PredictiveAnalysis } from "@/utils/predictiveJson";
 import { PredictiveModal } from '@/components/PredectiveModal';
+import { NextStepModal } from '@/components/NextStepModal';
 
 // Type definitions
 interface KpiItem {
@@ -153,12 +154,15 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
   const [ttsLoadingMap, setTtsLoadingMap] = useState<Record<string, boolean>>({});
   const [isSpeakingMap, setIsSpeakingMap] = useState<Record<string, boolean>>({});
-  const [predictiveMode, setPredictiveMode] = useState<Record<string, boolean>>({});
   const [predictiveLoading, setPredictiveLoading] = useState<Record<string, boolean>>({});
-  const [predictiveCharts, setPredictiveCharts] = useState<Record<string, any>>({});
   const [predictiveModalOpen, setPredictiveModalOpen] = useState(false);
   const [predictiveModalData, setPredictiveModalData] = useState<any>(null);
   const [predictiveModalMetricKey, setPredictiveModalMetricKey] = useState<string>('');
+  const [nextStepLoading, setNextStepLoading] = useState<Record<string, boolean>>({});
+  const [nextStepModalOpen, setNextStepModalOpen] = useState(false);
+  const [nextStepModalData, setNextStepModalData] = useState<any>(null);
+  const [nextStepModalMetricKey, setNextStepModalMetricKey] = useState<string>('');
+
 
 
 
@@ -255,6 +259,48 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const handleChartColorChangeInternal = (key: string, color: string) => {
     setChartColors(prev => ({ ...prev, [key]: color }));
     onChartColorChange(key, color); // Also call the prop function
+  };
+
+  const handleNextStepAnalysis = async (chartKey: string, chartLabel: string) => {
+    setNextStepLoading(prev => ({ ...prev, [chartKey]: true }));
+
+    try {
+      const chartType = chartTypes[chartKey] || charts[chartKey]?.plotType || "line";
+
+      // Use the new next step analysis method
+      const result = await PredictiveAnalysis.getNextStepAnalysisSimple(
+        chartKey,
+        tenantId,
+        chartType
+      ) as any;
+
+      if (result && result.status === "success") {
+        // Open modal with next step data - pass the entire result
+        setNextStepModalData(result);
+        setNextStepModalMetricKey(chartKey);
+        setNextStepModalOpen(true);
+
+        toast.success(`Next step analysis completed for ${chartLabel}`);
+      } else {
+        // Handle error cases
+        const errorMessage = result?.message || result?.error || 'Failed to generate next step analysis';
+        toast.error(errorMessage);
+        console.error('Next step analysis failed:', result);
+      }
+
+    } catch (error) {
+      console.error('Next step analysis failed:', error);
+      toast.error(`Next step analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setNextStepLoading(prev => ({ ...prev, [chartKey]: false }));
+    }
+  };
+
+  // 4. Add close modal function (add this after handleClosePredictiveModal)
+  const handleCloseNextStepModal = () => {
+    setNextStepModalOpen(false);
+    setNextStepModalData(null);
+    setNextStepModalMetricKey('');
   };
 
   // Update the handlePredictiveAnalysis function - replace the existing function with this:
@@ -821,6 +867,38 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 </p>
                                               </TooltipContent>
                                             </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handleNextStepAnalysis(metric.key, metric.label)}
+                                                  disabled={nextStepLoading[metric.key]}
+                                                >
+                                                  {nextStepLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <Lightbulb className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Next Step</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {nextStepLoading[metric.key]
+                                                    ? 'Generating next steps...'
+                                                    : 'Next Step Analysis'
+                                                  }
+                                                </p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
 
                                             <Popover>
                                               <PopoverTrigger asChild>
@@ -963,6 +1041,13 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 metricKey={predictiveModalMetricKey}
                 chartType={predictiveModalData ? (chartTypes[predictiveModalMetricKey] || predictiveModalData.plotType) : undefined}
                 chartColor={predictiveModalData ? (chartColors[predictiveModalMetricKey] || predictiveModalData.marker?.color) : undefined}
+              />
+
+              <NextStepModal
+                isOpen={nextStepModalOpen}
+                onClose={handleCloseNextStepModal}
+                nextStepData={nextStepModalData}
+                metricKey={nextStepModalMetricKey}
               />
             </>
             );

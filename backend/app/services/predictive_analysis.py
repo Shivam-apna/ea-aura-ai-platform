@@ -128,10 +128,9 @@ class PredictiveAnalysisAgent:
                 "intro": "This forecast uses statistical methods (determined by data length N) with uncertainty quantification and optimized parameters.",
                 "bullets": [
                     "P50: most likely (median) forecast using optimal statistical method.",
-                    "P10: cautious lower bound (≈10% chance results are worse).",
-                    "P90: optimistic upper bound (≈10% chance results are better)."
                 ],
-                "howToUse": "Start with the P50 Forecast for planning, check P10-P90 range for risk assessment, use Seasonality to time campaigns, and leverage statistical method accuracy."
+                "howToUse": "Start with the P50 Forecast as your primary baseline for planning. The P50 represents the most likely outcome, meaning there is an equal 50% chance that actual results will be higher or lower than this forecast. Using P50 helps create a balanced and realistic plan without being overly optimistic or conservative."
+
             }}
             }}
 
