@@ -228,7 +228,7 @@ services:
     restart: unless-stopped
 
   nifi:
-    image: apache/nifi:1.27.0
+    image: apache/nifi:latest
     container_name: nifi-staging
     environment:
       # Use different ports to avoid conflict with Keycloak (8080)
