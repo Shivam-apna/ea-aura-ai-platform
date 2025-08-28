@@ -545,14 +545,9 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             kpi.bgColor || '#E5E7EB' // Fallback to original bgColor or gray
           );
 
-          console.log('KPI Debug:', kpi.key, kpiValue, typeof kpiValue);
-
           // Get additional color info for stroke color
           const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
-
-          console.log('Color Info Debug:', kpi.key, colorInfo);
           const strokeColor = colorInfo?.strokeColor;
-          console.log('Stroke Color Debug:', kpi.key, strokeColor);
           const shouldShowStroke = strokeColor && strokeColor !== '';
 
           // Check if we're using dynamic colors or default colors
