@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse, FileResponse
 import requests
 import tempfile
 from app.services.predictive_analysis import  get_predictive_analysis,generate_predictive_report
+from app.services.next_step_agent import  next_step_analyser
 
 
 
@@ -495,7 +496,6 @@ def run_predictive_analysis(payload: dict = Body(...), request: Request = None):
     """
     try:
         chart_data = payload.get("chart_data")
-        print("chart_datachart_datachart_datachart_data",chart_data)
         tenant_id = payload.get("tenant_id", "default_tenant")
         metric_key = payload.get("metric_key", chart_data.get("title", "metric"))
         chart_type = chart_data.get("plotType", "line")
@@ -524,4 +524,93 @@ def run_predictive_analysis(payload: dict = Body(...), request: Request = None):
             return {"status": "error", "message": f"Unknown analysis_type: {analysis_type}"}
 
     except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/next-step-analysis")
+def run_next_step_analysis(payload: dict = Body(...), request: Request = None):
+    """
+    Accept chart_data and return actionable next steps based on NextStepAnalyser.
+    
+    """
+    try:
+        chart_data = payload.get("chart_data")
+        tenant_id = payload.get("tenant_id", "default_tenant")
+        metric_key = payload.get("metric_key", chart_data.get("title", "metric") if chart_data else "unknown")
+
+        if not chart_data:
+            return {"status": "error", "message": "chart_data is required"}
+
+        # Prepare data for NextStepAnalyser
+        analysis_input = {
+            "title": chart_data.get("title", "Unknown Chart"),
+            "plot_type": chart_data.get("plotType", "line"),
+            "x_label": chart_data.get("xLabel", "X-axis"),
+            "y_label": chart_data.get("yLabel", "Y-axis"),
+            "x_values": [],
+            "y_values": []
+        }
+
+        # Extract data points from chart_data
+        chart_data_points = chart_data.get("data", [])
+        if isinstance(chart_data_points, list) and len(chart_data_points) > 0:
+            # Handle different data formats
+            if isinstance(chart_data_points[0], dict):
+                # Format: [{"x": "Jan", "y": 100}, {"x": "Feb", "y": 150}]
+                analysis_input["x_values"] = [point.get("x") for point in chart_data_points]
+                analysis_input["y_values"] = [point.get("y") for point in chart_data_points]
+            elif isinstance(chart_data_points[0], (list, tuple)) and len(chart_data_points[0]) >= 2:
+                # Format: [["Jan", 100], ["Feb", 150]]
+                analysis_input["x_values"] = [point[0] for point in chart_data_points]
+                analysis_input["y_values"] = [point[1] for point in chart_data_points]
+            else:
+                # Fallback: assume it's just y-values
+                analysis_input["x_values"] = list(range(len(chart_data_points)))
+                analysis_input["y_values"] = chart_data_points
+                
+        # Handle direct x,y arrays format
+        elif chart_data.get("x") and chart_data.get("y"):
+            x_values = chart_data.get("x", [])
+            y_values = chart_data.get("y", [])
+            
+            analysis_input["x_values"] = x_values
+            # Clean y_values - remove $ and commas if present
+            cleaned_y_values = []
+            for y_val in y_values:
+                if isinstance(y_val, str):
+                    # Remove $ and commas, convert to float
+                    cleaned_val = y_val.replace('$', '').replace(',', '')
+                    try:
+                        cleaned_y_values.append(float(cleaned_val))
+                    except ValueError:
+                        cleaned_y_values.append(0)  # fallback for invalid values
+                else:
+                    cleaned_y_values.append(y_val)
+            
+            analysis_input["y_values"] = cleaned_y_values
+
+        logger.info(f"Next-step analysis request: tenant={tenant_id}, metric={metric_key}")
+
+        # Run analysis using NextStepAnalyser
+        result = next_step_analyser.analyze(analysis_input)
+
+
+        # Handle analysis errors/blocks
+        if result.get('status') == 'error':
+            logger.error(f"Analysis failed: {result.get('error')}")
+            return {"status": "error", "message": result.get('error')}
+        elif result.get('status') == 'blocked':
+            logger.warning("Analysis blocked by LLM guard")
+            return {"status": "error", "message": "Analysis request was blocked for safety reasons"}
+
+        # Add metadata to the response
+        result["tenant_id"] = tenant_id
+        result["metric_key"] = metric_key
+        result["chart_title"] = chart_data.get("title", "Unknown Chart")
+        
+        # Return the complete JSON response from the agent
+        return result
+
+    except Exception as e:
+        logger.error(f"Next-step analysis error: {str(e)}")
         return {"status": "error", "message": str(e)}

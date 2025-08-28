@@ -26,6 +26,23 @@ interface PredictiveAnalysisResponse {
     chart_data?: ChartData;
 }
 
+// 1. Add new interface after PredictiveAnalysisResponse
+interface NextStepAnalysisResponse {
+    status: string;
+    recommendations: string[];
+    priority_level: string;
+    confidence: string;
+    action_items: {
+        immediate: string[];
+        short_term: string[];
+        long_term: string[];
+    };
+    key_insight?: string;
+    analysis_type: string;
+    metric_key: string;
+    chart_data?: ChartData;
+}
+
 interface PageContext {
     pageName: string;
     activeTab: string;
@@ -326,7 +343,7 @@ export class PredictiveAnalysis {
             const predictiveData = await response.json();
 
             if (predictiveData && predictiveData.status === "success" && predictiveData.chart_data) {
-                toast.success(`✨ Predictive analysis generated for ${pageContext.pageName}`);
+                toast.success(`Predictive analysis generated for ${chartKey}`);
 
                 const chartData = predictiveData.chart_data;
                 chartData._prediction_metadata = chartData.prediction_metadata;
@@ -340,6 +357,83 @@ export class PredictiveAnalysis {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
             toast.error(`Failed to generate predictive analysis: ${errorMessage}`);
+            return null;
+        }
+    }
+
+    static async generateNextStepAnalysis(
+        chartKey: string,
+        tenantId: string,
+        chartType?: string,
+        activeTab?: string
+    ): Promise<NextStepAnalysisResponse | null> {
+        try {
+            const pageContext = this.detectPageContext();
+            const finalActiveTab = activeTab || pageContext.activeTab;
+
+            const currentChartData = this.getStoredChartData(chartKey, finalActiveTab);
+
+            if (!currentChartData) {
+                toast.error(`No chart data available for ${chartKey} in ${pageContext.pageName} (${finalActiveTab})`);
+                return null;
+            }
+
+            // Validate chart data
+            const yData = Array.isArray(currentChartData.y) ? currentChartData.y : [currentChartData.y];
+            if (yData.length < 3) {
+                toast.warning("Need at least 3 data points for accurate analysis");
+                return {
+                    status: "insufficient_data",
+                    recommendations: [],
+                    priority_level: "low",
+                    confidence: "low",
+                    action_items: {
+                        immediate: [],
+                        short_term: [],
+                        long_term: []
+                    },
+                    key_insight: "Insufficient data points for next step analysis",
+                    analysis_type: "quick",
+                    metric_key: chartKey
+                };
+            }
+
+            const payload = {
+                chart_data: currentChartData,
+                tenant_id: tenantId || "demo232",
+                metric_key: chartKey,
+                chart_type: chartType || currentChartData.plotType || "line",
+                analysis_type: "quick",
+                page_context: {
+                    page_name: pageContext.pageName,
+                    active_tab: finalActiveTab,
+                    page_type: pageContext.pageType
+                }
+            };
+
+
+            const response = await fetch(getApiEndpoint("/v1/next-step-analysis"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+            }
+
+            const nextStepData = await response.json();
+
+            if (nextStepData && nextStepData.status === "success") {
+                // toast.success(`Next step analysis generated for ${chartKey}`);
+                return nextStepData;
+            }
+
+            return null;
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            toast.error(`Failed to generate next step analysis: ${errorMessage}`);
             return null;
         }
     }
@@ -458,11 +552,31 @@ export class PredictiveAnalysis {
 
     static displayPredictionResults(predictions: PredictiveAnalysisResponse): void {
         if (predictions.status === "success") {
-            toast.success("🔮 Prediction Complete!");
+            // toast.success("Prediction Complete!");
         } else if (predictions.status === "insufficient_data") {
             toast.warning(`⚠️ ${predictions.key_insight || "Need more data for accurate predictions"}`);
         } else {
             toast.error(`❌ ${predictions.key_insight || "Prediction analysis failed"}`);
+        }
+    }
+
+    static async getNextStepAnalysisSimple(
+        chartKey: string,
+        tenantId: string,
+        chartType?: string
+    ): Promise<NextStepAnalysisResponse | null> {
+        const pageContext = this.detectPageContext();
+        return this.generateNextStepAnalysis(chartKey, tenantId, chartType, pageContext.activeTab);
+    }
+
+    // 4. Add display method for next step results
+    static displayNextStepResults(analysis: NextStepAnalysisResponse): void {
+        if (analysis.status === "success") {
+            toast.success("🎯 Next Step Analysis Complete!");
+        } else if (analysis.status === "insufficient_data") {
+            toast.warning(`⚠️ ${analysis.key_insight || "Need more data for accurate analysis"}`);
+        } else {
+            toast.error(`❌ ${analysis.key_insight || "Next step analysis failed"}`);
         }
     }
 
