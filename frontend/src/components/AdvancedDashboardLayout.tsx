@@ -22,6 +22,7 @@ import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
 import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
+
 import { PredictiveAnalysis } from "@/utils/predictiveJson";
 import { PredictiveModal } from '@/components/PredectiveModal';
 import { NextStepModal } from '@/components/NextStepModal';
@@ -544,16 +545,16 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             kpi.bgColor || '#E5E7EB' // Fallback to original bgColor or gray
           );
 
+          // Get additional color info for stroke color
+          const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
+          const strokeColor = colorInfo?.strokeColor;
+          const shouldShowStroke = strokeColor && strokeColor !== '';
 
           // Check if we're using dynamic colors or default colors
           const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#E5E7EB');
 
           // Get contrast text color only for dynamic colors
           const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
-
-          // Get additional color info for debugging/tooltips
-          const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
-
 
           const icons = [BarChart2, LineChart];
           const Icon = icons[idx % icons.length];
@@ -563,7 +564,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
               key={idx}
               style={{
                 backgroundColor: dynamicBgColor,
-                border: 'none'
+                border: shouldShowStroke ? `2px solid ${strokeColor}` : 'none'
               }}
               className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg p-0 overflow-hidden group min-h-[90px]"}
               title={colorInfo ? `${colorInfo.label}` : undefined} // Tooltip showing range
