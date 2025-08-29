@@ -57,7 +57,6 @@ export const createTTS = async (
 
         const fullText = `${introText} ${summaryText}`;
 
-
         const res = await fetch(getApiEndpoint("/v1/text-to-speech"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -114,7 +113,6 @@ export const stopCurrentTTS = (setIsSpeaking: (speaking: boolean) => void) => {
         currentAudio.currentTime = 0;
         currentAudio = null;
         setIsSpeaking(false);
-
     } else {
         setIsSpeaking(false); // Set speaking to false anyway to reset UI state
     }
@@ -146,7 +144,6 @@ export const createIndividualMetricTTS = async (
             toast.error(`No summary data found for ${activeTab}.`);
             return;
         }
-
 
         const cachedSummary = localStorage.getItem(summaryKey);
         if (!cachedSummary) {
@@ -211,5 +208,52 @@ export const createIndividualMetricTTS = async (
         currentAudio = null;
     } finally {
         setTtsLoading(false);
+    }
+};
+// In avatars.ts - Updated function signature to match your usage pattern
+// Updated extractIndividualGraphSummary function in avatars.ts
+// Updated extractIndividualGraphSummary function in avatars.ts
+export const extractIndividualGraphSummary = (
+
+    
+    metricKey: string,      // Individual metric key
+    activeTab: string       // Active tab name  
+): string | null => {   
+    
+    console.log("demo")   
+    try {
+        // Use exact same logic as createIndividualMetricTTS
+        const targetSuffix = `_summary_${activeTab}`;
+        const summaryKey = Object.keys(localStorage).find(key =>
+            key.toLowerCase().endsWith(targetSuffix.toLowerCase())
+        );
+
+        if (!summaryKey) {
+            console.warn(`No summary data found for ${activeTab}.`);
+            return null;
+        }
+
+        const cachedSummary = localStorage.getItem(summaryKey);
+        if (!cachedSummary) {
+            console.warn("No summary data available.");
+            return null;
+        }
+
+        const summaryData = JSON.parse(cachedSummary);
+
+        console.log("Extracted summary data:", summaryData);
+        
+
+        // Find the specific metric - same logic as TTS function
+        const metricData = summaryData[metricKey];
+        if (!metricData || !metricData.summary) {
+            console.warn(`No summary available for ${metricKey}.`);
+            return null;
+        }
+
+        return metricData.summary;
+    } catch (error) {
+        console.error("Error extracting individual graph summary:", error);
+        return null;
     }
 };
