@@ -6,7 +6,7 @@ import sys
 
 # API v1 routes
 from app.dao.job_index import index_job
-from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, test_agent_run
+from app.api.v1.routes import health, agent_job, sub_agent_chain, agent_memory, test_agent_run, keycloak
 from app.api.v1.routes import status as status_routes
 from app.api.v1.routes import agents as agents_routes
 from app.api.v1.routes import kafka_status as kafka_status_routes
@@ -51,7 +51,7 @@ app.include_router(agent_memory.router, prefix="/api/v1")
 app.include_router(status_routes.router, prefix="/api/v1")
 app.include_router(agents_routes.router, prefix="/api/v1")
 app.include_router(kafka_status_routes.router, prefix="/api/v1/kafka", tags=["Kafka"])
-
+app.include_router(keycloak.router, prefix="/api/v1/keycloak")
 
 # Only include test routes in development and testing
 if settings.is_development or settings.is_testing:
