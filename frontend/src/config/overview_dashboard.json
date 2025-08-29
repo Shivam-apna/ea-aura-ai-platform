@@ -30,19 +30,19 @@
     "kpi_keys": [
         {
             "key": "CES Score",
-            "bgColor": "#E4F8C2"
+            "bgColor": "#FFFFFF"
         },
         {
             "key": "NPS Score",
-            "bgColor": "#E6F1FD"
+            "bgColor": "#FFFFFF"
         },
         {
             "key": "Sentiment Score (%)",
-            "bgColor": "#E4F8C2"
+            "bgColor": "#FFFFFF"
         },
         {
             "key": "CSAT (%)",
-            "bgColor": "#E6F1FD"
+            "bgColor": "#FFFFFF"
         }
     ]
 }

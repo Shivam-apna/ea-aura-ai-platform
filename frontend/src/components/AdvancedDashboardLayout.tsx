@@ -18,7 +18,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { cn } from '@/lib/utils';
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Speech } from "lucide-react";
-import { stopCurrentTTS, createIndividualMetricTTS, extractIndividualGraphSummary } from "@/utils/avatars";
+import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
 import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
@@ -28,7 +28,6 @@ import GraphCardContent from './GraphCardContent'; // Import the new GraphCardCo
 import { PredictiveAnalysis } from "@/utils/predictiveJson";
 import { PredictiveModal } from '@/components/PredectiveModal';
 import { NextStepModal } from '@/components/NextStepModal';
-
 // Type definitions
 interface KpiItem {
   key: string;
@@ -48,6 +47,7 @@ interface MetricGroups {
 
 // Define the ChartData interface based on its usage in the component
 interface ChartData {
+  summary: string;
   title: string;
   plotType: string;
   x: any[];
@@ -194,42 +194,6 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         }))
     );
   };
-
-  // Function to toggle summary popup visibility
-  // Updated handleToggleSummary function in AdvancedDashboardLayout.tsx
-// Updated handleToggleSummary function in AdvancedDashboardLayout.tsx
-const handleToggleSummary = (chartKey: string) => {
-    // Toggle the summary visibility
-    setShowSummaryMap(prev => ({
-        ...prev,
-        [chartKey]: !prev[chartKey],
-    }));
-
-    // Only extract summary if we're showing it AND don't already have it
-    const isTogglingOn = !showSummaryMap[chartKey];
-    if (isTogglingOn && !individualSummaries[chartKey]) {
-        console.log(`Extracting summary for ${chartKey}...`);
-        
-        // Use the exact same approach as createIndividualMetricTTS
-        const summary = extractIndividualGraphSummary(chartKey, currentTab);
-        
-        if (summary) {
-            setIndividualSummaries(prev => ({
-                ...prev,
-                [chartKey]: summary
-            }));
-            console.log(`✓ Summary successfully extracted for ${chartKey}`);
-        } else {
-            console.warn(`✗ No summary found for ${chartKey} in tab ${currentTab}`);
-            setIndividualSummaries(prev => ({
-                ...prev,
-                [chartKey]: "No summary available for this metric."
-            }));
-        }
-    } else if (individualSummaries[chartKey]) {
-        console.log(`Using cached summary for ${chartKey}`);
-    }
-};
 
 
   useEffect(() => {
@@ -438,7 +402,26 @@ const handleToggleSummary = (chartKey: string) => {
     ['resetScale2d'] // Reset axes button in its own group
   ];
 
+  const wrapText = (text: string, maxLineLength: number = 60): string => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + ' ' + word).length <= maxLineLength) {
+        currentLine = currentLine ? currentLine + ' ' + word : word;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+
+    if (currentLine) lines.push(currentLine);
+    return lines.join('<br>');
+  };
+
   // Get Plotly layout and config based on theme
+
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
     const baseLayout = {
       width: undefined,
@@ -449,7 +432,9 @@ const handleToggleSummary = (chartKey: string) => {
         family: 'Inter, sans-serif',
         size: 16,
       },
-      margin: { l: 50, r: 30, t: 60, b: 20 },
+      margin: chart.summary ?
+        { l: 50, r: 30, t: 60, b: 75 } : // Reduced from 100 to 80
+        { l: 50, r: 30, t: 60, b: 50 },
       xaxis: {
         title: chart.xLabel,
         zeroline: false,
@@ -468,6 +453,24 @@ const handleToggleSummary = (chartKey: string) => {
         font: { size: 15 }
       },
       transition: { duration: 500, easing: 'cubic-in-out' },
+      annotations: chart.summary ? [{
+        text: `💡 ${wrapText(chart.summary, 100)}`,
+        showarrow: false,
+        x: 0.5,
+        y: -0.40, // Changed from -0.35 to -0.25 to bring it closer
+        xref: 'paper',
+        yref: 'paper',
+        xanchor: 'center',
+        yanchor: 'top',
+        font: {
+          size: 13, // Reduced from 14 to 12
+          color: isDarkTheme ? '#e5e7eb' : '#1f2937',
+          family: 'Inter, sans-serif'
+        },
+        width: 800, // Add width constraint for wrapping
+        bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+
+      }] : [],
     };
 
     if (isDarkTheme) {
@@ -579,11 +582,9 @@ const handleToggleSummary = (chartKey: string) => {
           const kpiValue = chart?.y?.at(-1);
 
           // Get dynamic background color based on KPI name and value
-          const dynamicBgColor = getKpiBgColor(
-            kpi.key, // Use kpi.key directly since it matches your JSON
-            kpiValue,
-            kpi.bgColor || '#E5E7EB' // Fallback to original bgColor or gray
-          );
+          const dynamicBgColor = kpiValue !== undefined
+            ? getKpiBgColor(kpi.key, kpiValue, kpi.bgColor || '#FFFFFF')
+            : '#FFFFFF';
 
           // Get additional color info for stroke color
           const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
@@ -591,10 +592,19 @@ const handleToggleSummary = (chartKey: string) => {
           const shouldShowStroke = strokeColor && strokeColor !== '';
 
           // Check if we're using dynamic colors or default colors
-          const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#E5E7EB');
+          const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#FFFFF');
 
           // Get contrast text color only for dynamic colors
-          const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
+          // const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
+
+          // Force black text if background is white, otherwise use contrast only for dynamic colors
+          let textColor: string | undefined;
+
+          if (dynamicBgColor.toLowerCase() === '#fff' || dynamicBgColor.toLowerCase() === 'white') {
+            textColor = '#000000'; // force black
+          } else if (isUsingDynamicColor) {
+            textColor = getContrastTextColor(dynamicBgColor);
+          }
 
           const icons = [BarChart2, LineChart];
           const Icon = icons[idx % icons.length];
@@ -855,25 +865,6 @@ const handleToggleSummary = (chartKey: string) => {
 
                                         {chart && (
                                           <>
-                                            {/* Graph Summary Button */}
-                                            <ShadcnTooltip>
-                                              <TooltipTrigger asChild>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  className={cn("h-8 w-8 rounded-full hover:bg-muted transition-colors", iconColorClass)}
-                                                  onClick={() => handleToggleSummary(metric.key)}
-                                                  aria-label="Graph Summary"
-                                                >
-                                                  <InfoIcon className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
-                                                  <span className="sr-only">Graph Summary</span>
-                                                </Button>
-                                              </TooltipTrigger>
-                                              <TooltipContent>
-                                                <p>Graph Summary</p>
-                                              </TooltipContent>
-                                            </ShadcnTooltip>
-
                                             {/* TTS/Avatar Button with Loading Spinner */}
                                             <ShadcnTooltip>
                                               <TooltipTrigger asChild>
@@ -1024,15 +1015,6 @@ const handleToggleSummary = (chartKey: string) => {
                                         </button>
                                       </div>
                                     </div>
-                                    {/* Graph Summary Popup */}
-                                    {showSummaryMap[metric.key] && (
-                                      <div className="mx-2 mb-4">
-                                        <AISummaryPopup
-                                          summaryText={graphSummaryText}
-                                          onClose={() => handleToggleSummary(metric.key)}
-                                        />
-                                      </div>
-                                    )}
                                     <div className="flex-1 w-full h-full" style={{ minHeight: 280, overflow: 'hidden' }}>
                                       <GraphCardContent
                                         chart={chart}

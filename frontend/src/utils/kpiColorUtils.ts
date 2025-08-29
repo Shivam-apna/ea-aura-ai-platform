@@ -32,7 +32,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 4, max: 8, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 8, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
 
     // NPS Score (Net Promoter Score) - Scale -100 to +100
@@ -43,7 +43,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 4, max: 7, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
             { min: 7, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
 
     // Sentiment Score - Percentage 0-100%
@@ -54,7 +54,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
 
     // CSAT Score (Customer Satisfaction) - Percentage 0-100%
@@ -65,7 +65,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Gross Margin (%)': {
         type: 'numeric',
@@ -74,7 +74,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Net Profit Margin (%)': {
         type: 'numeric',
@@ -83,7 +83,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     // Add both variations of Conversion Rate to handle data inconsistencies
     'Conversion Rate (%)': {
@@ -93,7 +93,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Conversion Rate': {
         type: 'numeric',
@@ -102,7 +102,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'GMROI': {
         type: 'numeric',
@@ -111,7 +111,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 1, max: 2, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 2, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Engagement Rate + Reach': {
         type: 'numeric',
@@ -120,7 +120,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Avg Sentiment Score': {
         type: 'numeric',
@@ -129,7 +129,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Alignment Score (%)': {
         type: 'numeric',
@@ -138,7 +138,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Resource Allocation': {
         type: 'numeric',
@@ -147,7 +147,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 30000, max: 70000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70000, max: 100000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Impact Metrics': {
         type: 'numeric',
@@ -156,7 +156,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Risks Identified': {
         type: 'string',
@@ -173,7 +173,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 3000, max: 7000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 7000, max: 1000000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Audience Growth': {
         type: 'numeric',
@@ -182,7 +182,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 20, max: 50, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 50, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Engagement Rate (%)': {
         type: 'numeric',
@@ -191,7 +191,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     },
     'Bounce Rate (%)': {
         type: 'numeric',
@@ -200,7 +200,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
             { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
             { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
         ],
-        defaultColor: '#E5E7EB'
+        defaultColor: '#FFF'
     }
 };
 
@@ -259,7 +259,7 @@ function extractNumericValue(value: number | string): number | undefined {
 export function getKpiBgColor(
     kpiName: string,
     value: number | string | undefined,
-    fallbackColor: string = '#E5E7EB'
+    fallbackColor: string = '#FFF'
 ): string {
     // Return fallback if value is invalid
     if (value === undefined || value === null) {

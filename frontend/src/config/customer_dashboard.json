@@ -1,32 +1,92 @@
 {
   "metric_groups": {
     "Survey": [
-      { "key": "NPS Score", "label": "NPS Score" },
-      { "key": "CSAT %", "label": "CSAT (%)" },
-      { "key": "CES Score", "label": "CES Score" },
-      { "key": "CXHS", "label": "CX Health Score (CXHS)" },
-      { "key": "Sentiment Score", "label": "Sentiment Score" }
+      {
+        "key": "NPS Score",
+        "label": "NPS Score"
+      },
+      {
+        "key": "CSAT %",
+        "label": "CSAT (%)"
+      },
+      {
+        "key": "CES Score",
+        "label": "CES Score"
+      },
+      {
+        "key": "CXHS",
+        "label": "CX Health Score (CXHS)"
+      },
+      {
+        "key": "Sentiment Score",
+        "label": "Sentiment Score"
+      }
     ],
     "Social Media": [
-      { "key": "Engagement Rate + Reach", "label": "Engagement & Reach" },
-      { "key": "Avg First Response Time", "label": "Avg First Response Time" },
-      { "key": "Share Of Voice (%)", "label": "Share of Voice (%)" },
-      { "key": "Response Rate (%)", "label": "Response Rate (%)" },
-      { "key": "Avg Response Time (Days)", "label": "Avg Response Time (Days)" }
+      {
+        "key": "Engagement Rate + Reach",
+        "label": "Engagement & Reach"
+      },
+      {
+        "key": "Avg First Response Time",
+        "label": "Avg First Response Time"
+      },
+      {
+        "key": "Share Of Voice (%)",
+        "label": "Share of Voice (%)"
+      },
+      {
+        "key": "Response Rate (%)",
+        "label": "Response Rate (%)"
+      },
+      {
+        "key": "Avg Response Time (Days)",
+        "label": "Avg Response Time (Days)"
+      }
     ],
     "Support Tickets": [
-      { "key": "Avg Sentiment Score", "label": "Avg Sentiment Score" },
-      { "key": "Avg Resolution Time", "label": "Avg Resolution Time" },
-      { "key": "% SLA Met", "label": "SLA Met (%)" },
-      { "key": "CSAT (%)", "label": "CSAT (%)" },
-      { "key": "CES Score", "label": "CES Score" },
-      { "key": "Sentiment Score", "label": "Sentiment Score" }
+      {
+        "key": "Avg Sentiment Score",
+        "label": "Avg Sentiment Score"
+      },
+      {
+        "key": "Avg Resolution Time",
+        "label": "Avg Resolution Time"
+      },
+      {
+        "key": "% SLA Met",
+        "label": "SLA Met (%)"
+      },
+      {
+        "key": "CSAT (%)",
+        "label": "CSAT (%)"
+      },
+      {
+        "key": "CES Score",
+        "label": "CES Score"
+      },
+      {
+        "key": "Sentiment Score",
+        "label": "Sentiment Score"
+      }
     ]
   },
   "kpi_keys": [
-    { "key": "NPS Score", "bgColor": "#E4F8C2" },
-    { "key": "Engagement Rate + Reach", "bgColor": "#E6F1FD" },
-    { "key": "Avg Sentiment Score", "bgColor": "#E4F8C2" },
-    { "key": "CSAT (%)", "bgColor": "#E6F1FD" }
+    {
+      "key": "NPS Score",
+      "bgColor": "#FFFFFF"
+    },
+    {
+      "key": "Engagement Rate + Reach",
+      "bgColor": "#FFFFFF"
+    },
+    {
+      "key": "Avg Sentiment Score",
+      "bgColor": "#FFFFFF"
+    },
+    {
+      "key": "CSAT (%)",
+      "bgColor": "#FFFFFF"
+    }
   ]
-} 
+}
