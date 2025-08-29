@@ -2,19 +2,19 @@
   "kpi_keys": [
     {
       "key": "Gross Margin (%)",
-      "bgColor": "#E4F8C2"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "Net Profit Margin (%)",
-      "bgColor": "#E6F1FD"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "Conversion Rate (%)",
-      "bgColor": "#E4F8C2"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "GMROI",
-      "bgColor": "#E6F1FD"
+      "bgColor": "#FFFFFF"
     }
   ],
   "metric_groups": {

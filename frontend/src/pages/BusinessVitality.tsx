@@ -470,7 +470,7 @@ const BusinessDashboard = () => {
       const chartMap: Record<string, any> = {};
 
       for (const key of apiResponseKeys) {
-        const { plot_type, data: values, value, delta } = parsed[key] || {};
+        const { plot_type, data: values, value, delta, summary } = parsed[key] || {};
         if (!values || values.length === 0) continue;
 
         const xKey = Object.keys(values[0])[0];
@@ -492,6 +492,7 @@ const BusinessDashboard = () => {
           yLabel: yKey,
           value,
           delta,
+          summary: summary || "",
         };
       }
 

@@ -102,6 +102,18 @@ class PredictiveAnalysisAgent:
             - Ensure all arrays and objects are properly closed with matching brackets
             - Do not include any text outside the JSON object
 
+            DATE GENERATION RULES:
+            - You MUST generate exactly 5 new dates, each one month after the previous date.
+            - Start from the last date in x_values.
+            - Use the same format as x_values (e.g., "YYYY-MM-DD").
+            - Example: if the last date is "2022-03-01", then the 5 new dates must be:
+            ["2022-04-01", "2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01"].
+            - NEVER repeat the same month, and do not skip months.
+
+            VALUE GENERATION RULES:
+
+            - Generate 5 new P50 values based on the chosen forecasting method.
+
             IMPORTANT: Return ONLY a valid JSON object in this exact format:
 
             {{
@@ -109,12 +121,12 @@ class PredictiveAnalysisAgent:
                 "title": "ForecastP50",
                 "plotType": "{plot_type}",
                 "description": "Actual {title} vs most likely (p50) forecast for the next five months.",
-                "x": [all original dates + 5 new predicted dates],
+                "x": [all original dates + 5 new predicted dates of next five months],
                 "y": [all original values + 5 new P50 predicted values],
                 "xLabel": "{x_label}",
                 "yLabel": "{y_label}",
                 "prediction_metadata": {{
-                    "predicted_dates": [5 new dates],
+                    "predicted_dates": [5 new dates (each 1 month apart, sequential after last x date)],
                     "predicted_values": [5 new P50 values],
                     "predicted_values_p10": [5 new P10 values],
                     "predicted_values_p90": [5 new P90 values],
