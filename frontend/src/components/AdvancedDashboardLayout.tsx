@@ -11,17 +11,19 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb, Icon, InfoIcon } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
 import { cn } from '@/lib/utils';
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Speech } from "lucide-react";
-import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
+import { stopCurrentTTS, createIndividualMetricTTS, extractIndividualGraphSummary } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
 import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
+import AISummaryPopup from './AISummaryPopup'; // Import the new component
+import GraphCardContent from './GraphCardContent'; // Import the new GraphCardContent component
 
 import { PredictiveAnalysis } from "@/utils/predictiveJson";
 import { PredictiveModal } from '@/components/PredectiveModal';
@@ -155,6 +157,8 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
   const [ttsLoadingMap, setTtsLoadingMap] = useState<Record<string, boolean>>({});
   const [isSpeakingMap, setIsSpeakingMap] = useState<Record<string, boolean>>({});
+  const [showSummaryMap, setShowSummaryMap] = useState<Record<string, boolean>>({}); // State for summary popup visibility
+  const [individualSummaries, setIndividualSummaries] = useState<Record<string, string>>({});
   const [predictiveLoading, setPredictiveLoading] = useState<Record<string, boolean>>({});
   const [predictiveModalOpen, setPredictiveModalOpen] = useState(false);
   const [predictiveModalData, setPredictiveModalData] = useState<any>(null);
@@ -168,7 +172,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
 
 
   const handleTTSClick = (chartKey: string, chartLabel: string) => {
-    // ✅ Set loading to true for this specific chart
+    // Set loading to true for this specific chart
     setTtsLoadingMap((prev: Record<string, boolean>) => ({
       ...prev,
       [chartKey]: true,
@@ -177,7 +181,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     createIndividualMetricTTS(
       chartKey,            // metricKey
       currentTab, // activeTab or page title
-      "graph_summary", // storageKey
+      storagePrefix, // Pass storagePrefix for correct summary key lookup
       (loading: boolean) =>
         setTtsLoadingMap((prev: Record<string, boolean>) => ({
           ...prev,
@@ -190,6 +194,42 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         }))
     );
   };
+
+  // Function to toggle summary popup visibility
+  // Updated handleToggleSummary function in AdvancedDashboardLayout.tsx
+// Updated handleToggleSummary function in AdvancedDashboardLayout.tsx
+const handleToggleSummary = (chartKey: string) => {
+    // Toggle the summary visibility
+    setShowSummaryMap(prev => ({
+        ...prev,
+        [chartKey]: !prev[chartKey],
+    }));
+
+    // Only extract summary if we're showing it AND don't already have it
+    const isTogglingOn = !showSummaryMap[chartKey];
+    if (isTogglingOn && !individualSummaries[chartKey]) {
+        console.log(`Extracting summary for ${chartKey}...`);
+        
+        // Use the exact same approach as createIndividualMetricTTS
+        const summary = extractIndividualGraphSummary(chartKey, currentTab);
+        
+        if (summary) {
+            setIndividualSummaries(prev => ({
+                ...prev,
+                [chartKey]: summary
+            }));
+            console.log(`✓ Summary successfully extracted for ${chartKey}`);
+        } else {
+            console.warn(`✗ No summary found for ${chartKey} in tab ${currentTab}`);
+            setIndividualSummaries(prev => ({
+                ...prev,
+                [chartKey]: "No summary available for this metric."
+            }));
+        }
+    } else if (individualSummaries[chartKey]) {
+        console.log(`Using cached summary for ${chartKey}`);
+    }
+};
 
 
   useEffect(() => {
@@ -390,26 +430,26 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const currentTab = activeTab || Object.keys(dynamicMetricGroups)[0];
   const metrics = dynamicMetricGroups[currentTab] || [];
 
-  const buttonsToRemove = [
-    'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
-    'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'sendDataToCloud', 'editInChartStudio',
-    'drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape',
-    'orbitRotation', 'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
-    'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo'
+  // Define the modebar buttons explicitly to control grouping
+  const customModeBarButtons = [
+    ['toImage'], // Download button in its own group
+    ['zoom2d'],  // Zoom button in its own group
+    ['pan2d'],   // Pan button in its own group
+    ['resetScale2d'] // Reset axes button in its own group
   ];
 
   // Get Plotly layout and config based on theme
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
     const baseLayout = {
       width: undefined,
-      height: 280,
+      height: 240, // Reduced height from 280 to 240
       autosize: true,
       title: '',
       font: {
         family: 'Inter, sans-serif',
         size: 16,
       },
-      margin: { l: 50, r: 30, t: 60, b: 50 },
+      margin: { l: 50, r: 30, t: 60, b: 20 },
       xaxis: {
         title: chart.xLabel,
         zeroline: false,
@@ -468,7 +508,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         config: {
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: buttonsToRemove,
+          modeBarButtons: customModeBarButtons, // Use the custom defined buttons
           responsive: true,
           toImageButtonOptions: {
             format: 'png',
@@ -517,7 +557,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         config: {
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: buttonsToRemove,
+          modeBarButtons: customModeBarButtons, // Use the custom defined buttons
           responsive: true,
           toImageButtonOptions: {
             format: 'png',
@@ -586,11 +626,11 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   </span>
                   {idx % 2 === 0 ? (
                     <BarChart2
-                      className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")}
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
                     />
                   ) : (
                     <LineChart
-                      className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")}
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
                     />
                   )}
                 </div>
@@ -790,23 +830,50 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                         const isOdd = arr.length % 2 === 1;
                         const stretchClass = columns === 2 && isLast && isOdd ? 'sm:col-span-2' : '';
 
+                        // Retrieve summary text for the current metric
+                        const summaryStorageKey = `${storagePrefix}_parsed_summary_${currentTab}`;
+                        const cachedSummary = typeof window !== 'undefined' ? localStorage.getItem(summaryStorageKey) : null;
+                        const parsedSummary = cachedSummary ? JSON.parse(cachedSummary) : {};
+                        const graphSummaryText = parsedSummary[metric.key]?.summary || "No summary present.";
+
                         return (
                           <Draggable key={metric.key} draggableId={metric.key} index={idx}>
                             {(provided) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                {...provided.dragHandleProps}
                                 className={stretchClass}
                               >
                                 <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in">
                                   <CardContent className="flex flex-col h-full p-0">
-                                    <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
+                                    <div
+                                      className="flex justify-between items-center mb-0 pb-1 border-b border-gray-100 px-2 pt-2 cursor-move"
+                                      {...provided.dragHandleProps} // <-- Only header is the drag handle now!
+                                    >
                                       <h3 className="text-base font-semibold text-foreground">{metric.label}</h3>
                                       <div className="flex items-center gap-2">
 
                                         {chart && (
                                           <>
+                                            {/* Graph Summary Button */}
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn("h-8 w-8 rounded-full hover:bg-muted transition-colors", iconColorClass)}
+                                                  onClick={() => handleToggleSummary(metric.key)}
+                                                  aria-label="Graph Summary"
+                                                >
+                                                  <InfoIcon className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
+                                                  <span className="sr-only">Graph Summary</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Graph Summary</p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+
                                             {/* TTS/Avatar Button with Loading Spinner */}
                                             <ShadcnTooltip>
                                               <TooltipTrigger asChild>
@@ -957,63 +1024,26 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex-1 w-full h-full" style={{ minHeight: 340, overflow: 'hidden' }}>
-                                      {chart ? (
-                                        (() => {
-                                          const { layout, config } = getPlotlyLayoutAndConfig(chart);
-                                          return (
-                                            <Plot
-                                              data={(() => {
-                                                const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
-                                                if (isBar && Array.isArray(chart.y[0])) {
-                                                  return chart.y.map((series, i) => ({
-                                                    x: chart.x,
-                                                    y: series,
-                                                    type: 'bar',
-                                                    marker: chartColors[metric.key]
-                                                      ? { color: Array(series.length).fill(chartColors[metric.key]) }
-                                                      : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
-                                                  }));
-                                                } else if (isBar) {
-                                                  return [{
-                                                    x: chart.x,
-                                                    y: chart.y,
-                                                    type: 'bar',
-                                                    marker: chartColors[metric.key]
-                                                      ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
-                                                      : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) }
-                                                  }];
-                                                } else {
-                                                  const type = chartTypes[metric.key] || chart.plotType;
-                                                  return [{
-                                                    x: chart.x,
-                                                    y: chart.y,
-                                                    type,
-                                                    ...(type === 'scatter' ? { mode: 'markers' } : {}),
-                                                    marker: {
-                                                      color: chartColors[metric.key] || chart.marker?.color || COLORS[0],
-                                                      size: 10,
-                                                      line: { width: 2, color: isDarkTheme ? '#1f2937' : '#fff' }
-                                                    },
-                                                  }];
-                                                }
-                                              })()}
-                                              layout={layout}
-                                              style={{ width: '100%', height: '100%' }}
-                                              config={config}
-                                            />
-
-                                          );
-                                        })()
-                                      ) : (
-                                        <div className={cn("flex flex-col items-center justify-center pt-20 pb-8", "text-muted-foreground")}>
-                                          <BarChart2 className={cn("w-12 h-12 mb-2 animate-bounce", "text-primary")} />
-                                          <span className={cn("text-base font-semibold")}>No data available</span>
-                                          <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
-
-
-                                        </div>
-                                      )}
+                                    {/* Graph Summary Popup */}
+                                    {showSummaryMap[metric.key] && (
+                                      <div className="mx-2 mb-4">
+                                        <AISummaryPopup
+                                          summaryText={graphSummaryText}
+                                          onClose={() => handleToggleSummary(metric.key)}
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 w-full h-full" style={{ minHeight: 280, overflow: 'hidden' }}>
+                                      <GraphCardContent
+                                        chart={chart}
+                                        isLoading={loading}
+                                        isDarkTheme={isDarkTheme}
+                                        chartType={chartTypes[metric.key] || chart?.plotType || 'bar'}
+                                        chartColor={chartColors[metric.key] || chart?.marker?.color || primaryColorForCharts}
+                                        primaryColorForCharts={primaryColorForCharts}
+                                        colors={COLORS}
+                                        getPlotlyLayoutAndConfig={getPlotlyLayoutAndConfig}
+                                      />
 
                                       {/* Voice Visualizer - Now shows for any chart when speaking */}
                                       {isSpeakingMap[metric.key] && (

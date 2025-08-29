@@ -124,4 +124,74 @@
   pre {
     @apply font-monospace;
   }
+
+  /* Custom CSS to reduce Plotly's default bottom padding/margin */
+  .js-plotly-plot .plotly {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .js-plotly-plot .main-svg {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Global Plotly Modebar Styling */
+  .modebar {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    z-index: 10; /* Ensure it's above the chart */
+    padding: 5px; /* Add some padding around the modebar */
+  }
+
+  /* Ensure modebar-container is a flex row and remove its gap */
+  .modebar-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    /* Removed gap here, spacing will be applied to individual buttons */
+  }
+
+  /* Ensure modebar-group itself is a flex container for its children */
+  .modebar-group {
+    display: flex;
+    /* No gap here, individual buttons will have margin */
+  }
+
+  /* Style individual modebar buttons and add spacing */
+  .modebar-container .modebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 6px;
+    background-color: hsl(var(--muted)/0.5);
+    color: hsl(var(--muted-foreground));
+    transition: all 0.2s ease-in-out;
+    border: 1px solid hsl(var(--border));
+    /* Add margin-left to separate each button */
+    margin-left: 6px; /* Space between buttons */
+  }
+
+  /* Remove margin-left for the very first button in the entire modebar */
+  .modebar-container .modebar-group:first-child .modebar-btn:first-child {
+    margin-left: 0;
+  }
+
+  .modebar-container .modebar-btn:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    border-color: hsl(var(--primary));
+  }
+
+  /* For future flexibility: bottom alignment */
+  /* .modebar.bottom-aligned {
+    top: auto;
+    bottom: 0px;
+  } */
 }
