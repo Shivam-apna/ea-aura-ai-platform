@@ -292,41 +292,109 @@ def convert_text_to_speech(payload: dict = Body(...), request: Request = None):
     
 
 
+import requests
+import time
+import os
+import tempfile
+import logging
+from fastapi import File, UploadFile, Form
+from fastapi.responses import JSONResponse
+from requests.auth import HTTPBasicAuth
+
+logger = logging.getLogger(__name__)
+
 class NiFiUploader:
     def __init__(self, nifi_url: str, username: str = None, password: str = None):
-        self.nifi_url = nifi_url
+        # Properly format the NiFi URL for internal Docker communication
+        if nifi_url.startswith('http://') or nifi_url.startswith('https://'):
+            # Handle external URLs - convert to internal Docker service URL if needed
+            if 'staging.ea-aura.ai' in nifi_url:
+                # Convert external URL to internal Docker service URL
+                self.nifi_url = "http://nifi:8082"
+                self.api_base_url = f"{self.nifi_url}/nifi-api"
+            else:
+                self.nifi_url = nifi_url
+                if not nifi_url.endswith('/nifi-api'):
+                    self.api_base_url = f"{nifi_url}/nifi-api"
+                else:
+                    self.api_base_url = nifi_url
+        else:
+            # Assume it's already formatted correctly
+            self.nifi_url = nifi_url
+            self.api_base_url = f"{nifi_url}/nifi-api"
+        
         self.username = username
         self.password = password
         self.session = requests.Session()
         
         # Set up authentication if provided
         if username and password:
-            from requests.auth import HTTPBasicAuth
             self.session.auth = HTTPBasicAuth(username, password)
+            
+        logger.info(f"NiFi URL set to: {self.nifi_url}")
+        logger.info(f"NiFi API base URL: {self.api_base_url}")
     
     def validate_nifi_connection(self) -> bool:
         """Validate connection to NiFi"""
         try:
             # Test connection by hitting NiFi system diagnostics endpoint
-            test_url = self.nifi_url.replace('/upload', '/nifi-api/system-diagnostics')
+            test_url = f"{self.api_base_url}/system-diagnostics"
+            logger.info(f"Testing NiFi connection to: {test_url}")
+            
             response = self.session.get(test_url, timeout=10)
+            logger.info(f"NiFi connection test - Status: {response.status_code}")
+            
+            if response.status_code != 200:
+                logger.error(f"NiFi connection test failed - Response: {response.text[:500]}")
+                
             return response.status_code == 200
+            
         except Exception as e:
             logger.error(f"NiFi connection validation failed: {str(e)}")
             return False
     
+    def get_listen_http_processors(self) -> list:
+        """Get all ListenHTTP processors"""
+        try:
+            processors_url = f"{self.api_base_url}/flow/processors"
+            response = self.session.get(processors_url, timeout=10)
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to get processors: {response.text}")
+                return []
+                
+            processors_data = response.json()
+            listen_http_processors = []
+            
+            for processor in processors_data.get('processors', []):
+                if processor.get('component', {}).get('type') == 'org.apache.nifi.processors.standard.ListenHTTP':
+                    listen_http_processors.append(processor)
+                    
+            return listen_http_processors
+            
+        except Exception as e:
+            logger.error(f"Failed to get ListenHTTP processors: {str(e)}")
+            return []
+    
     def upload_file_to_nifi(self, file_path: str, filename: str, 
                            content_type: str = 'application/octet-stream',
                            additional_attributes: dict = None) -> dict:
-        """Upload file to NiFi and return response"""
+        """Upload file to NiFi ListenHTTP processor"""
         try:
+            # For ListenHTTP processor, we typically upload to a specific endpoint
+            # You may need to adjust this URL based on your NiFi processor configuration
+            upload_url = f"{self.nifi_url}/contentListener"
+            
+            logger.info(f"Uploading file to NiFi endpoint: {upload_url}")
+            
             headers = {
                 'Accept': 'application/json',
             }
             
-            # Add any additional attributes as headers
+            # Add any additional attributes as headers (NiFi ListenHTTP can read these)
             if additional_attributes:
                 for key, value in additional_attributes.items():
+                    # NiFi ListenHTTP processor can read custom headers
                     headers[f'X-{key}'] = str(value)
             
             with open(file_path, 'rb') as file:
@@ -334,12 +402,16 @@ class NiFiUploader:
                     'file': (filename, file, content_type)
                 }
                 
-                response = self.session.post(
-                    self.nifi_url,
+                # For ListenHTTP, we typically use POST without authentication
+                response = requests.post(
+                    upload_url,
                     files=files,
                     headers=headers,
                     timeout=300  # 5 minutes timeout for large files
                 )
+                
+                logger.info(f"NiFi upload response - Status: {response.status_code}")
+                logger.info(f"NiFi upload response - Text: {response.text[:200]}")
                 
                 return {
                     'status_code': response.status_code,
@@ -349,10 +421,12 @@ class NiFiUploader:
                 
         except requests.exceptions.Timeout:
             raise Exception("Upload to NiFi timed out")
-        except requests.exceptions.ConnectionError:
-            raise Exception("Failed to connect to NiFi")
+        except requests.exceptions.ConnectionError as e:
+            raise Exception(f"Failed to connect to NiFi: {str(e)}")
         except Exception as e:
             raise Exception(f"NiFi upload failed: {str(e)}")
+
+
 
 @router.post("/upload-to-nifi")
 async def upload_to_nifi(
@@ -438,7 +512,7 @@ async def upload_to_nifi(
             'process-name': process_name,
             'original-filename': file.filename,
             'file-size': len(content),
-            'upload-timestamp': str(int(os.time.time()))
+            'upload-timestamp': str(int(time.time()))  # Fixed: use time.time() instead of os.time.time()
         }
 
         # Upload file to NiFi

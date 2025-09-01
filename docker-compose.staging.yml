@@ -13,7 +13,6 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
-      - frontend
       - nifi
     networks:
       - ea-aura-staging
@@ -244,26 +243,52 @@ services:
     image: apache/nifi:1.27.0
     container_name: nifi-staging
     environment:
+      # Use different ports to avoid conflict with Keycloak (8080)
       - NIFI_WEB_HTTPS_HOST=0.0.0.0
       - NIFI_WEB_HTTPS_PORT=8443
+      - NIFI_WEB_HTTP_HOST=0.0.0.0
+      - NIFI_WEB_HTTP_PORT=8082  # Changed from 8080 to 8082
       - NIFI_WEB_PROXY_HOST=staging.ea-aura.ai
       - NIFI_WEB_PROXY_CONTEXT_PATH=/nifi
-      - NIFI_SECURITY_KEYSTORE=/opt/nifi/nifi-current/conf/keystore.jks
-      - NIFI_SECURITY_KEYSTORE_TYPE=JKS
-      - NIFI_SECURITY_KEYSTORE_PASS=changeit
-      - NIFI_SECURITY_KEY_PASS=changeit
-      - NIFI_SECURITY_TRUSTSTORE=/opt/nifi/nifi-current/conf/truststore.jks
-      - NIFI_SECURITY_TRUSTSTORE_TYPE=JKS
-      - NIFI_SECURITY_TRUSTSTORE_PASS=changeit
+      
+      # Disable clustering for single-node setup
+      - NIFI_CLUSTER_IS_NODE=false
+      - NIFI_ZK_CONNECT_STRING=
+      - NIFI_ELECTION_MAX_WAIT=30 sec
+      - NIFI_ELECTION_MAX_CANDIDATES=
+      
+      # Single-user authentication
       - SINGLE_USER_CREDENTIALS_USERNAME=admin
       - SINGLE_USER_CREDENTIALS_PASSWORD=admin123456789
+      
+      # JVM Settings
+      - NIFI_JVM_HEAP_INIT=512m
+      - NIFI_JVM_HEAP_MAX=1g
+      
+      # Remove SSL requirements
+      - NIFI_SECURITY_KEYSTORE=
+      - NIFI_SECURITY_KEYSTORE_TYPE=
+      - NIFI_SECURITY_KEYSTORE_PASS=
+      - NIFI_SECURITY_KEY_PASS=
+      - NIFI_SECURITY_TRUSTSTORE=
+      - NIFI_SECURITY_TRUSTSTORE_TYPE=
+      - NIFI_SECURITY_TRUSTSTORE_PASS=
     ports:
-      - "8443:8443"
+      - "8082:8082"  # Changed from 8080 to 8082
+      - "8443:8443"  # Keep HTTPS port
     volumes:
       - ./nifi/data:/opt/nifi/nifi-current/data
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
     networks:
       - ea-aura-staging
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/nifi/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
 
 volumes:
   esdata_staging:
