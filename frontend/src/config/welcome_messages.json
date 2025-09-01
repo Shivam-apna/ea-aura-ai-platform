@@ -1,0 +1,17 @@
+{
+  "Overview": {
+    "welcome_message": "Welcome to the Overview Dashboard. Here you can track CES, NPS, Sentiment Score, CSAT, Conversion Rate, and Customer Health Score for a quick snapshot of your business health."
+  },
+  "Business_Vitality": {
+    "welcome_message": "Welcome to Business Vitality. This section gives you a clear view of financial and marketing performance. You will see sales results through net sales, and profit margins, while also tracking marketing effectiveness — including click-through rates, conversion percentages, revenue generated, and cost per lead. Use the Sales and Marketing tabs to review each side of business vitality in more detail."
+  },
+  "Customer_Analysis": {
+    "welcome_message": "Welcome to Customer Analyzer. This page brings together insights from surveys, social media, and customer support. You will see how customers rate their experiences through the Customer Effort Score, Customer Satisfaction Percentage, Net Promoter Score, and overall Customer Health Score. It also shows interaction on social channels — including response times, share of voice, and engagement levels. Support performance is measured through sentiment, resolution times, service level agreements met, and satisfaction scores. Use the Survey Analyzer, Social Media Analyzer, and Support Tickets Analyzer tabs to explore each area of the customer journey in detail."
+  },
+  "Mission_Alignment": {
+    "welcome_message": "Welcome to Mission Alignment. Here you can see whether your daily execution supports the companys broader goals. It highlights alignment scores, resource allocation, the impact of initiatives, and risks that may affect progress. The Mission Alignment tab guides you through these focus areas in one place."
+  },
+  "Brand_Index": {
+    "welcome_message": "Welcome to the Brand Index. This section shows how your brand is perceived and engaged with. You will see social impressions, engagement rates, and sentiment alongside website activity such as page views, bounce rates, session growth, and visitors — giving you a full picture of how your brand connects with its audience. Use the Social Engagement Analyzer and Website Analyzer tabs to look at each channel in greater detail."
+  }
+}
