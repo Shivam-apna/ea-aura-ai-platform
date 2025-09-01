@@ -60,23 +60,38 @@ INDEX_TEMPLATES = {
             }
         }
     },
-"agent_memory_log": {
-    "mappings": {
-        "properties": {
-            "agent_job_id": {"type": "keyword"},
-            "agent_id": {"type": "keyword"},
-            "tenant_id": {"type": "keyword"},
-            "timestamp": {"type": "date"},
-            "step": {"type": "keyword"},
-            "input": {"type": "text"},
-            "output": {"type": "text"},
-            "summary": {"type": "text"},
-            "agent_name": { "type": "keyword" },
-            "parent_agent": { "type": "keyword" },
-            "memory_type": {"type": "keyword"}
+    "agent_memory_log": {
+        "mappings": {
+            "properties": {
+                "agent_job_id": {"type": "keyword"},
+                "agent_id": {"type": "keyword"},
+                "tenant_id": {"type": "keyword"},
+                "timestamp": {"type": "date"},
+                "step": {"type": "keyword"},
+                "input": {"type": "text"},
+                "output": {"type": "text"},
+                "summary": {"type": "text"},
+                "agent_name": { "type": "keyword" },
+                "parent_agent": { "type": "keyword" },
+                "memory_type": {"type": "keyword"}
+            }
+        }
+    },
+    "token_usage": {
+        "mappings": {
+            "properties": {
+                "tenant_id": {"type": "keyword"},
+                "agent_id": {"type": "keyword"},
+                "job_id": {"type": "keyword"},
+                "input_tokens": {"type": "integer"},
+                "output_tokens": {"type": "integer"},
+                "total_tokens": {"type": "integer"},
+                "model_name": {"type": "keyword"},
+                "timestamp": {"type": "date"},
+                "month": {"type": "keyword"}
+            }
         }
     }
 }
 
 
-}

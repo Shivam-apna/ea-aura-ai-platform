@@ -2,19 +2,19 @@
   "kpi_keys": [
     {
       "key": "Page Views",
-      "bgColor": "#E4F8C2"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "Audience Growth",
-      "bgColor": "#E6F1FD"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "Engagement Rate (%)",
-      "bgColor": "#E4F8C2"
+      "bgColor": "#FFFFFF"
     },
     {
       "key": "Bounce Rate (%)",
-      "bgColor": "#E6F1FD"
+      "bgColor": "#FFFFFF"
     }
   ],
   "metric_groups": {
@@ -24,7 +24,7 @@
         "label": "Impressions"
       },
       {
-        "key": "Engagement_Rate",
+        "key": "Engagement Rate (%)",
         "label": "Engagement Rate"
       },
       {
@@ -38,7 +38,7 @@
     ],
     "Website Analyzer": [
       {
-        "key": "Page_Views",
+        "key": "Page Views",
         "label": "Page Views"
       },
       {
@@ -46,7 +46,7 @@
         "label": "Bounce Rate "
       },
       {
-        "key": "Session Growth (%",
+        "key": "Session Growth (%)",
         "label": "Session Growth"
       },
       {

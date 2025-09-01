@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import LoginPage from "./pages/Login";
 import ChatbotLauncher from "./components/ChatbotLauncher";
+import { WelcomeAvatarTTS } from "./components/AvatarVisualizer";
 import { cn } from "@/lib/utils";
 import { useKeycloakRoles } from "./hooks/useKeycloakRoles";
 import Landing from "./pages/Landing";
@@ -63,14 +64,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   console.log("ProtectedRoute: Checking roles for path", location.pathname, "with roles:", clientRoles);
 
-  if (clientRoles.includes('admin')) {
+  if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
     console.log("ProtectedRoute: User is admin.");
     allowedPaths = allowedPaths.concat([
       '/settings', '/users', '/upload-data', '/dashboard', '/business-vitality',
       '/customer-analyzer', '/mission-alignment', '/brand-index',
     ]);
     defaultRedirectPath = '/settings';
-  } else if (clientRoles.includes('user') && !clientRoles.includes('admin')) {
+  } else if (clientRoles.some(role => role.toLowerCase() === 'user') && !clientRoles.some(role => role.toLowerCase() === 'admin')) {
     console.log("ProtectedRoute: User is a standard user (not admin).");
     allowedPaths = allowedPaths.concat([
       '/dashboard', '/business-vitality', '/customer-analyzer',
@@ -150,6 +151,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
       </div>
+      {/* Welcome TTS for new users on applicable pages */}
+      <WelcomeAvatarTTS />
       <ChatbotLauncher
         onOpen={() => console.log('Chatbot opened!')}
         onClose={() => console.log('Chatbot closed!')}

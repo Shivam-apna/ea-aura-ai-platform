@@ -4,13 +4,14 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Plot from "react-plotly.js";
+import { toast } from 'sonner';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3 } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb, Icon, InfoIcon } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
@@ -20,9 +21,13 @@ import { Speech } from "lucide-react";
 import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import ClipLoader from "react-spinners/ClipLoader";
+import { getKpiBgColor, getContrastTextColor, getKpiColorInfo, debugKpiColors } from '@/utils/kpiColorUtils';
+import AISummaryPopup from './AISummaryPopup'; // Import the new component
+import GraphCardContent from './GraphCardContent'; // Import the new GraphCardContent component
 
-
-
+import { PredictiveAnalysis } from "@/utils/predictiveJson";
+import { PredictiveModal } from '@/components/PredectiveModal';
+import { NextStepModal } from '@/components/NextStepModal';
 // Type definitions
 interface KpiItem {
   key: string;
@@ -42,6 +47,7 @@ interface MetricGroups {
 
 // Define the ChartData interface based on its usage in the component
 interface ChartData {
+  summary: string;
   title: string;
   plotType: string;
   x: any[];
@@ -71,6 +77,8 @@ interface AdvancedDashboardLayoutProps {
   onTabChange?: (tab: string) => void;
   tabNames?: string[];
   hideTabsList?: boolean; // New prop
+  tenantId?: string;
+  onRefreshCharts?: () => void;
 }
 
 const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
@@ -87,12 +95,21 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   loading = false,
   activeTab,
   onTabChange,
+  tenantId,
   tabNames,
-  hideTabsList = false // Default to false
+  hideTabsList = false,// Default to false
+  onRefreshCharts
 }) => {
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } = useTheme();
 
   const iconColorClass = theme === 'dark' ? 'text-white' : 'text-primary'; // Conditional class
+
+  useEffect(() => {
+    // Debug the KPI color mapping
+    const kpiNames = dynamicKpiKeys.map(kpi => kpi.key);
+    debugKpiColors(kpiNames);
+  }, [dynamicKpiKeys]);
+
 
   // Detect if the current theme is dark
   const isDarkTheme = theme === 'dark' ||
@@ -140,9 +157,22 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const [chartColors, setChartColors] = useState<Record<string, string>>(initialChartColors);
   const [ttsLoadingMap, setTtsLoadingMap] = useState<Record<string, boolean>>({});
   const [isSpeakingMap, setIsSpeakingMap] = useState<Record<string, boolean>>({});
+  const [showSummaryMap, setShowSummaryMap] = useState<Record<string, boolean>>({}); // State for summary popup visibility
+  const [individualSummaries, setIndividualSummaries] = useState<Record<string, string>>({});
+  const [predictiveLoading, setPredictiveLoading] = useState<Record<string, boolean>>({});
+  const [predictiveModalOpen, setPredictiveModalOpen] = useState(false);
+  const [predictiveModalData, setPredictiveModalData] = useState<any>(null);
+  const [predictiveModalMetricKey, setPredictiveModalMetricKey] = useState<string>('');
+  const [nextStepLoading, setNextStepLoading] = useState<Record<string, boolean>>({});
+  const [nextStepModalOpen, setNextStepModalOpen] = useState(false);
+  const [nextStepModalData, setNextStepModalData] = useState<any>(null);
+  const [nextStepModalMetricKey, setNextStepModalMetricKey] = useState<string>('');
+
+
+
 
   const handleTTSClick = (chartKey: string, chartLabel: string) => {
-    // ✅ Set loading to true for this specific chart
+    // Set loading to true for this specific chart
     setTtsLoadingMap((prev: Record<string, boolean>) => ({
       ...prev,
       [chartKey]: true,
@@ -151,7 +181,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     createIndividualMetricTTS(
       chartKey,            // metricKey
       currentTab, // activeTab or page title
-      "graph_summary", // storageKey
+      storagePrefix, // Pass storagePrefix for correct summary key lookup
       (loading: boolean) =>
         setTtsLoadingMap((prev: Record<string, boolean>) => ({
           ...prev,
@@ -236,29 +266,175 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     onChartColorChange(key, color); // Also call the prop function
   };
 
+  const handleNextStepAnalysis = async (chartKey: string, chartLabel: string) => {
+    setNextStepLoading(prev => ({ ...prev, [chartKey]: true }));
+
+    try {
+      const chartType = chartTypes[chartKey] || charts[chartKey]?.plotType || "line";
+
+      // Use the new next step analysis method
+      const result = await PredictiveAnalysis.getNextStepAnalysisSimple(
+        chartKey,
+        tenantId,
+        chartType
+      ) as any;
+
+      if (result && result.status === "success") {
+        // Open modal with next step data - pass the entire result
+        setNextStepModalData(result);
+        setNextStepModalMetricKey(chartKey);
+        setNextStepModalOpen(true);
+
+        toast.success(`Next step analysis completed for ${chartLabel}`);
+      } else {
+        // Handle error cases
+        const errorMessage = result?.message || result?.error || 'Failed to generate next step analysis';
+        toast.error(errorMessage);
+        console.error('Next step analysis failed:', result);
+      }
+
+    } catch (error) {
+      console.error('Next step analysis failed:', error);
+      toast.error(`Next step analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setNextStepLoading(prev => ({ ...prev, [chartKey]: false }));
+    }
+  };
+
+  // 4. Add close modal function (add this after handleClosePredictiveModal)
+  const handleCloseNextStepModal = () => {
+    setNextStepModalOpen(false);
+    setNextStepModalData(null);
+    setNextStepModalMetricKey('');
+  };
+
+  // Update the handlePredictiveAnalysis function - replace the existing function with this:
+  const handlePredictiveAnalysis = async (chartKey: string, chartLabel: string) => {
+
+    setPredictiveLoading(prev => ({ ...prev, [chartKey]: true }));
+
+    try {
+      // Debug storage to see what's available
+      PredictiveAnalysis.debugStorage();
+
+      const chartType = chartTypes[chartKey] || charts[chartKey]?.plotType || "line";
+
+
+      // Use the updated getPredictiveData method
+      const result = await PredictiveAnalysis.getPredictiveData(
+        chartKey,
+        currentTab,
+        tenantId,
+        chartType,
+        true // use cache
+      ) as any;
+
+      if (result) {
+        // Handle the new data structure: {prediction_result: {...}, popup: {...}}
+        const chartData = result.prediction_result || result.chart_data || result;
+        const popupData = result.popup;
+
+        // Check if this is successful prediction data
+        if (chartData && (chartData.status === "success" || chartData.x && chartData.y)) {
+
+          // Merge popup data into chart data for the modal
+          const modalData = {
+            ...chartData,
+            popup: popupData
+          };
+
+          // Open modal with prediction data
+          setPredictiveModalData(modalData);
+          setPredictiveModalMetricKey(chartKey);
+          setPredictiveModalOpen(true);
+
+          // Display success message
+          const predictionMetadata = chartData._prediction_metadata || chartData.prediction_metadata || result.predictionmetadata;
+          if (predictionMetadata) {
+            PredictiveAnalysis.displayPredictionResults({
+              status: "success",
+              trend: predictionMetadata.trend,
+              confidence: predictionMetadata.confidence,
+              predictions: predictionMetadata.predictions || [],
+              key_insight: predictionMetadata.key_insight,
+              analysis_type: predictionMetadata.analysis_type,
+              metric_key: chartKey
+            });
+          } else {
+            toast.success(`Predictive analysis completed for ${chartLabel}`);
+          }
+
+        } else if (result.status) {
+          console.warn(`Prediction status: ${result.status}`, result.key_insight);
+          PredictiveAnalysis.displayPredictionResults(result);
+        } else {
+          console.error('Invalid prediction result structure:', result);
+          toast.error('Invalid prediction data received');
+        }
+      } else {
+        console.error('No prediction result returned');
+        toast.error('Failed to generate predictions. Check console for details.');
+      }
+
+    } catch (error) {
+      console.error('Prediction failed:', error);
+      toast.error(`Prediction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setPredictiveLoading(prev => ({ ...prev, [chartKey]: false }));
+    }
+  };
+
+  // Add this helper function to close the modal
+  const handleClosePredictiveModal = () => {
+    setPredictiveModalOpen(false);
+    setPredictiveModalData(null);
+    setPredictiveModalMetricKey('');
+  };
+
   const currentTab = activeTab || Object.keys(dynamicMetricGroups)[0];
   const metrics = dynamicMetricGroups[currentTab] || [];
 
-  const buttonsToRemove = [
-    'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d',
-    'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'sendDataToCloud', 'editInChartStudio',
-    'drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape',
-    'orbitRotation', 'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d',
-    'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'hoverClosestGeo'
+  // Define the modebar buttons explicitly to control grouping
+  const customModeBarButtons = [
+    ['toImage'], // Download button in its own group
+    ['zoom2d'],  // Zoom button in its own group
+    ['pan2d'],   // Pan button in its own group
+    ['resetScale2d'] // Reset axes button in its own group
   ];
 
+  const wrapText = (text: string, maxLineLength: number = 60): string => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + ' ' + word).length <= maxLineLength) {
+        currentLine = currentLine ? currentLine + ' ' + word : word;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+
+    if (currentLine) lines.push(currentLine);
+    return lines.join('<br>');
+  };
+
   // Get Plotly layout and config based on theme
+
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
     const baseLayout = {
       width: undefined,
-      height: 280,
+      height: 240, // Reduced height from 280 to 240
       autosize: true,
       title: '',
       font: {
         family: 'Inter, sans-serif',
         size: 16,
       },
-      margin: { l: 50, r: 30, t: 60, b: 50 },
+      margin: chart.summary ?
+        { l: 50, r: 30, t: 60, b: 75 } : // Reduced from 100 to 80
+        { l: 50, r: 30, t: 60, b: 50 },
       xaxis: {
         title: chart.xLabel,
         zeroline: false,
@@ -277,6 +453,24 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         font: { size: 15 }
       },
       transition: { duration: 500, easing: 'cubic-in-out' },
+      annotations: chart.summary ? [{
+        text: `💡 ${wrapText(chart.summary, 100)}`,
+        showarrow: false,
+        x: 0.5,
+        y: -0.40, // Changed from -0.35 to -0.25 to bring it closer
+        xref: 'paper',
+        yref: 'paper',
+        xanchor: 'center',
+        yanchor: 'top',
+        font: {
+          size: 13, // Reduced from 14 to 12
+          color: isDarkTheme ? '#e5e7eb' : '#1f2937',
+          family: 'Inter, sans-serif'
+        },
+        width: 800, // Add width constraint for wrapping
+        bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+
+      }] : [],
     };
 
     if (isDarkTheme) {
@@ -317,7 +511,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         config: {
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: buttonsToRemove,
+          modeBarButtons: customModeBarButtons, // Use the custom defined buttons
           responsive: true,
           toImageButtonOptions: {
             format: 'png',
@@ -366,7 +560,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         config: {
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: buttonsToRemove,
+          modeBarButtons: customModeBarButtons, // Use the custom defined buttons
           responsive: true,
           toImageButtonOptions: {
             format: 'png',
@@ -385,31 +579,115 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
+          const kpiValue = chart?.y?.at(-1);
+
+          // Get dynamic background color based on KPI name and value
+          const dynamicBgColor = kpiValue !== undefined
+            ? getKpiBgColor(kpi.key, kpiValue, kpi.bgColor || '#FFFFFF')
+            : '#FFFFFF';
+
+          // Get additional color info for stroke color
+          const colorInfo = getKpiColorInfo(kpi.key, kpiValue);
+          const strokeColor = colorInfo?.strokeColor;
+          const shouldShowStroke = strokeColor && strokeColor !== '';
+
+          // Check if we're using dynamic colors or default colors
+          const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#FFFFF');
+
+          // Get contrast text color only for dynamic colors
+          // const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
+
+          // Force black text if background is white, otherwise use contrast only for dynamic colors
+          let textColor: string | undefined;
+
+          if (dynamicBgColor.toLowerCase() === '#fff' || dynamicBgColor.toLowerCase() === 'white') {
+            textColor = '#000000'; // force black
+          } else if (isUsingDynamicColor) {
+            textColor = getContrastTextColor(dynamicBgColor);
+          }
+
           const icons = [BarChart2, LineChart];
           const Icon = icons[idx % icons.length];
+
           return (
             <Card
               key={idx}
-              style={{ backgroundColor: kpi.bgColor || '#fff' }}
+              style={{
+                backgroundColor: dynamicBgColor,
+                border: shouldShowStroke ? `2px solid ${strokeColor}` : 'none'
+              }}
               className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg p-0 overflow-hidden group min-h-[90px]"}
+              title={colorInfo ? `${colorInfo.label}` : undefined} // Tooltip showing range
             >
               <CardContent className="flex flex-col items-center justify-center py-3 px-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={cn("text-xs font-medium", theme === 'dark' && "text-black")} style={{ fontSize: "0.90rem" }}>{kpi.originalKey || kpi.key}</span>
-                  {idx % 2 === 0 ? <BarChart2 className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} /> : <LineChart className={cn("w-4 h-4 text-primary", theme === 'dark' && "text-black")} />}
+                  <span
+                    className={cn("text-xs font-medium",
+                      // Use original Tailwind classes when not using dynamic colors
+                      !isUsingDynamicColor && theme === 'dark' && "text-black"
+                    )}
+                    style={{
+                      fontSize: "0.90rem",
+                      // Only use inline color when we have dynamic colors
+                      ...(isUsingDynamicColor && { color: textColor })
+                    }}
+                  >
+                    {kpi.key}
+                  </span>
+                  {idx % 2 === 0 ? (
+                    <BarChart2
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
+                    />
+                  ) : (
+                    <LineChart
+                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
+                    />
+                  )}
                 </div>
                 <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
-                  {chart?.y?.at(-1) !== undefined ? (
-                    <span className={cn("text-lg font-bold text-foreground transition-colors", theme === 'dark' && "text-black")}>{chart.y.at(-1).toLocaleString()}</span>
+                  {kpiValue !== undefined ? (
+                    <span
+                      className={cn("text-lg font-bold text-foreground transition-colors",
+                        theme === 'dark' && "text-black"
+                      )}
+                      style={{
+                        ...(isUsingDynamicColor && { color: textColor })
+                      }}
+                    >
+                      {kpiValue.toLocaleString()}
+                    </span>
                   ) : (
                     <span className="flex flex-col items-center justify-center">
-                      <Icon className={cn("w-7 h-7 mb-0.5", theme === 'dark' ? "text-black" : "text-muted-foreground")} />
-                      <span className={cn("text-[10px] mt-0.5 font-medium", theme === 'dark' ? "text-black" : "text-muted-foreground")}>No data</span>
+                      <Icon
+                        className={cn("w-7 h-7 mb-0.5",
+                          theme === 'dark' ? "text-black" : "text-muted-foreground"
+                        )}
+                        style={{
+                          ...(isUsingDynamicColor && { color: textColor })
+                        }}
+                      />
+                      <span
+                        className={cn("text-[10px] mt-0.5 font-medium",
+                          theme === 'dark' ? "text-black" : "text-muted-foreground"
+                        )}
+                        style={{
+                          ...(isUsingDynamicColor && { color: textColor })
+                        }}
+                      >
+                        No data
+                      </span>
                     </span>
                   )}
                 </span>
                 <span
-                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" : chart?.delta < 0 ? "text-red-500" : "text-muted-foreground"}`}
+                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" :
+                    chart?.delta < 0 ? "text-red-500" :
+                      "text-muted-foreground"
+                    }`}
+                  style={{
+                    // Only override for neutral delta when using dynamic colors
+                    ...((chart?.delta === undefined || chart?.delta === null || chart?.delta === 0) && isUsingDynamicColor && { color: textColor })
+                  }}
                 >
                   {chart?.delta === undefined || chart?.delta === null
                     ? ""
@@ -547,7 +825,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
             const visibleMetrics = (cardOrder[currentTab] || metrics.filter(metric => !hiddenCharts.has(metric.key)).map(m => m.key))
               .map(key => metrics.find(m => m.key === key)).filter((m): m is MetricItem => Boolean(m));
 
-            return (
+            return (<>
               <DragDropContext onDragEnd={handleDragEnd(currentTab)}>
                 <Droppable droppableId={`cards-${currentTab}`} direction="horizontal">
                   {(provided) => (
@@ -562,18 +840,26 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                         const isOdd = arr.length % 2 === 1;
                         const stretchClass = columns === 2 && isLast && isOdd ? 'sm:col-span-2' : '';
 
+                        // Retrieve summary text for the current metric
+                        const summaryStorageKey = `${storagePrefix}_parsed_summary_${currentTab}`;
+                        const cachedSummary = typeof window !== 'undefined' ? localStorage.getItem(summaryStorageKey) : null;
+                        const parsedSummary = cachedSummary ? JSON.parse(cachedSummary) : {};
+                        const graphSummaryText = parsedSummary[metric.key]?.summary || "No summary present.";
+
                         return (
                           <Draggable key={metric.key} draggableId={metric.key} index={idx}>
                             {(provided) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                {...provided.dragHandleProps}
                                 className={stretchClass}
                               >
                                 <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in">
                                   <CardContent className="flex flex-col h-full p-0">
-                                    <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 px-2 pt-2">
+                                    <div
+                                      className="flex justify-between items-center mb-0 pb-1 border-b border-gray-100 px-2 pt-2 cursor-move"
+                                      {...provided.dragHandleProps} // <-- Only header is the drag handle now!
+                                    >
                                       <h3 className="text-base font-semibold text-foreground">{metric.label}</h3>
                                       <div className="flex items-center gap-2">
 
@@ -608,6 +894,71 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                 </p>
                                               </TooltipContent>
                                             </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handlePredictiveAnalysis(metric.key, metric.label)}
+                                                  disabled={predictiveLoading[metric.key]}
+                                                >
+                                                  {predictiveLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <TrendingUp className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Predictive Analysis</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {predictiveLoading[metric.key]
+                                                    ? 'Generating predictions...'
+                                                    : 'Predictive Analysis'
+                                                  }
+                                                </p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handleNextStepAnalysis(metric.key, metric.label)}
+                                                  disabled={nextStepLoading[metric.key]}
+                                                >
+                                                  {nextStepLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <Lightbulb className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Next Step</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {nextStepLoading[metric.key]
+                                                    ? 'Generating next steps...'
+                                                    : 'Next Step Analysis'
+                                                  }
+                                                </p>
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+
                                             <Popover>
                                               <PopoverTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
@@ -664,63 +1015,17 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex-1 w-full h-full" style={{ minHeight: 340, overflow: 'hidden' }}>
-                                      {chart ? (
-                                        (() => {
-                                          const { layout, config } = getPlotlyLayoutAndConfig(chart);
-                                          return (
-                                            <Plot
-                                              data={(() => {
-                                                const isBar = (chartTypes[metric.key] || chart.plotType) === 'bar';
-                                                if (isBar && Array.isArray(chart.y[0])) {
-                                                  return chart.y.map((series, i) => ({
-                                                    x: chart.x,
-                                                    y: series,
-                                                    type: 'bar',
-                                                    marker: chartColors[metric.key]
-                                                      ? { color: Array(series.length).fill(chartColors[metric.key]) }
-                                                      : { color: Array(series.length).fill(COLORS[i % COLORS.length]) },
-                                                  }));
-                                                } else if (isBar) {
-                                                  return [{
-                                                    x: chart.x,
-                                                    y: chart.y,
-                                                    type: 'bar',
-                                                    marker: chartColors[metric.key]
-                                                      ? { color: Array(chart.x.length).fill(chartColors[metric.key]) }
-                                                      : { color: chart.x.map((_, i) => COLORS[i % COLORS.length]) }
-                                                  }];
-                                                } else {
-                                                  const type = chartTypes[metric.key] || chart.plotType;
-                                                  return [{
-                                                    x: chart.x,
-                                                    y: chart.y,
-                                                    type,
-                                                    ...(type === 'scatter' ? { mode: 'markers' } : {}),
-                                                    marker: {
-                                                      color: chartColors[metric.key] || chart.marker?.color || COLORS[0],
-                                                      size: 10,
-                                                      line: { width: 2, color: isDarkTheme ? '#1f2937' : '#fff' }
-                                                    },
-                                                  }];
-                                                }
-                                              })()}
-                                              layout={layout}
-                                              style={{ width: '100%', height: '100%' }}
-                                              config={config}
-                                            />
-
-                                          );
-                                        })()
-                                      ) : (
-                                        <div className={cn("flex flex-col items-center justify-center pt-20 pb-8", "text-muted-foreground")}>
-                                          <BarChart2 className={cn("w-12 h-12 mb-2 animate-bounce", "text-primary")} />
-                                          <span className={cn("text-base font-semibold")}>No data available</span>
-                                          <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
-
-
-                                        </div>
-                                      )}
+                                    <div className="flex-1 w-full h-full" style={{ minHeight: 280, overflow: 'hidden' }}>
+                                      <GraphCardContent
+                                        chart={chart}
+                                        isLoading={loading}
+                                        isDarkTheme={isDarkTheme}
+                                        chartType={chartTypes[metric.key] || chart?.plotType || 'bar'}
+                                        chartColor={chartColors[metric.key] || chart?.marker?.color || primaryColorForCharts}
+                                        primaryColorForCharts={primaryColorForCharts}
+                                        colors={COLORS}
+                                        getPlotlyLayoutAndConfig={getPlotlyLayoutAndConfig}
+                                      />
 
                                       {/* Voice Visualizer - Now shows for any chart when speaking */}
                                       {isSpeakingMap[metric.key] && (
@@ -742,6 +1047,22 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   )}
                 </Droppable>
               </DragDropContext>
+              <PredictiveModal
+                isOpen={predictiveModalOpen}
+                onClose={handleClosePredictiveModal}
+                chartData={predictiveModalData}
+                metricKey={predictiveModalMetricKey}
+                chartType={predictiveModalData ? (chartTypes[predictiveModalMetricKey] || predictiveModalData.plotType) : undefined}
+                chartColor={predictiveModalData ? (chartColors[predictiveModalMetricKey] || predictiveModalData.marker?.color) : undefined}
+              />
+
+              <NextStepModal
+                isOpen={nextStepModalOpen}
+                onClose={handleCloseNextStepModal}
+                nextStepData={nextStepModalData}
+                metricKey={nextStepModalMetricKey}
+              />
+            </>
             );
           })()}
         </TabsContent>

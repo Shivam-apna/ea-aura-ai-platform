@@ -111,11 +111,23 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SERVER_BASEPATH: "/kibana"
       SERVER_REWRITEBASEPATH: "true"
+      SERVER_PUBLICBASEURL: "https://staging.ea-aura.ai/kibana"
+      SERVER_HOST: "0.0.0.0"
+      XPACK_SECURITY_ENABLED: "false"
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: "staging-kibana-encryption-key-32chars"
+    volumes:
+      - kibana_data_staging:/usr/share/kibana/data
     depends_on:
       elasticsearch:
         condition: service_healthy
     networks:
       - ea-aura-staging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/kibana/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.0.0
@@ -285,6 +297,7 @@ volumes:
   postgres_data_staging:
   dbeaver_data_staging:
   dbeaver_logs_staging:
+  kibana_data_staging:
 
 networks:
   ea-aura-staging:

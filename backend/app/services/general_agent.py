@@ -3,6 +3,9 @@ from langchain_groq import ChatGroq
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from app.groq_config import get_groq_config
+from app.core.config import settings
+from app.services.llm_guard import validate_prompt, validate_response, SAFE_FALLBACK_MESSAGE
+from app.core.core_log import agent_logger as logger
 
 
 class GeneralAgent:
@@ -22,7 +25,7 @@ class GeneralAgent:
             self.llm = ChatGroq(
                 groq_api_key=groq_config["api_key"],
                 model_name=groq_config["model"],
-                base_url=groq_config["base_url"],
+                base_url="https://api.groq.com",
                 temperature=0.7,
                 max_tokens=500
             )
@@ -44,4 +47,21 @@ class GeneralAgent:
         self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
 
     def run(self, query: str) -> str:
-        return self.chain.run(query=query)
+        # Pre-check with guard
+        if settings.enable_llm_guard:
+            ok, reason = validate_prompt(query)
+            if not ok:
+                logger.warning(f"[LLM-GUARD] GeneralAgent prompt blocked: {reason}")
+                return SAFE_FALLBACK_MESSAGE
+            else:
+                logger.debug("[LLM-GUARD] GeneralAgent prompt allowed")
+        result = self.chain.run(query=query)
+        # Post-check with guard
+        if settings.enable_llm_guard:
+            ok, reason = validate_response(result)
+            if not ok:
+                logger.warning(f"[LLM-GUARD] GeneralAgent response blocked: {reason}")
+                return SAFE_FALLBACK_MESSAGE
+            else:
+                logger.debug("[LLM-GUARD] GeneralAgent response allowed")
+        return result

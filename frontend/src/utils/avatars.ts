@@ -57,7 +57,6 @@ export const createTTS = async (
 
         const fullText = `${introText} ${summaryText}`;
 
-
         const res = await fetch(getApiEndpoint("/v1/text-to-speech"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -114,7 +113,6 @@ export const stopCurrentTTS = (setIsSpeaking: (speaking: boolean) => void) => {
         currentAudio.currentTime = 0;
         currentAudio = null;
         setIsSpeaking(false);
-
     } else {
         setIsSpeaking(false); // Set speaking to false anyway to reset UI state
     }
@@ -146,7 +144,6 @@ export const createIndividualMetricTTS = async (
             toast.error(`No summary data found for ${activeTab}.`);
             return;
         }
-
 
         const cachedSummary = localStorage.getItem(summaryKey);
         if (!cachedSummary) {

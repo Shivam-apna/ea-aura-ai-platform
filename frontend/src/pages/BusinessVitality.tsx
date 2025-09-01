@@ -332,7 +332,7 @@ const BusinessDashboard = () => {
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: "demo123" }), // Use the prompt from the argument
+        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
         signal: abortControllerRef.current.signal, // Add abort signal
       });
 
@@ -438,7 +438,7 @@ const BusinessDashboard = () => {
       // Save tab-specific summary
       const summaryKey = `business_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
       // Merge new parsed response
       for (const key in parsed) {
@@ -470,7 +470,7 @@ const BusinessDashboard = () => {
       const chartMap: Record<string, any> = {};
 
       for (const key of apiResponseKeys) {
-        const { plot_type, data: values, value, delta } = parsed[key] || {};
+        const { plot_type, data: values, value, delta, summary } = parsed[key] || {};
         if (!values || values.length === 0) continue;
 
         const xKey = Object.keys(values[0])[0];
@@ -492,6 +492,7 @@ const BusinessDashboard = () => {
           yLabel: yKey,
           value,
           delta,
+          summary: summary || "",
         };
       }
 
