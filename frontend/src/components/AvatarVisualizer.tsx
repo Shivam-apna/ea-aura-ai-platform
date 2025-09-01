@@ -200,3 +200,159 @@ export const CompactVoiceVisualizer = ({ isSpeaking = false, className = "" }) =
 };
 
 export default VoiceAssistant;
+
+// New: WelcomeAvatarTTS - simple Web Speech API TTS for new users
+import { useLocation } from 'react-router-dom';
+import { useKeycloakRoles } from '@/hooks/useKeycloakRoles';
+import welcomeMessages from '@/config/welcome_messages.json';
+
+export const WelcomeAvatarTTS: React.FC = () => {
+    const location = useLocation();
+    const { clientRoles } = useKeycloakRoles();
+    const [isSpeaking, setIsSpeaking] = React.useState(false);
+    const hasSpokenRef = React.useRef(false);
+    const utteranceRef = React.useRef<SpeechSynthesisUtterance | null>(null);
+    const voicesHandlerSetRef = React.useRef(false);
+    const fallbackTimerRef = React.useRef<number | null>(null);
+
+    // Map path to section key in welcome_messages.json and return its message
+    const mapPathToSectionKey = (path: string): keyof typeof welcomeMessages | null => {
+        const keyMap: Record<string, keyof typeof welcomeMessages> = {
+            '/dashboard': 'Overview',
+            '/business-vitality': 'Business_Vitality',
+            '/customer-analyzer': 'Customer_Analysis',
+            '/mission-alignment': 'Mission_Alignment',
+            '/brand-index': 'Brand_Index',
+        } as const;
+        return keyMap[path] || null;
+    };
+ 
+    const getWelcomeMessage = (sectionKey: keyof typeof welcomeMessages | null): string | null => {
+        if (!sectionKey) return null;
+        const section = (welcomeMessages as any)[sectionKey];
+        return section?.welcome_message || null;
+    };
+ 
+    useEffect(() => {
+        // Cancel any ongoing welcome speech on path/role change to avoid overlap
+        try {
+            if (speechSynthesis.speaking || speechSynthesis.pending) {
+                speechSynthesis.cancel();
+            }
+        } catch {}
+
+        // Clear previous timers/handlers
+        if (fallbackTimerRef.current) {
+            clearTimeout(fallbackTimerRef.current);
+            fallbackTimerRef.current = null;
+        }
+        if (voicesHandlerSetRef.current) {
+            // Reset handler; setting to null is fine
+            (speechSynthesis as any).onvoiceschanged = null;
+            voicesHandlerSetRef.current = false;
+        }
+
+        hasSpokenRef.current = false;
+
+        // Only for role 'user' (non-admin)
+        const rolesLower = clientRoles.map(r => r.toLowerCase());
+        const isUser = rolesLower.includes('user');
+        const isAdmin = rolesLower.includes('admin');
+        if (!isUser || isAdmin) return;
+
+        const sectionKey = mapPathToSectionKey(location.pathname);
+        const message = getWelcomeMessage(sectionKey);
+        if (!message) return;
+
+        // Per-page flag to avoid conflicts with other logic: welcome_tts_shown_v1_<sectionKey>
+        const storageKey = sectionKey ? `welcome_tts_shown_v1_${sectionKey}` : null;
+        if (storageKey && localStorage.getItem(storageKey) === 'true') return;
+
+        // Use Web Speech API
+        const speak = () => {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'en-US';
+            utterance.rate = 1;
+            utterance.pitch = 1;
+        
+            // Use the SAME voice selection logic as WelcomeBackPage
+            const voices = speechSynthesis.getVoices();
+            const femaleVoice = voices.find(
+                (v) =>
+                    v.name.toLowerCase().includes('female') ||
+                    v.name.toLowerCase().includes('google us english')
+            );
+            if (femaleVoice) utterance.voice = femaleVoice;
+        
+            utterance.onstart = () => setIsSpeaking(true);
+            utterance.onend = () => {
+                setIsSpeaking(false);
+                hasSpokenRef.current = true;
+                if (storageKey) {
+                    localStorage.setItem(storageKey, 'true');
+                }
+            };
+            utterance.onerror = () => {
+                setIsSpeaking(false);
+            };
+        
+            // Ensure no queue; cancel then speak
+            try {
+                if (speechSynthesis.speaking || speechSynthesis.pending) {
+                    speechSynthesis.cancel();
+                }
+            } catch {}
+        
+            utteranceRef.current = utterance;
+            // Mark as shown BEFORE speaking to persist even if interrupted
+            if (storageKey) {
+                localStorage.setItem(storageKey, 'true');
+            }
+            speechSynthesis.speak(utterance);
+        };
+
+        // If voices not loaded yet, wait for them
+        const availableVoices = speechSynthesis.getVoices();
+        if (!availableVoices || availableVoices.length === 0) {
+            const handler = () => {
+                if (!hasSpokenRef.current) speak();
+                (speechSynthesis as any).onvoiceschanged = null;
+                voicesHandlerSetRef.current = false;
+            };
+            (speechSynthesis as any).onvoiceschanged = handler;
+            voicesHandlerSetRef.current = true;
+            // Fallback: attempt after short delay (and cancel previous queued attempts)
+            fallbackTimerRef.current = window.setTimeout(() => {
+                if (!hasSpokenRef.current) speak();
+            }, 600);
+        } else {
+            speak();
+        }
+        // Cleanup on path/role change or unmount
+        return () => {
+            try {
+                if (speechSynthesis.speaking || speechSynthesis.pending) {
+                    speechSynthesis.cancel();
+                }
+            } catch {}
+            if (fallbackTimerRef.current) {
+                clearTimeout(fallbackTimerRef.current);
+                fallbackTimerRef.current = null;
+            }
+            if (voicesHandlerSetRef.current) {
+                (speechSynthesis as any).onvoiceschanged = null;
+                voicesHandlerSetRef.current = false;
+            }
+            utteranceRef.current = null;
+            setIsSpeaking(false);
+        };
+    }, [clientRoles, location.pathname]);
+
+    // Floating compact visualizer while speaking
+    if (!isSpeaking) return null;
+    return (
+        <div className="fixed bottom-4 left-4 z-[9999] bg-[rgb(229_242_253)] rounded-full shadow-xl p-2">
+            <CompactVoiceVisualizer isSpeaking={isSpeaking} />
+        </div>
+    );
+};
