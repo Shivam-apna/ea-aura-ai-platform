@@ -430,7 +430,7 @@ const CustomerAnalyzer = () => {
 
       const summaryKey = `customer_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
       // Merge new parsed response
       for (const key in parsed) {
@@ -461,6 +461,7 @@ const CustomerAnalyzer = () => {
 
       const chartMap: Record<string, any> = {};
 
+      // ✅ UPDATED: Add null safety in chart data processing
       for (const key of apiResponseKeys) {
         const { plot_type, data: values, value, delta, summary } = parsed[key] || {};
         if (!values || values.length === 0) continue;
@@ -469,21 +470,30 @@ const CustomerAnalyzer = () => {
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
 
+        // ✅ Filter out data points with null/undefined values to prevent errors
+        const validData = values.filter((d: any) => 
+          d[xKey] !== null && d[xKey] !== undefined && 
+          d[yKey] !== null && d[yKey] !== undefined
+        );
+
+        // If no valid data after filtering, create chart with empty arrays but preserve metadata
+        const hasValidData = validData.length > 0;
+
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
-          x: values.map((d) => {
+          x: hasValidData ? validData.map((d: any) => {
             const val = d[xKey];
             if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
               return val.slice(0, 10);
             }
             return val;
-          }),
-          y: values.map((d) => d[yKey]),
+          }) : [],
+          y: hasValidData ? validData.map((d: any) => d[yKey]) : [],
           xLabel: xKey,
           yLabel: yKey,
-          value,
-          delta,
+          value: value === null || value === undefined ? null : value, // Keep null for proper handling
+          delta: delta === null || delta === undefined ? null : delta, // Keep null for proper handling
           summary: summary || "",
         };
       }

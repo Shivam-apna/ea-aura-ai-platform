@@ -11,25 +11,33 @@ from typing import Dict, Any, List, Union
 
 class NextStepAnalyser:
     def __init__(self):
-        groq_config = get_groq_config()
+        try:
+            groq_config = get_groq_config()
+        except Exception as e:
+            logger.error(f"Failed to get groq config: {str(e)}")
+            raise RuntimeError(f"Configuration error: {str(e)}")
 
-        # Decide backend: LM Studio → ChatOpenAI | Groq → ChatGroq
-        if "pinguaicloud" in groq_config["base_url"]:  # LM Studio
-            self.llm = ChatOpenAI(
-                api_key=groq_config["api_key"],
-                base_url=groq_config["base_url"],
-                model=groq_config["model"],
-                temperature=0.3,  # Lower temperature for more consistent predictions
-                max_tokens=800
-            )
-        else:  # Groq
-            self.llm = ChatGroq(
-                groq_api_key=groq_config["api_key"],
-                model_name=groq_config["model"],
-                base_url="https://api.groq.com",
-                temperature=0.3,  # Lower temperature for more consistent predictions
-                max_tokens=800
-            )
+        try:
+            # Decide backend: LM Studio → ChatOpenAI | Groq → ChatGroq
+            if "pinguaicloud" in groq_config["base_url"]:  # LM Studio
+                self.llm = ChatOpenAI(
+                    api_key=groq_config["api_key"],
+                    base_url=groq_config["base_url"],
+                    model=groq_config["model"],
+                    temperature=0.3,  # Lower temperature for more consistent predictions
+                    max_tokens=800
+                )
+            else:  # Groq
+                self.llm = ChatGroq(
+                    groq_api_key=groq_config["api_key"],
+                    model_name=groq_config["model"],
+                    base_url="https://api.groq.com",
+                    temperature=0.3,  # Lower temperature for more consistent predictions
+                    max_tokens=800
+                )
+        except Exception as e:
+            logger.error(f"Failed to initialize LLM: {str(e)}")
+            raise RuntimeError(f"LLM initialization error: {str(e)}")
 
         self.prompt = PromptTemplate.from_template(
             "You are a business strategy consultant specializing in actionable recommendations for startups and businesses. "
@@ -53,7 +61,7 @@ class NextStepAnalyser:
             
             "REQUIRED OUTPUT FORMAT:\n"
             "You must respond with ONLY a valid JSON object in this exact structure:\n"
-            "Do not add any specticial characters to the title it will be sting only.\n\n"
+            "Do not add any special characters to the title it will be string only.\n\n"
             "{{\n"
             "  \"Next Steps to Boost {title}\": \"Based on AI analysis and key performance drivers, here are recommended actions you can take to improve {title} performance.\",\n"
             "  \"step_1\": {{\n"
@@ -98,7 +106,11 @@ class NextStepAnalyser:
             "Analyze the data and provide actionable next steps in JSON format:"
         )
 
-        self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
+        try:
+            self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
+        except Exception as e:
+            logger.error(f"Failed to create LLMChain: {str(e)}")
+            raise RuntimeError(f"Chain initialization error: {str(e)}")
 
     def _prepare_data_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare and validate input data for analysis"""
@@ -209,15 +221,41 @@ class NextStepAnalyser:
 # Helper functions to maintain compatibility with existing code
 def get_next_step_analysis(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     """Main function to get next step analysis"""
-    agent = NextStepAnalyser()
-    return agent.analyze(chart_data)
+    try:
+        agent = NextStepAnalyser()
+        return agent.analyze(chart_data)
+    except Exception as e:
+        logger.error(f"Failed to create NextStepAnalyser: {str(e)}")
+        return {"error": f"Service unavailable: {str(e)}"}
 
 
 def analyze_next_steps(chart_data: Dict[str, Any]) -> Dict[str, Any]:
     """Alternative helper function name for next step analysis"""
-    agent = NextStepAnalyser()
-    return agent.analyze(chart_data)
+    try:
+        agent = NextStepAnalyser()
+        return agent.analyze(chart_data)
+    except Exception as e:
+        logger.error(f"Failed to create NextStepAnalyser: {str(e)}")
+        return {"error": f"Service unavailable: {str(e)}"}
 
 
-# Create a global instance for easy importing (optional)
-next_step_analyser = NextStepAnalyser()
+# Create a global instance for easy importing (optional) - with lazy initialization
+_next_step_analyser = None
+
+def get_next_step_analyser():
+    """Get or create NextStepAnalyser instance"""
+    global _next_step_analyser
+    if _next_step_analyser is None:
+        try:
+            _next_step_analyser = NextStepAnalyser()
+        except Exception as e:
+            logger.error(f"Failed to initialize NextStepAnalyser: {str(e)}")
+            raise
+    return _next_step_analyser
+
+# For backward compatibility, but avoid creating instance at module level
+try:
+    next_step_analyser = NextStepAnalyser()
+except Exception as e:
+    logger.error(f"Failed to create global NextStepAnalyser instance: {str(e)}")
+    next_step_analyser = None
