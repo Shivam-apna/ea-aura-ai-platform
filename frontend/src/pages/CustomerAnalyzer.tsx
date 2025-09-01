@@ -461,7 +461,6 @@ const CustomerAnalyzer = () => {
 
       const chartMap: Record<string, any> = {};
 
-      // ✅ UPDATED: Add null safety in chart data processing
       for (const key of apiResponseKeys) {
         const { plot_type, data: values, value, delta, summary } = parsed[key] || {};
         if (!values || values.length === 0) continue;
@@ -470,30 +469,21 @@ const CustomerAnalyzer = () => {
         const yKey = Object.keys(values[0]).find((k) => k !== xKey);
         if (!yKey) continue;
 
-        // ✅ Filter out data points with null/undefined values to prevent errors
-        const validData = values.filter((d: any) => 
-          d[xKey] !== null && d[xKey] !== undefined && 
-          d[yKey] !== null && d[yKey] !== undefined
-        );
-
-        // If no valid data after filtering, create chart with empty arrays but preserve metadata
-        const hasValidData = validData.length > 0;
-
         chartMap[key] = {
           title: key,
           plotType: plot_type || "bar",
-          x: hasValidData ? validData.map((d: any) => {
+          x: values.map((d) => {
             const val = d[xKey];
             if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
               return val.slice(0, 10);
             }
             return val;
-          }) : [],
-          y: hasValidData ? validData.map((d: any) => d[yKey]) : [],
+          }),
+          y: values.map((d) => d[yKey]),
           xLabel: xKey,
           yLabel: yKey,
-          value: value === null || value === undefined ? null : value, // Keep null for proper handling
-          delta: delta === null || delta === undefined ? null : delta, // Keep null for proper handling
+          value,
+          delta,
           summary: summary || "",
         };
       }
