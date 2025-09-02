@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Plot from "react-plotly.js";
@@ -652,7 +652,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                       )}
                     </div>
                     <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
-                      {kpiValue !== undefined ? (
+                      {kpiValue !== undefined && kpiValue !== null ? (
                         <span
                           className={cn("text-lg font-bold text-foreground transition-colors",
                             theme === 'dark' && "text-black"
@@ -661,7 +661,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                             ...(isUsingDynamicColor && { color: textColor })
                           }}
                         >
-                          {kpiValue.toLocaleString()}
+                          {(typeof kpiValue === 'number' || typeof kpiValue === 'string') ? kpiValue.toLocaleString() : String(kpiValue)}
                         </span>
                       ) : (
                         <span className="flex flex-col items-center justify-center">
@@ -706,9 +706,15 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 </Card>
               </TooltipTrigger>
               <TooltipContent>
-                <p>
-                  {colorInfo ? colorInfo.label : 'Out of range / No data'}
-                </p>
+                {colorInfo ? (
+                  <>
+                    <p className="font-semibold">{colorInfo.label}</p>
+                    {colorInfo.range && <p className="text-xs text-muted-foreground">Range: {colorInfo.range}</p>}
+                    {colorInfo.value && <p className="text-xs text-muted-foreground">Value: {colorInfo.value}</p>}
+                  </>
+                ) : (
+                  <p>No KPI information available</p>
+                )}
               </TooltipContent>
             </ShadcnTooltip>
           );
