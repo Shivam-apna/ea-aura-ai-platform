@@ -17,6 +17,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
 import { cn } from '@/lib/utils';
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"; // Import TooltipPrimitive for the Arrow component
 import { Speech } from "lucide-react";
 import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
@@ -709,6 +710,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                 <p>
                   {colorInfo ? colorInfo.label : 'Out of range / No data'}
                 </p>
+                <TooltipPrimitive.Arrow className="fill-popover" /> {/* Add the arrow here */}
               </TooltipContent>
             </ShadcnTooltip>
           );
@@ -910,6 +912,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                       : 'Voice Summary'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
                                             <ShadcnTooltip>
@@ -942,6 +945,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                     : 'Predictive Analysis'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
                                             <ShadcnTooltip>
@@ -974,6 +978,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                     : 'Next Step Analysis'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
 
