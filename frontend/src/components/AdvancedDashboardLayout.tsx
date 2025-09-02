@@ -1038,7 +1038,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex-1 w-full h-full" style={{ minHeight: 280, overflow: 'hidden' }}>
+                                    <div className="flex-1 w-full h-full relative" style={{ minHeight: 280, overflow: 'hidden' }}>
                                       <GraphCardContent
                                         chart={chart}
                                         isLoading={loading}
