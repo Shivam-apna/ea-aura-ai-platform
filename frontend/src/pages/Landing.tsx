@@ -52,24 +52,30 @@ const Landing: React.FC = () => {
     }
   }, [isAuthenticated]); // Re-run when auth state changes
 
-  const handleGetStarted = () => {
-    localStorage.setItem('is_returning_user', 'true');
-    setIsNewUser(false);
-    // Redirect based on user role (case-insensitive)
-    if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
+  const handleRedirectBasedOnRole = () => {
+    const isAdmin = clientRoles.some(role => role.toLowerCase() === 'admin');
+    const isUser = clientRoles.some(role => role.toLowerCase() === 'user');
+
+    if (isAdmin) {
       navigate('/settings');
+    } else if (isUser) {
+      // For 'user' role, always redirect to dashboard and set 'overview' as active agent
+      localStorage.setItem('last_active_agent_user_role', 'overview');
+      navigate('/dashboard');
     } else {
+      // Fallback if no specific role is matched
       navigate('/dashboard');
     }
   };
 
+  const handleGetStarted = () => {
+    localStorage.setItem('is_returning_user', 'true');
+    setIsNewUser(false);
+    handleRedirectBasedOnRole();
+  };
+
   const handleContinue = () => {
-    // Redirect based on user role (case-insensitive)
-    if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
-      navigate('/settings');
-    } else {
-      navigate('/dashboard');
-    }
+    handleRedirectBasedOnRole();
   };
 
   if (authLoading) {

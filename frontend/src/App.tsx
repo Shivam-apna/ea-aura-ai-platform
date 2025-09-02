@@ -25,6 +25,7 @@ import Landing from "./pages/Landing";
 import UploadData from "./pages/UploadData";
 import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext";
 import { useTheme } from "./components/ThemeProvider";
+import { allAgents } from "./config/sidebar_agents"; // Import allAgents
 
 const queryClient = new QueryClient();
 
@@ -97,7 +98,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Layout component that conditionally renders header and sidebar
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const [activeAgent, setActiveAgent] = React.useState('overview');
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { clientRoles } = useKeycloakRoles();
+  const [activeAgent, setActiveAgent] = React.useState('overview'); // Default to 'overview'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const { theme } = useTheme(); // Get the current theme from context
 
@@ -125,6 +128,38 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       }
     }
   }, [isAuthPage, theme]); // Depend on isAuthPage and theme
+
+  // Effect to initialize activeAgent based on user role and stored preference
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && clientRoles.length > 0) {
+      const isAdmin = clientRoles.some(role => role.toLowerCase() === 'admin');
+      const isUser = clientRoles.some(role => role.toLowerCase() === 'user');
+
+      if (isUser && !isAdmin) {
+        // For 'user' role, check local storage for last active agent, default to 'overview'
+        const lastActiveAgent = localStorage.getItem('last_active_agent_user_role');
+        setActiveAgent(lastActiveAgent || 'overview');
+      } else if (isAdmin) {
+        // For 'admin' role, keep existing behavior (e.g., default to settings or last visited)
+        // For now, we'll just keep the default 'overview' or whatever the sidebar's default is
+        // If admin has a specific default, it should be set here.
+        // For this request, admin behavior remains unchanged, so no explicit override needed here.
+      }
+    }
+  }, [isAuthenticated, authLoading, clientRoles, location.pathname]); // Add location.pathname to re-evaluate on route change
+
+  // NEW useEffect to sync activeAgent with current route
+  useEffect(() => {
+    const currentAgent = allAgents.find(agent => agent.path === location.pathname);
+    if (currentAgent) {
+      setActiveAgent(currentAgent.id);
+    } else if (location.pathname === '/') {
+      // Default to 'overview' if at root and not an auth page
+      if (!isAuthPage) {
+        setActiveAgent('overview');
+      }
+    }
+  }, [location.pathname, isAuthPage]); // Only re-run when pathname or authPage status changes
 
   if (isAuthPage) {
     // For login and landing pages, just render children directly.
