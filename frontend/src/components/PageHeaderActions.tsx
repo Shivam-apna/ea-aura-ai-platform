@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Video, Presentation, FileSpreadsheet, FileText, Download, Speech } from 'lucide-react';
+import { Video, Presentation, FileSpreadsheet, FileText, Download, Speech, CircleStop } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +10,9 @@ import ClipLoader from "react-spinners/ClipLoader";
 import { useTheme } from '@/components/ThemeProvider';
 import VoiceAssistant, { CompactVoiceVisualizer } from "@/components/AvatarVisualizer"
 import { stopCurrentTTS } from "@/utils/avatars";
+import { WelcomeAvatarTTS } from "@/components/AvatarVisualizer";
+import ChatbotLauncher from "@/components/ChatbotLauncher";
+
 
 
 interface PageHeaderActionsProps {
@@ -38,6 +41,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const { theme } = useTheme(); // Get the current theme
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isWelcomeSpeaking, setIsWelcomeSpeaking] = useState(false);
 
   const iconColorClass = theme === 'dark' ? 'text-white' : 'text-primary'; // Conditional class
   // Add this useEffect in PageHeaderActions component
@@ -72,6 +76,23 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
     if (onCreateTTS) {
       onCreateTTS();
     }
+  };
+
+  const handleStopTTS = () => {
+    if (setIsSpeaking) {
+      stopCurrentTTS(setIsSpeaking);
+    } else {
+      stopCurrentTTS(() => { });
+    }
+  };
+
+  const handleStopWelcomeTTS = () => {
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+      }
+    } catch { }
+    setIsWelcomeSpeaking(false);
   };
 
   const handleVoiceModalClose = (open: boolean) => {
@@ -141,6 +162,25 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
             </TooltipContent>
           </ShadcnTooltip> */}
 
+          {isWelcomeSpeaking && (
+            <ShadcnTooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted transition-colors"
+                  onClick={handleStopWelcomeTTS}
+                >
+                  <CircleStop className="h-4 w-4 text-red-500" />
+                  <span className="sr-only">Stop Welcome Voice</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop Welcome Voice</p>
+              </TooltipContent>
+            </ShadcnTooltip>
+          )}
+
           {/* PDF Download Button - Updated with conditional rendering and loading state */}
           {hasChartsData && (
             <ShadcnTooltip>
@@ -165,6 +205,27 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
               </TooltipContent>
             </ShadcnTooltip>
           )}
+          {/* Dedicated Stop Button - Only visible when speaking */}
+          {isSpeaking && (
+            <ShadcnTooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted transition-colors"
+                  onClick={handleStopTTS}
+                >
+                  <CircleStop className="h-4 w-4 text-red-500" />
+                  <span className="sr-only">Stop Voice</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop Voice</p>
+              </TooltipContent>
+            </ShadcnTooltip>
+          )}
+
+
           {/* TTS/Avatar Button - Updated to disable while speaking */}
           <ShadcnTooltip>
             <TooltipTrigger asChild>
@@ -172,15 +233,19 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
                 variant="ghost"
                 size="icon"
                 className={cn("h-8 w-8 rounded-full hover:bg-muted hover:text-foreground transition-colors", iconColorClass)}
-                onClick={handleTTSClick}
-                disabled={ttsLoading || isSpeaking}
+                onClick={isSpeaking ? handleStopTTS : handleTTSClick}
+                disabled={ttsLoading}
               >
                 {ttsLoading ? (
                   <ClipLoader size={16} color="currentColor" />
+                ) : isSpeaking ? (
+                  <CircleStop className={cn("h-4 w-4", theme === 'dark' ? 'text-red-400' : 'text-red-500')} />
                 ) : (
                   <Speech className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
                 )}
-                <span className="sr-only">Voice Summary</span>
+                <span className="sr-only">
+                  {isSpeaking ? 'Stop Voice' : 'Voice Summary'}
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -188,7 +253,7 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
                 {ttsLoading
                   ? 'Generating voice...'
                   : isSpeaking
-                    ? 'Currently speaking...'
+                    ? 'Stop voice'
                     : 'Voice Summary'
                 }
               </p>
@@ -241,6 +306,12 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
           <CompactVoiceVisualizer isSpeaking={isSpeaking} />
         </div>
       )}
+      <WelcomeAvatarTTS onSpeakingChange={setIsWelcomeSpeaking} />
+      <ChatbotLauncher
+        onOpen={() => console.log('Chatbot opened!')}
+        onClose={() => console.log('Chatbot closed!')}
+        onMessageSend={(msg) => console.log('Message sent:', msg)}
+      />
     </>
   );
 };

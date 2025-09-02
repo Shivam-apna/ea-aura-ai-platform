@@ -17,8 +17,6 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import LoginPage from "./pages/Login";
-import ChatbotLauncher from "./components/ChatbotLauncher";
-import { WelcomeAvatarTTS } from "./components/AvatarVisualizer";
 import { cn } from "@/lib/utils";
 import { useKeycloakRoles } from "./hooks/useKeycloakRoles";
 import Landing from "./pages/Landing";
@@ -186,13 +184,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
       </div>
-      {/* Welcome TTS for new users on applicable pages */}
-      <WelcomeAvatarTTS />
-      <ChatbotLauncher
-        onOpen={() => console.log('Chatbot opened!')}
-        onClose={() => console.log('Chatbot closed!')}
-        onMessageSend={(msg) => console.log('Message sent:', msg)}
-      />
     </div>
   );
 };
@@ -222,7 +213,7 @@ const App = () => {
                     path="/dashboard"
                     element={
                       <ProtectedRoute>
-                        <Dashboard activeAgent="overview" onSelectAgent={() => {}} />
+                        <Dashboard activeAgent="overview" onSelectAgent={() => { }} />
                       </ProtectedRoute>
                     }
                   />

@@ -36,12 +36,14 @@ interface KpiItem {
   key: string;
   bgColor: string;
   originalKey?: string;
+  displayName?: string;
 }
 
 interface MetricItem {
   key: string;
   label: string;
   originalKey?: string;
+  displayName?: string;
 }
 
 interface MetricGroups {
@@ -231,28 +233,36 @@ const BrandIndex = () => {
     return mapping;
   };
 
-  // Function to update metric groups and KPI keys based on API response
+  // Add this utility function to format keys into display names
+  const formatDisplayName = (key: string): string => {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Update the updateDynamicKeys function to include display names
   const updateDynamicKeys = (apiResponseKeys: string[]) => {
     // Create mapping for KPI keys
     const kpiKeyMapping = createKeyMapping(apiResponseKeys, KPI_KEYS);
+
     // Create mapping for metric keys (collect all metrics from all groups)
     const allMetrics = Object.values(METRIC_GROUPS).flat();
     const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
 
-    // Update KPI keys with mapped values
+    // Update KPI keys with mapped values and display names
     const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
       ...kpi,
       originalKey: kpi.key,
-      key: kpiKeyMapping[kpi.key] || kpi.key
+      key: kpiKeyMapping[kpi.key] || kpi.key,
+      displayName: formatDisplayName(kpiKeyMapping[kpi.key] || kpi.key) // Add display name
     }));
 
-    // Update metric groups with mapped values
+    // Update metric groups with mapped values and display names
     const updatedMetricGroups: MetricGroups = {};
     Object.entries(METRIC_GROUPS).forEach(([groupName, metrics]) => {
       updatedMetricGroups[groupName] = metrics.map(metric => ({
         ...metric,
         originalKey: metric.key,
-        key: metricKeyMapping[metric.key] || metric.key
+        key: metricKeyMapping[metric.key] || metric.key,
+        displayName: formatDisplayName(metricKeyMapping[metric.key] || metric.key) // Add display name
       }));
     });
 
