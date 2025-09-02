@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Volume2, VolumeX, Loader2 } from 'lucide-react';
 
+interface WelcomeAvatarTTSProps {
+    onSpeakingChange?: (isSpeaking: boolean) => void;
+}
+
 // Main Voice Assistant Component
 const VoiceAssistant = ({
     isLoading = false,
@@ -201,12 +205,16 @@ export const CompactVoiceVisualizer = ({ isSpeaking = false, className = "" }) =
 
 export default VoiceAssistant;
 
-// New: WelcomeAvatarTTS - simple Web Speech API TTS for new users
+// WelcomeAvatarTTS - Updated version for AvatarVisualizer.tsx
 import { useLocation } from 'react-router-dom';
 import { useKeycloakRoles } from '@/hooks/useKeycloakRoles';
 import welcomeMessages from '@/config/welcome_messages.json';
 
-export const WelcomeAvatarTTS: React.FC = () => {
+interface WelcomeAvatarTTSProps {
+    onSpeakingChange?: (isSpeaking: boolean) => void;
+}
+
+export const WelcomeAvatarTTS: React.FC<WelcomeAvatarTTSProps> = ({ onSpeakingChange }) => {
     const location = useLocation();
     const { clientRoles } = useKeycloakRoles();
     const [isSpeaking, setIsSpeaking] = React.useState(false);
@@ -226,20 +234,20 @@ export const WelcomeAvatarTTS: React.FC = () => {
         } as const;
         return keyMap[path] || null;
     };
- 
+
     const getWelcomeMessage = (sectionKey: keyof typeof welcomeMessages | null): string | null => {
         if (!sectionKey) return null;
         const section = (welcomeMessages as any)[sectionKey];
         return section?.welcome_message || null;
     };
- 
+
     useEffect(() => {
         // Cancel any ongoing welcome speech on path/role change to avoid overlap
         try {
             if (speechSynthesis.speaking || speechSynthesis.pending) {
                 speechSynthesis.cancel();
             }
-        } catch {}
+        } catch { }
 
         // Clear previous timers/handlers
         if (fallbackTimerRef.current) {
@@ -274,7 +282,7 @@ export const WelcomeAvatarTTS: React.FC = () => {
             utterance.lang = 'en-US';
             utterance.rate = 1;
             utterance.pitch = 1;
-        
+
             // Use the SAME voice selection logic as WelcomeBackPage
             const voices = speechSynthesis.getVoices();
             const femaleVoice = voices.find(
@@ -283,10 +291,14 @@ export const WelcomeAvatarTTS: React.FC = () => {
                     v.name.toLowerCase().includes('google us english')
             );
             if (femaleVoice) utterance.voice = femaleVoice;
-        
-            utterance.onstart = () => setIsSpeaking(true);
+
+            utterance.onstart = () => {
+                setIsSpeaking(true);
+                onSpeakingChange?.(true);
+            };
             utterance.onend = () => {
                 setIsSpeaking(false);
+                onSpeakingChange?.(false);
                 hasSpokenRef.current = true;
                 if (storageKey) {
                     localStorage.setItem(storageKey, 'true');
@@ -294,15 +306,16 @@ export const WelcomeAvatarTTS: React.FC = () => {
             };
             utterance.onerror = () => {
                 setIsSpeaking(false);
+                onSpeakingChange?.(false);
             };
-        
+
             // Ensure no queue; cancel then speak
             try {
                 if (speechSynthesis.speaking || speechSynthesis.pending) {
                     speechSynthesis.cancel();
                 }
-            } catch {}
-        
+            } catch { }
+
             utteranceRef.current = utterance;
             // Mark as shown BEFORE speaking to persist even if interrupted
             if (storageKey) {
@@ -328,13 +341,14 @@ export const WelcomeAvatarTTS: React.FC = () => {
         } else {
             speak();
         }
+
         // Cleanup on path/role change or unmount
         return () => {
             try {
                 if (speechSynthesis.speaking || speechSynthesis.pending) {
                     speechSynthesis.cancel();
                 }
-            } catch {}
+            } catch { }
             if (fallbackTimerRef.current) {
                 clearTimeout(fallbackTimerRef.current);
                 fallbackTimerRef.current = null;
@@ -345,8 +359,22 @@ export const WelcomeAvatarTTS: React.FC = () => {
             }
             utteranceRef.current = null;
             setIsSpeaking(false);
+            onSpeakingChange?.(false);
         };
-    }, [clientRoles, location.pathname]);
+    }, [clientRoles, location.pathname, onSpeakingChange]);
+
+    // Listen for external speech cancellation
+    useEffect(() => {
+        const handleSpeechEnd = () => {
+            if (!speechSynthesis.speaking && isSpeaking) {
+                setIsSpeaking(false);
+                onSpeakingChange?.(false);
+            }
+        };
+
+        const interval = setInterval(handleSpeechEnd, 500);
+        return () => clearInterval(interval);
+    }, [isSpeaking, onSpeakingChange]);
 
     // Floating compact visualizer while speaking
     if (!isSpeaking) return null;
