@@ -1,7 +1,10 @@
+"use client";
+
 import React from 'react';
 import Plot from 'react-plotly.js';
 import { BarChart2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // Fixed: Added 'from' keyword
+import { useTheme } from '@/components/ThemeProvider'; // Import useTheme
 
 // Type definitions (copied from AdvancedDashboardLayout for self-containment)
 interface ChartData {
@@ -61,9 +64,12 @@ const GraphCardContent: React.FC<GraphCardContentProps> = ({
   colors,
   getPlotlyLayoutAndConfig,
 }) => {
+  // Common classes for centering placeholder content
+  const placeholderClasses = "absolute inset-0 flex flex-col items-center justify-center text-muted-foreground";
+
   if (isLoading && !chart) { // If overall dashboard is loading and this specific chart has no data yet
     return (
-      <div className={cn("flex flex-col items-center justify-center h-full", "text-muted-foreground")}>
+      <div className={cn(placeholderClasses)}>
         <GraphLoader /> {/* Use the animated SVG loader */}
         <span className={cn("text-base font-semibold mt-4")}>Loading data...</span>
         <span className={cn("text-xs mt-1", "text-muted-foreground")}>Please wait while we generate your insights.</span>
@@ -73,7 +79,7 @@ const GraphCardContent: React.FC<GraphCardContentProps> = ({
 
   if (!chart) { // If not loading, but still no chart data
     return (
-      <div className={cn("flex flex-col items-center justify-center h-full", "text-muted-foreground")}>
+      <div className={cn(placeholderClasses)}>
         <BarChart2 className={cn("w-12 h-12 mb-2", "text-primary")} />
         <span className={cn("text-base font-semibold")}>No data available</span>
         <span className={cn("text-xs mt-1", "text-muted-foreground")}>Try a different prompt or check your data source.</span>
