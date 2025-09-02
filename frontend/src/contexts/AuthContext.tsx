@@ -11,6 +11,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Function to clear user-specific session data
+const clearUserSessionData = () => {
+  localStorage.removeItem('last_active_agent_user_role');
+  // Add any other user-specific session data to clear here
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null); // Use UserInfo type
@@ -30,6 +36,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           setIsAuthenticated(false);
           setUser(null);
+          clearUserSessionData(); // Clear session data if not authenticated
         }
       } catch (error) {
         console.error('AuthContext: Auth check failed:', error);
@@ -37,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authService.logout();
         setIsAuthenticated(false);
         setUser(null);
+        clearUserSessionData(); // Clear session data on auth failure
       } finally {
         setLoading(false);
         console.log("AuthContext: Finished initial auth check. isAuthenticated:", isAuthenticated);
@@ -59,6 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error("AuthContext: Login failed:", error);
       setIsAuthenticated(false);
       setUser(null);
+      clearUserSessionData(); // Clear session data on login failure
       throw error;
     } finally {
       setLoading(false);
@@ -77,6 +86,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
+      clearUserSessionData(); // Clear session data on logout
       console.log("AuthContext: Finished logout. isAuthenticated:", false);
     }
   };
