@@ -1092,14 +1092,14 @@ def prepare_agent_prompt(agent_data: dict, input_text: str, enhanced_data: str) 
     return agent_prompt
 
 
-def create_cache_key(user_input: str, agent_name: str, enhanced_data_hash: str = None) -> str:
+def create_cache_key(user_input: str, agent_name: str, enhanced_data_hash: str = None, sub_index: str = None) -> str:
     """Create a cache key based on user input and agent context"""
     import hashlib
-   
     key_components = [user_input, agent_name]
     if enhanced_data_hash:
         key_components.append(enhanced_data_hash)
-   
+    if sub_index:
+        key_components.append(sub_index)
     cache_key = "|".join(key_components)
     return cache_key
 
@@ -1174,7 +1174,7 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
    
-    cached_response = search_cache(cache_key, tenant_id)
+    cached_response = search_cache(cache_key, tenant_id, f"agent_{agent_name}")
     if cached_response:
         response_time = time.time() - start_time
         intelligent_orchestrator.performance_tracker.update_performance(
@@ -1277,7 +1277,7 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
                     raise ValueError(f"Success criteria failed: {failures}")
 
             # Save response to cache
-            save_to_cache(cache_key, response, tenant_id)
+            save_to_cache(cache_key, response, tenant_id, f"agent_{agent_name}")
 
             # Track tokens and performance
             token_usage = token_tracker.track_agent_tokens(
@@ -1409,12 +1409,14 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
         "model": sub_agent_config.get("llm_config", {}).get("model"),
         "input_length": len(input_text)
     })
+
+    sub_index = f"{agent_name}_dataset"
    
     enhanced_data = get_enhanced_data_for_agent(parent_agent, input_text, tenant_id)
     enhanced_data_hash = get_enhanced_data_hash(enhanced_data)
     cache_key = create_cache_key(input_text, agent_name, enhanced_data_hash)
    
-    cached_response = search_cache(cache_key, tenant_id)
+    cached_response = search_cache(cache_key, tenant_id, f"subagent_{agent_name}")
     if cached_response:
         response_time = time.time() - start_time
         intelligent_orchestrator.performance_tracker.update_performance(
@@ -1522,7 +1524,7 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
                 if failures:
                     raise ValueError(f"Success criteria failed: {failures}")
 
-            save_to_cache(cache_key, subagent_response, tenant_id)
+            save_to_cache(cache_key, subagent_response, tenant_id,sub_index)
 
             # Track tokens and performance
             token_usage = token_tracker.track_agent_tokens(
@@ -1749,11 +1751,13 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
    
     parent_prompt_template = parent_agent_data.get("prompt_template", "Analyze this:\n\n{{input}}")
     parent_prompt = parent_prompt_template.replace("{{input}}", subagent_response).replace("{{question}}", input_text)
+
+    sub_index = f"{parent_agent_name}_parent_dataset"
    
     subagent_hash = get_enhanced_data_hash(subagent_response)
-    cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash)
+    cache_key = create_cache_key(input_text, f"{parent_agent_name}_parent", subagent_hash,sub_index)
    
-    cached_response = search_cache(cache_key, tenant_id)
+    cached_response = search_cache(cache_key, tenant_id,sub_index)
     if cached_response:
         response_time = time.time() - start_time
         intelligent_orchestrator.performance_tracker.update_performance(
@@ -1804,7 +1808,7 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
                 logger.warning(f"[LLM-GUARD] Blocked parent response for {parent_agent_name}: {reason}")
                 parent_response = SAFE_FALLBACK_MESSAGE
        
-        save_to_cache(cache_key, parent_response, tenant_id)
+        save_to_cache(cache_key, parent_response, tenant_id,sub_index)
        
         parent_token_usage = token_tracker.track_agent_tokens(
             agent_id=parent_agent_name,
@@ -1874,8 +1878,8 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
 def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
     """Execute orchestrator with full workflow caching"""
     workflow_cache_key = create_cache_key(input_text, "full_orchestration")
-   
-    cached_workflow = search_cache(workflow_cache_key, tenant_id)
+    cached_workflow = search_cache(workflow_cache_key, tenant_id, "workflow_orchestration")
+    
     if cached_workflow:
         logger.info("✅ Full orchestration cache HIT")
         try:
@@ -1895,9 +1899,7 @@ def execute_orchestrator_with_cache(input_text: str, tenant_id: str):
                 "response": cached_workflow,
                 "from_cache": True
             }
-   
     return None
-
 
 def run_autogen_agent(input_text: str, tenant_id: str):
     """Enhanced orchestration with semantic matching and intelligent selection"""
@@ -2146,10 +2148,11 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         # Cache the entire enhanced workflow result
         workflow_cache_key = create_cache_key(input_text, "full_orchestration_v2")
         try:
-            save_to_cache(workflow_cache_key, json.dumps(final_result, default=str), tenant_id)
+            save_to_cache(workflow_cache_key, json.dumps(final_result, default=str), tenant_id, "workflow_orchestration")
             logger.info("💾 Cached enhanced orchestration workflow result")
         except Exception as cache_error:
             logger.warning(f"⚠️ Failed to cache workflow result: {cache_error}")
+
        
         logger.info("✅ Enhanced agent orchestration completed", extra={
             "job_id": job_id,
