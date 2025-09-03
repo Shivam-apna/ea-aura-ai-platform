@@ -18,6 +18,7 @@ def create_cache_index_if_not_exists():
             "mappings": {
                 "properties": {
                     "tenant_id": {"type": "keyword"},
+                    "sub_index": {"type": "keyword"},
                     "query_text": {"type": "text"},
                     "query_hash": {"type": "keyword"},
                     "response": {"type": "text"},
@@ -37,20 +38,23 @@ def create_cache_index_if_not_exists():
 def get_query_hash(query_text: str) -> str:
     return hashlib.sha256(query_text.encode()).hexdigest()[:16]
 
-def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> str:
+def search_cache(query_text: str, tenant_id: str, sub_index: str = None, threshold: float = 0.85) -> str:
     logger.info(f"[CACHE CHECK] USER QUESTION (first 100 chars): {query_text[:100]}")
-    logger.info(f"tenantid: {tenant_id}")
+    logger.info(f"tenantid: {tenant_id}, sub_index: {sub_index}")
     query_hash = get_query_hash(query_text)
 
-    # 1. Exact hash + tenant keyword
+    # Base filters for all searches
+    base_filters = [{"term": {"tenant_id.keyword": tenant_id}}]
+    if sub_index:
+        base_filters.append({"term": {"sub_index.keyword": sub_index}})
+
+    # 1. Exact hash + tenant + sub_index
     try:
+        filters = base_filters + [{"term": {"query_hash.keyword": query_hash}}]
         result = es.search(index=CACHE_INDEX, body={
             "query": {
                 "bool": {
-                    "must": [
-                        {"term": {"query_hash.keyword": query_hash}},
-                        {"term": {"tenant_id.keyword": tenant_id}}
-                    ]
+                    "must": filters
                 }
             }
         })
@@ -63,15 +67,13 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
     except Exception as e:
         logger.error(f"[CACHE HASH MATCH ERROR] {e}")
 
-    # 2. Phrase match + tenant keyword
+    # 2. Phrase match + tenant + sub_index
     try:
+        filters = base_filters + [{"match_phrase": {"query_text": query_text}}]
         result = es.search(index=CACHE_INDEX, body={
             "query": {
                 "bool": {
-                    "must": [
-                        {"match_phrase": {"query_text": query_text}},
-                        {"term": {"tenant_id.keyword": tenant_id}}
-                    ]
+                    "must": filters
                 }
             }
         })
@@ -84,7 +86,7 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
     except Exception as e:
         logger.error(f"[CACHE EXACT MATCH ERROR] {e}")
 
-    # 3. Embedding match + tenant keyword
+    # 3. Embedding match + tenant + sub_index
     try:
         query_vector = embedding_model.embed_query(query_text)
         result = es.search(index=CACHE_INDEX, body={
@@ -93,9 +95,7 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
                 "script_score": {
                     "query": {
                         "bool": {
-                            "must": [
-                                {"term": {"tenant_id.keyword": tenant_id}}
-                            ]
+                            "must": base_filters
                         }
                     },
                     "script": {
@@ -105,16 +105,14 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
                 }
             }
         })
-
         hits = result["hits"]["hits"]
         if hits:
             logger.info(f"📊 Found {len(hits)} embedding matches:")
             for i, hit in enumerate(hits):
-                logger.debug(f"  {i+1}. Score: {hit['_score']:.4f} | Query: {hit['_source']['query_text'][:100]}...")
-
+                logger.debug(f" {i+1}. Score: {hit['_score']:.4f} | Sub-index: {hit['_source'].get('sub_index', 'N/A')} | Query: {hit['_source']['query_text'][:100]}...")
+            
             top_hit = hits[0]
             top_score = top_hit["_score"]
-
             if top_score >= threshold + 1.0:
                 logger.info("✅ Cache HIT with embedding similarity.")
                 return top_hit["_source"]["response"]
@@ -122,7 +120,6 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
                 logger.warning(f"⚠️ Best embedding score {top_score:.4f} below threshold.")
         else:
             logger.info("❌ No embedding matches found.")
-
     except Exception as e:
         logger.error(f"[CACHE EMBEDDING ERROR] {e}")
 
@@ -134,7 +131,7 @@ def search_cache(query_text: str, tenant_id: str, threshold: float = 0.85) -> st
 
     return None
 
-def save_to_cache(query_text: str, response: str, tenant_id: str):
+def save_to_cache(query_text: str, response: str, tenant_id: str ,sub_index: str='general'):
     logger.info(f"💾 [CACHE SAVE] Storing prompt in cache. Preview (first 100 chars): {query_text[:100]}")
     query_hash = get_query_hash(query_text)
 
@@ -143,6 +140,7 @@ def save_to_cache(query_text: str, response: str, tenant_id: str):
         doc = {
             "tenant_id": tenant_id,
             "query_text": query_text,
+            "sub_index": sub_index,
             "query_hash": query_hash,
             "response": response,
             "embedding": query_vector
@@ -152,16 +150,49 @@ def save_to_cache(query_text: str, response: str, tenant_id: str):
     except Exception as e:
         logger.error(f"[CACHE SAVE ERROR] {e}")
 
-def clear_cache(tenant_id: str = None):
+def clear_cache(tenant_id: str = None, sub_index: str = None):
     try:
+        filters = []
         if tenant_id:
-            query = {"term": {"tenant_id": tenant_id}}
+            filters.append({"term": {"tenant_id": tenant_id}})
+        if sub_index:
+            filters.append({"term": {"sub_index": sub_index}})
+        
+        if filters:
+            query = {"bool": {"must": filters}}
         else:
             query = {"match_all": {}}
+            
         es.delete_by_query(index=CACHE_INDEX, body={"query": query})
         logger.info("🗑️ Cache cleared successfully.")
     except Exception as e:
         logger.error(f"[CACHE CLEAR ERROR] {e}")
+
+def list_cache_entries(tenant_id: str = None, sub_index: str = None, limit: int = 10):
+    try:
+        filters = []
+        if tenant_id:
+            filters.append({"term": {"tenant_id": tenant_id}})
+        if sub_index:
+            filters.append({"term": {"sub_index": sub_index}})
+        
+        if filters:
+            query = {"bool": {"must": filters}}
+        else:
+            query = {"match_all": {}}
+            
+        result = es.search(index=CACHE_INDEX, body={
+            "size": limit,
+            "query": query,
+            "_source": ["query_text", "query_hash", "tenant_id", "sub_index"]
+        })
+        hits = result["hits"]["hits"]
+        logger.info(f"📋 Cache entries ({len(hits)}):")
+        for i, hit in enumerate(hits, 1):
+            q = hit["_source"]
+            logger.debug(f"{i}. [{q['tenant_id']}] [{q.get('sub_index', 'N/A')}] Hash: {q['query_hash']} | Query: {q['query_text'][:80]}")
+    except Exception as e:
+        logger.error(f"[CACHE LIST ERROR] {e}")
 
 def list_cache_entries(tenant_id: str = None, limit: int = 10):
     try:
