@@ -5,19 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import Plot from "react-plotly.js";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import config from "@/config/customer_dashboard.json";
 // Configurable metric layout
 const KPI_KEYS = config.kpi_keys;
-const METRIC_GROUPS = config.metric_groups;;
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter } from 'lucide-react';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+const METRIC_GROUPS = config.metric_groups;
+import {
+  BarChart2,
+  LineChart,
+  ScatterChart,
+  Settings2,
+  X,
+  Eye,
+  EyeOff,
+  Filter,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "sonner";
@@ -52,7 +60,10 @@ interface MetricGroups {
 const NoDataGhost = () => (
   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
     <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef" />
-    <path d="M12 36V18a12 12 0 1 1 24 0v18c0 2-2 2-3 0s-3-2-4 0-3 2-4 0-3-2-4 0-3 2-3 0z" fill="#fff" />
+    <path
+      d="M12 36V18a12 12 0 1 1 24 0v18c0 2-2 2-3 0s-3-2-4 0-3 2-4 0-3-2-4 0-3 2-3 0z"
+      fill="#fff"
+    />
     <circle cx="18" cy="24" r="2" fill="#a0aec0" />
     <circle cx="30" cy="24" r="2" fill="#a0aec0" />
     <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1" />
@@ -63,20 +74,60 @@ const NoDataGhost = () => (
 const GraphLoader = () => (
   <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
     <rect x="10" y="20" width="10" height="20" rx="2" fill="#4CB2FF">
-      <animate attributeName="height" values="20;35;20" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="20;5;20" dur="1s" repeatCount="indefinite" />
+      <animate
+        attributeName="height"
+        values="20;35;20"
+        dur="1s"
+        repeatCount="indefinite"
+      />
+      <animate
+        attributeName="y"
+        values="20;5;20"
+        dur="1s"
+        repeatCount="indefinite"
+      />
     </rect>
     <rect x="30" y="10" width="10" height="30" rx="2" fill="#A8C574">
-      <animate attributeName="height" values="30;15;30" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="10;25;10" dur="1s" repeatCount="indefinite" />
+      <animate
+        attributeName="height"
+        values="30;15;30"
+        dur="1s"
+        repeatCount="indefinite"
+      />
+      <animate
+        attributeName="y"
+        values="10;25;10"
+        dur="1s"
+        repeatCount="indefinite"
+      />
     </rect>
     <rect x="50" y="25" width="10" height="15" rx="2" fill="#4CB2FF">
-      <animate attributeName="height" values="15;30;15" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="25;10;25" dur="1s" repeatCount="indefinite" />
+      <animate
+        attributeName="height"
+        values="15;30;15"
+        dur="1s"
+        repeatCount="indefinite"
+      />
+      <animate
+        attributeName="y"
+        values="25;10;25"
+        dur="1s"
+        repeatCount="indefinite"
+      />
     </rect>
     <rect x="70" y="15" width="10" height="25" rx="2" fill="#A8C574">
-      <animate attributeName="height" values="25;10;25" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="15;30;15" dur="1s" repeatCount="indefinite" />
+      <animate
+        attributeName="height"
+        values="25;10;25"
+        dur="1s"
+        repeatCount="indefinite"
+      />
+      <animate
+        attributeName="y"
+        values="15;30;15"
+        dur="1s"
+        repeatCount="indefinite"
+      />
     </rect>
   </svg>
 );
@@ -92,25 +143,32 @@ const DEFAULT_MODEBAR = {
 
 const COLORS = ["#A8C574", "#4CB2FF"];
 
-const getTabSpecificStorageKey = (baseKey: string, tab: string) => `${baseKey}_${tab}`;
+const getTabSpecificStorageKey = (baseKey: string, tab: string) =>
+  `${baseKey}_${tab}`;
 
 // Update storage key functions
-const LOCAL_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
-const KPI_KEYS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
-const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
-const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("customer_analyzer_last_prompt", tab);
-
+const LOCAL_STORAGE_KEY = (tab: string) =>
+  getTabSpecificStorageKey("customer_analyzer_charts_cache", tab);
+const KPI_KEYS_STORAGE_KEY = (tab: string) =>
+  getTabSpecificStorageKey("customer_analyzer_kpi_keys_cache", tab);
+const METRIC_GROUPS_STORAGE_KEY = (tab: string) =>
+  getTabSpecificStorageKey("customer_analyzer_metric_groups_cache", tab);
+const LAST_PROMPT_STORAGE_KEY = (tab: string) =>
+  getTabSpecificStorageKey("customer_analyzer_last_prompt", tab);
 
 const CustomerAnalyzer = () => {
   const { registerRefreshHandler } = useDashboardRefresh(); // Use the hook
-  const [modebarOptions, setModebarOptions] = useState<Record<string, typeof DEFAULT_MODEBAR>>({});
+  const [modebarOptions, setModebarOptions] = useState<
+    Record<string, typeof DEFAULT_MODEBAR>
+  >({});
   const [input, setInput] = useState(""); // Keep input state for caching purposes
   const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState<string>(""); // New state for last submitted prompt
   const [charts, setCharts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({});
   const [chartColors, setChartColors] = useState<Record<string, string>>({});
-  const [dynamicMetricGroups, setDynamicMetricGroups] = useState<MetricGroups>(METRIC_GROUPS);
+  const [dynamicMetricGroups, setDynamicMetricGroups] =
+    useState<MetricGroups>(METRIC_GROUPS);
   const [dynamicKpiKeys, setDynamicKpiKeys] = useState<KpiItem[]>(KPI_KEYS);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const TAB_NAMES = Object.keys(METRIC_GROUPS);
@@ -124,7 +182,6 @@ const CustomerAnalyzer = () => {
 
   // Add AbortController ref for canceling requests
   const abortControllerRef = useRef<AbortController | null>(null);
-
 
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
@@ -140,7 +197,9 @@ const CustomerAnalyzer = () => {
     }
 
     // Restore last submitted prompt
-    const cachedLastPrompt = localStorage.getItem(LAST_PROMPT_STORAGE_KEY(activeTab));
+    const cachedLastPrompt = localStorage.getItem(
+      LAST_PROMPT_STORAGE_KEY(activeTab)
+    );
     if (cachedLastPrompt) {
       setLastSubmittedPrompt(cachedLastPrompt);
     } else {
@@ -162,7 +221,9 @@ const CustomerAnalyzer = () => {
     }
 
     // Restore metric groups for active tab
-    const cachedMetricGroups = localStorage.getItem(METRIC_GROUPS_STORAGE_KEY(activeTab));
+    const cachedMetricGroups = localStorage.getItem(
+      METRIC_GROUPS_STORAGE_KEY(activeTab)
+    );
     if (cachedMetricGroups) {
       try {
         const parsedMetricGroups = JSON.parse(cachedMetricGroups);
@@ -186,12 +247,11 @@ const CustomerAnalyzer = () => {
     }
   };
 
-
   // Function to create a mapping between config keys and actual API response keys
   const createKeyMapping = (apiResponseKeys: string[], configKeys: any[]) => {
     const mapping: { [key: string]: string } = {};
 
-    configKeys.forEach(configItem => {
+    configKeys.forEach((configItem) => {
       const configKey = configItem.key;
 
       // Try exact match first
@@ -201,8 +261,8 @@ const CustomerAnalyzer = () => {
       }
 
       // Try case-insensitive match
-      const exactMatch = apiResponseKeys.find(apiKey =>
-        apiKey.toLowerCase() === configKey.toLowerCase()
+      const exactMatch = apiResponseKeys.find(
+        (apiKey) => apiKey.toLowerCase() === configKey.toLowerCase()
       );
       if (exactMatch) {
         mapping[configKey] = exactMatch;
@@ -210,13 +270,15 @@ const CustomerAnalyzer = () => {
       }
 
       // Try partial match (remove special characters and spaces)
-      const normalizeKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizeKey = (key: string) =>
+        key.toLowerCase().replace(/[^a-z0-9]/g, "");
       const normalizedConfigKey = normalizeKey(configKey);
 
-      const partialMatch = apiResponseKeys.find(apiKey =>
-        normalizeKey(apiKey) === normalizedConfigKey ||
-        normalizeKey(apiKey).includes(normalizedConfigKey) ||
-        normalizedConfigKey.includes(normalizeKey(apiKey))
+      const partialMatch = apiResponseKeys.find(
+        (apiKey) =>
+          normalizeKey(apiKey) === normalizedConfigKey ||
+          normalizeKey(apiKey).includes(normalizedConfigKey) ||
+          normalizedConfigKey.includes(normalizeKey(apiKey))
       );
 
       if (partialMatch) {
@@ -233,9 +295,8 @@ const CustomerAnalyzer = () => {
 
   // Add this utility function to format keys into display names
   const formatDisplayName = (key: string): string => {
-    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
-
 
   // Update the updateDynamicKeys function to include display names
   const updateDynamicKeys = (apiResponseKeys: string[]) => {
@@ -247,32 +308,39 @@ const CustomerAnalyzer = () => {
     const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
 
     // Update KPI keys with mapped values and display names
-    const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
+    const updatedKpiKeys: KpiItem[] = KPI_KEYS.map((kpi) => ({
       ...kpi,
       originalKey: kpi.key,
       key: kpiKeyMapping[kpi.key] || kpi.key,
-      displayName: formatDisplayName(kpiKeyMapping[kpi.key] || kpi.key) // Add display name
+      displayName: formatDisplayName(kpiKeyMapping[kpi.key] || kpi.key), // Add display name
     }));
 
     // Update metric groups with mapped values and display names
     const updatedMetricGroups: MetricGroups = {};
     Object.entries(METRIC_GROUPS).forEach(([groupName, metrics]) => {
-      updatedMetricGroups[groupName] = metrics.map(metric => ({
+      updatedMetricGroups[groupName] = metrics.map((metric) => ({
         ...metric,
         originalKey: metric.key,
         key: metricKeyMapping[metric.key] || metric.key,
-        displayName: formatDisplayName(metricKeyMapping[metric.key] || metric.key) // Add display name
+        displayName: formatDisplayName(
+          metricKeyMapping[metric.key] || metric.key
+        ), // Add display name
       }));
     });
 
     // Save updated keys to localStorage
-    localStorage.setItem(KPI_KEYS_STORAGE_KEY(activeTab), JSON.stringify(updatedKpiKeys));
-    localStorage.setItem(METRIC_GROUPS_STORAGE_KEY(activeTab), JSON.stringify(updatedMetricGroups));
+    localStorage.setItem(
+      KPI_KEYS_STORAGE_KEY(activeTab),
+      JSON.stringify(updatedKpiKeys)
+    );
+    localStorage.setItem(
+      METRIC_GROUPS_STORAGE_KEY(activeTab),
+      JSON.stringify(updatedMetricGroups)
+    );
 
     setDynamicKpiKeys(updatedKpiKeys);
     setDynamicMetricGroups(updatedMetricGroups);
   };
-
 
   const handleCloseChart = (key: string) => {
     // This will be handled by the AdvancedDashboardLayout component
@@ -283,11 +351,11 @@ const CustomerAnalyzer = () => {
   };
 
   const handleChartTypeChange = (key: string, type: string) => {
-    setChartTypes(prev => ({ ...prev, [key]: type }));
+    setChartTypes((prev) => ({ ...prev, [key]: type }));
   };
 
   const handleChartColorChange = (key: string, color: string) => {
-    setChartColors(prev => ({ ...prev, [key]: color }));
+    setChartColors((prev) => ({ ...prev, [key]: color }));
   };
 
   const handleDownloadPDF = async () => {
@@ -298,7 +366,9 @@ const CustomerAnalyzer = () => {
 
     try {
       setDownloadingPdf(true);
-      toast.info(`Generating PDF for ${activeTab} tab... This may take a moment`);
+      toast.info(
+        `Generating PDF for ${activeTab} tab... This may take a moment`
+      );
 
       // Pass activeTab to generatePDF function
       await generatePDF(
@@ -318,7 +388,8 @@ const CustomerAnalyzer = () => {
     }
   };
 
-  const fetchData = async (prompt: string) => { // Modified to accept prompt as argument
+  const fetchData = async (prompt: string) => {
+    // Modified to accept prompt as argument
     setLoading(true);
 
     // Create new AbortController for this request
@@ -343,35 +414,42 @@ const CustomerAnalyzer = () => {
 
       // Handle different HTTP status codes with user-friendly messages
       if (!res.ok) {
-        let errorMessage = 'An error occurred while processing your request.';
+        let errorMessage = "An error occurred while processing your request.";
 
         switch (res.status) {
           case 400:
-            errorMessage = 'Invalid request. Please check your input and try again.';
+            errorMessage =
+              "Invalid request. Please check your input and try again.";
             break;
           case 401:
-            errorMessage = 'Authentication required. Please log in again.';
+            errorMessage = "Authentication required. Please log in again.";
             break;
           case 403:
-            errorMessage = 'Access denied. You do not have permission to perform this action.';
+            errorMessage =
+              "Access denied. You do not have permission to perform this action.";
             break;
           case 404:
-            errorMessage = 'The requested service is not available. Please try again later.';
+            errorMessage =
+              "The requested service is not available. Please try again later.";
             break;
           case 429:
-            errorMessage = 'Too many requests. Please wait a moment and try again.';
+            errorMessage =
+              "Too many requests. Please wait a moment and try again.";
             break;
           case 500:
-            errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            errorMessage =
+              "Server error. Our team has been notified. Please try again later.";
             break;
           case 502:
-            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+            errorMessage =
+              "Service temporarily unavailable. Please try again in a few minutes.";
             break;
           case 503:
-            errorMessage = 'Service is currently under maintenance. Please try again later.';
+            errorMessage =
+              "Service is currently under maintenance. Please try again later.";
             break;
           case 429:
-            errorMessage = 'Token limit exceeded.';
+            errorMessage = "Token limit exceeded.";
             break;
           default:
             errorMessage = `Request failed with status ${res.status}. Please try again.`;
@@ -385,7 +463,7 @@ const CustomerAnalyzer = () => {
           }
         } catch (parseError) {
           // If we can't parse the error response, use the default message
-          console.warn('Could not parse error response:', parseError);
+          console.warn("Could not parse error response:", parseError);
         }
 
         toast.error(errorMessage);
@@ -400,7 +478,9 @@ const CustomerAnalyzer = () => {
         toast(
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <div className="font-semibold text-blue-600 mb-2">EA-AURA Assistant</div>
+              <div className="font-semibold text-blue-600 mb-2">
+                EA-AURA Assistant
+              </div>
               <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
                 {data.response}
               </div>
@@ -416,14 +496,14 @@ const CustomerAnalyzer = () => {
           {
             duration: 9000,
             style: {
-              maxWidth: '600px',
-              padding: '16px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              maxWidth: "600px",
+              padding: "16px",
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
             },
-            className: 'custom-toast',
+            className: "custom-toast",
           }
         );
         setLoading(false);
@@ -440,7 +520,9 @@ const CustomerAnalyzer = () => {
 
       const summaryKey = `customer_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = {
+        ...(existingSummary ? JSON.parse(existingSummary) : {}),
+      };
 
       // Merge new parsed response
       for (const key in parsed) {
@@ -460,10 +542,9 @@ const CustomerAnalyzer = () => {
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
 
-
       // Get all available keys from API response
-      const apiResponseKeys = Object.keys(parsed).filter(key =>
-        !["response", "task", "columns", "filters"].includes(key)
+      const apiResponseKeys = Object.keys(parsed).filter(
+        (key) => !["response", "task", "columns", "filters"].includes(key)
       );
 
       // Update dynamic keys based on API response
@@ -472,7 +553,13 @@ const CustomerAnalyzer = () => {
       const chartMap: Record<string, any> = {};
 
       for (const key of apiResponseKeys) {
-        const { plot_type, data: values, value, delta, summary } = parsed[key] || {};
+        const {
+          plot_type,
+          data: values,
+          value,
+          delta,
+          summary,
+        } = parsed[key] || {};
         if (!values || values.length === 0) continue;
 
         const xKey = Object.keys(values[0])[0];
@@ -484,7 +571,7 @@ const CustomerAnalyzer = () => {
           plotType: plot_type || "bar",
           x: values.map((d) => {
             const val = d[xKey];
-            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+            if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
               return val.slice(0, 10);
             }
             return val;
@@ -499,12 +586,12 @@ const CustomerAnalyzer = () => {
       }
 
       // Merge with previous charts
-      setCharts(prevCharts => {
+      setCharts((prevCharts) => {
         const mergedCharts = { ...prevCharts, ...chartMap };
 
         // 🔑 Get all keys from the merged charts for updateDynamicKeys
-        const mergedKeys = Object.keys(mergedCharts).filter(key =>
-          !["response", "task", "columns", "filters"].includes(key)
+        const mergedKeys = Object.keys(mergedCharts).filter(
+          (key) => !["response", "task", "columns", "filters"].includes(key)
         );
 
         // ✅ Update dynamic keys using all current keys
@@ -521,19 +608,19 @@ const CustomerAnalyzer = () => {
       setLastSubmittedPrompt(prompt); // Store the prompt that was successfully submitted
       localStorage.setItem(LAST_PROMPT_STORAGE_KEY(activeTab), prompt); // Persist last prompt
     } catch (err: any) {
-
       // Handle abort error gracefully
-      if (err.name === 'AbortError') {
-        console.log('Request was aborted');
+      if (err.name === "AbortError") {
+        console.log("Request was aborted");
         return; // Don't show error toast for user-initiated abort
       }
       console.error("Error fetching charts:", err);
 
       // Handle network errors and other exceptions
-      let errorMessage = 'An unexpected error occurred. Please try again.';
+      let errorMessage = "An unexpected error occurred. Please try again.";
 
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
+      if (err.name === "TypeError" && err.message.includes("fetch")) {
+        errorMessage =
+          "Network error. Please check your internet connection and try again.";
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -550,7 +637,14 @@ const CustomerAnalyzer = () => {
     registerRefreshHandler(fetchData, lastSubmittedPrompt);
   }, [fetchData, lastSubmittedPrompt, activeTab, registerRefreshHandler]);
 
-  const handleCreateTTS = () => createTTS(activeTab, "Customer Analysis", "customer_parsed_summary", setTtsLoading, setIsSpeaking);
+  const handleCreateTTS = () =>
+    createTTS(
+      activeTab,
+      "Customer Analysis",
+      "customer_parsed_summary",
+      setTtsLoading,
+      setIsSpeaking
+    );
 
   return (
     <div className="relative min-h-screen">
@@ -559,7 +653,9 @@ const CustomerAnalyzer = () => {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
           <div className="flex flex-col items-center gap-4">
             <GraphLoader />
-            <span className="text-lg font-semibold text-blue-600 animate-pulse">Generating your dashboard...</span>
+            <span className="text-lg font-semibold text-blue-600 animate-pulse">
+              Generating your dashboard...
+            </span>
             <Button
               onClick={handleStopProcess}
               variant="ghost"
