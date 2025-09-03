@@ -34,5 +34,8 @@ infra/secrets/*
 backend/app/logs/
 !backend/app/logs/.gitkeep
 
+backend/.cache
+backend/temp_audio
+
 
 kafka/

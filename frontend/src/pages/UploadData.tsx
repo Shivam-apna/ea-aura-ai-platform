@@ -10,12 +10,52 @@ import { toast } from 'sonner';
 import { HolographicCard } from './Dashboard'; // Import HolographicCard
 import { authService } from '@/services/authService'; // Import authService to get token
 import { getApiEndpoint } from '@/config/environment'; // Import getApiEndpoint
+import { useAuth } from '@/contexts/AuthContext';
+import { keycloakAdminService } from '@/services/keycloakAdminService';
+
+// Define the mapping between agents and their corresponding sub_index values
+const AGENT_SUB_INDEX_MAP = {
+  "business-vitality-agent": "business_vitality_dataset",
+  "customer-analyzer-agent": "customer_survey_dataset",
+  "mission-alignment-agent": "mission_alignment_dataset",
+  "brand-index-agent": "brand_index_dataset",
+};
+
+// Static index name as mentioned in requirements
+const INDEX_NAME = "agent_dataset";
+
+// Organizations will be loaded from Keycloak
+
+
 
 const UploadData: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [selectedTenant, setSelectedTenant] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [orgLoading, setOrgLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  
+  // Load organizations from Keycloak
+  const loadOrganizations = async () => {
+    setOrgLoading(true);
+    try {
+      const orgs = await keycloakAdminService.getOrganizations();
+      setOrganizations(orgs);
+    } catch (error: any) {
+      console.error('Failed to load organizations:', error);
+      toast.error('Failed to load organizations');
+    } finally {
+      setOrgLoading(false);
+    }
+  };
+
+  // Load organizations on component mount
+  React.useEffect(() => {
+    loadOrganizations();
+  }, []);
 
   const handleDownloadTemplate = () => {
     toast.info("Downloading template...");
@@ -69,6 +109,10 @@ const UploadData: React.FC = () => {
       toast.error("Please select an agent.");
       return;
     }
+    if (!selectedTenant) {
+      toast.error("Please select a tenant.");
+      return;
+    }
     if (!selectedFile) {
       toast.error("Please select a file to upload.");
       return;
@@ -80,14 +124,17 @@ const UploadData: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('agent', selectedAgent);
+      formData.append('sub_index', AGENT_SUB_INDEX_MAP[selectedAgent as keyof typeof AGENT_SUB_INDEX_MAP]);
+      formData.append('index_name', INDEX_NAME);
+      formData.append('tenant_id', `"${selectedTenant}"`); // Wrap tenant_id in quotes as shown in curl
 
       const accessToken = authService.getAccessToken();
       if (!accessToken) {
         throw new Error("Authentication token not found. Please log in again.");
       }
 
-      const response = await fetch(getApiEndpoint("/api/upload-data"), {
+      // Updated API endpoint to match your curl command
+      const response = await fetch(getApiEndpoint("/v1/uploadfile"), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -109,10 +156,13 @@ const UploadData: React.FC = () => {
 
       const result = await response.json();
       console.log("Upload successful:", result);
-      toast.success(`File uploaded and request submitted for processing by ${selectedAgent}!`);
+      
+      const selectedTenantName = organizations.find(org => org.id === selectedTenant)?.name || selectedTenant;
+      toast.success(`File uploaded and request submitted for processing by ${selectedAgent} for ${selectedTenantName}!`);
 
       // Reset form
       setSelectedAgent("");
+      setSelectedTenant("");
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -128,6 +178,7 @@ const UploadData: React.FC = () => {
 
   const handleCancel = () => {
     setSelectedAgent("");
+    setSelectedTenant("");
     setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -146,7 +197,7 @@ const UploadData: React.FC = () => {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground mb-4">
-            Select an AURA agent to process a structured dataset for this tenant.
+            Select an AURA agent and tenant to process a structured dataset.
           </p>
 
           <div className="space-y-6">
@@ -163,13 +214,29 @@ const UploadData: React.FC = () => {
                     <SelectItem value="customer-analyzer-agent">Customer Analyzer Agent</SelectItem>
                     <SelectItem value="mission-alignment-agent">Mission Alignment Agent</SelectItem>
                     <SelectItem value="brand-index-agent">Brand Index Agent</SelectItem>
-                    {/* Add more agents as needed */}
                   </SelectContent>
                 </Select>
                 <Button variant="outline" onClick={handleDownloadTemplate} disabled={isLoading} className="flex-shrink-0">
                   <Download className="h-4 w-4 mr-2" /> Download Template
                 </Button>
               </div>
+            </div>
+
+            {/* Select Organization */}
+            <div className="space-y-2">
+              <label htmlFor="select-tenant" className="text-sm font-medium text-muted-foreground">Select Organization</label>
+              <Select onValueChange={setSelectedTenant} value={selectedTenant} disabled={isLoading || orgLoading}>
+                <SelectTrigger id="select-tenant" className="bg-input border-border text-foreground">
+                  <SelectValue placeholder={orgLoading ? "Loading organizations..." : "Choose organization..."} />
+                </SelectTrigger>
+                <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card">
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name} {org.domain ? `(${org.domain})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* File Upload Input */}
@@ -221,7 +288,7 @@ const UploadData: React.FC = () => {
               <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent || !selectedFile}>
+              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent || !selectedTenant || !selectedFile}>
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...

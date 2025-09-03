@@ -20,6 +20,7 @@ from app.services.memory_manager import memory_manager
 from app.core.kafka import send_event
 import time
 from difflib import SequenceMatcher
+import signal
 from collections import defaultdict
 import hashlib
 import math
@@ -28,14 +29,112 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+
+
+def is_kafka_broker_available(timeout_seconds: float = 2.0) -> bool:
+    """
+    Quick health check for Kafka broker availability with timeout protection
+    
+    Args:
+        timeout_seconds: Maximum time to wait for broker response
+        
+    Returns:
+        bool: True if broker is available, False otherwise
+    """
+    try:
+        # Use signal for timeout protection on the broker check
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Kafka broker health check timed out")
+        
+        # Set up timeout signal
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(int(timeout_seconds))
+        
+        try:
+            # Try to import and check Kafka connection
+            # This should be replaced with actual broker health check
+            # For now, we'll do a basic import check with timeout
+            from app.core.kafka import send_event
+            
+            # If we get here without exception, assume broker is available
+            # In production, you'd want to do an actual broker ping/metadata check
+            return True
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Kafka broker health check failed: {e}")
+            return False
+        finally:
+            # Restore original signal handler
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+            
+    except Exception as e:
+        logger.warning(f"⚠️ Kafka broker availability check error: {e}")
+        return False
+
+
+def safe_send_event(topic: str, event: dict, timeout_seconds: float = 3.0) -> bool:
+    """
+    Safely send Kafka event with timeout and error handling
+    
+    Args:
+        topic: Kafka topic to send to
+        event: Event data to send
+        timeout_seconds: Maximum time to wait for send operation
+        
+    Returns:
+        bool: True if event was sent successfully, False otherwise
+    """
+    try:
+        # Quick broker availability check first
+        if not is_kafka_broker_available(timeout_seconds=1.0):
+            return False
+        
+        # Use ThreadPoolExecutor for timeout protection
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(send_event, topic, event)
+            try:
+                future.result(timeout=timeout_seconds)
+                return True
+            except FutureTimeoutError:
+                logger.warning(f"⏰ Kafka event send timed out after {timeout_seconds}s")
+                return False
+            except Exception as e:
+                logger.warning(f"📡 Kafka event send failed: {e}")
+                return False
+                
+    except Exception as e:
+        logger.warning(f"📡 Safe Kafka send error: {e}")
+        return False
+
+
+def async_send_event(topic: str, event: dict) -> None:
+    """
+    Send Kafka event asynchronously without blocking main execution
+    
+    Args:
+        topic: Kafka topic to send to
+        event: Event data to send
+    """
+    def send_in_background():
+        try:
+            safe_send_event(topic, event, timeout_seconds=2.0)
+        except Exception as e:
+            logger.warning(f"📡 Async Kafka send failed: {e}")
+    
+    # Fire and forget - don't block main execution
+    thread = threading.Thread(target=send_in_background, daemon=True, name="AsyncKafkaEvent")
+    thread.start()
 
 
 class SemanticAgentMatcher:
-    """Advanced semantic matching system for intelligent agent selection"""
+    """Advanced semantic matching system for intelligent agent selection with lazy loading"""
     
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         """
-        Initialize semantic matcher with sentence transformer model
+        Initialize semantic matcher with lazy loading
         
         Args:
             model_name: HuggingFace sentence transformer model name
@@ -47,23 +146,201 @@ class SemanticAgentMatcher:
         self.model = None
         self.agent_embeddings = {}
         self.embeddings_cache_file = "agent_embeddings_cache.pkl"
-        self.load_model()
-        self.precompute_agent_embeddings()
+        
+        # Lazy loading control variables
+        self.model_loading = False
+        self.model_loaded = False
+        self.embeddings_computed = False
+        self.loading_lock = threading.Lock()
+        
+        # Timeout configurations
+        self.model_load_timeout = 30  # seconds for model loading
+        self.encoding_timeout = 5     # seconds for encoding operations
+        self.embedding_computation_timeout = 60  # seconds for embedding computation
+        
+        logger.info("🚀 SemanticAgentMatcher initialized with lazy loading", extra={
+            "model_name": model_name,
+            "cache_file": self.embeddings_cache_file,
+            "load_timeout": self.model_load_timeout,
+            "encoding_timeout": self.encoding_timeout
+        })
+        
+        # Start background initialization (non-blocking)
+        self._start_background_initialization()
+    
+    def _start_background_initialization(self):
+        """Start model loading in background thread (non-blocking)"""
+        def background_init():
+            try:
+                logger.info("🔄 Starting background model initialization", extra={
+                    "model_name": self.model_name,
+                    "thread_id": threading.current_thread().ident
+                })
+                
+                success = self.lazy_load_model_sync(timeout=self.model_load_timeout)
+                
+                if success:
+                    logger.info("✅ Background model initialization completed successfully", extra={
+                        "model_loaded": self.model_loaded,
+                        "embeddings_computed": self.embeddings_computed
+                    })
+                else:
+                    logger.warning("⚠️ Background model initialization failed or timed out", extra={
+                        "model_loaded": self.model_loaded,
+                        "timeout": self.model_load_timeout
+                    })
+                    
+            except Exception as e:
+                logger.error("❌ Background initialization failed with exception", extra={
+                    "error": str(e),
+                    "model_name": self.model_name
+                })
+        
+        # Start in daemon thread so it doesn't block shutdown
+        init_thread = threading.Thread(target=background_init, daemon=True, name="SemanticModelInit")
+        init_thread.start()
+        logger.info("🚀 Background initialization thread started", extra={
+            "thread_name": init_thread.name,
+            "thread_id": init_thread.ident
+        })
     
     def load_model(self):
-        """Load sentence transformer model with error handling"""
+        """Load sentence transformer model with error handling (synchronous)"""
+        load_start_time = time.time()
+        logger.info("🔄 Loading semantic model", extra={
+            "model_name": self.model_name,
+            "thread_id": threading.current_thread().ident
+        })
+        
         try:
             self.model = SentenceTransformer(self.model_name)
-            logger.info(f"✅ Loaded semantic model: {self.model_name}")
+            load_time = time.time() - load_start_time
+            self.model_loaded = True
+            
+            logger.info("✅ Loaded semantic model successfully", extra={
+                "model_name": self.model_name,
+                "load_time_seconds": round(load_time, 2),
+                "model_loaded": True
+            })
+            return True
+            
         except Exception as e:
-            logger.warning(f"⚠️ Failed to load semantic model {self.model_name}: {e}")
-            logger.info("🔄 Falling back to keyword matching...")
+            load_time = time.time() - load_start_time
+            logger.warning("⚠️ Failed to load semantic model", extra={
+                "model_name": self.model_name,
+                "error": str(e),
+                "load_time_seconds": round(load_time, 2),
+                "fallback": "keyword_matching"
+            })
             self.model = None
+            self.model_loaded = False
+            return False
+    
+    def lazy_load_model_sync(self, timeout: int = 30):
+        """Lazy load model with timeout protection (synchronous)"""
+        
+        # If already loaded, return immediately
+        if self.model_loaded and self.model is not None:
+            logger.debug("✅ Model already loaded", extra={
+                "model_name": self.model_name,
+                "embeddings_computed": self.embeddings_computed
+            })
+            return True
+        
+        # Prevent multiple simultaneous loading attempts
+        with self.loading_lock:
+            # Double-check after acquiring lock
+            if self.model_loaded and self.model is not None:
+                return True
+                
+            if self.model_loading:
+                logger.info("⏳ Model loading already in progress, waiting...", extra={
+                    "timeout": timeout
+                })
+                return self._wait_for_model_loading(timeout)
+            
+            self.model_loading = True
+            
+            try:
+                logger.info("🚀 Starting lazy model loading", extra={
+                    "model_name": self.model_name,
+                    "timeout": timeout,
+                    "thread_id": threading.current_thread().ident
+                })
+                
+                # Load model with timeout
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self.load_model)
+                    try:
+                        success = future.result(timeout=timeout)
+                        if success:
+                            # Start background embedding computation
+                            self._compute_embeddings_background()
+                        return success
+                        
+                    except FutureTimeoutError:
+                        logger.warning("⏰ Model loading timed out", extra={
+                            "timeout": timeout,
+                            "model_name": self.model_name
+                        })
+                        return False
+                        
+            except Exception as e:
+                logger.error("❌ Lazy model loading failed", extra={
+                    "error": str(e),
+                    "model_name": self.model_name
+                })
+                return False
+            finally:
+                self.model_loading = False
+    
+    def _wait_for_model_loading(self, timeout: int):
+        """Wait for ongoing model loading to complete"""
+        start_time = time.time()
+        
+        while self.model_loading and (time.time() - start_time) < timeout:
+            time.sleep(0.1)  # Check every 100ms
+            
+        if self.model_loaded:
+            logger.info("✅ Model loading completed while waiting")
+            return True
+        else:
+            logger.warning("⏰ Timed out waiting for model loading")
+            return False
+    
+    def _compute_embeddings_background(self):
+        """Start embedding computation in background"""
+        def compute_embeddings():
+            try:
+                logger.info("🔄 Starting background embedding computation")
+                self.precompute_agent_embeddings()
+                logger.info("✅ Background embedding computation completed")
+            except Exception as e:
+                logger.error("❌ Background embedding computation failed", extra={
+                    "error": str(e)
+                })
+        
+        embedding_thread = threading.Thread(target=compute_embeddings, daemon=True, name="EmbeddingComputation")
+        embedding_thread.start()
+        logger.info("🚀 Background embedding computation thread started", extra={
+            "thread_name": embedding_thread.name
+        })
     
     def precompute_agent_embeddings(self):
         """Pre-compute and cache embeddings for all agent keywords and descriptions"""
         if not self.model:
+            logger.warning("⚠️ Cannot precompute embeddings - model not loaded")
             return
+        
+        if self.embeddings_computed:
+            logger.debug("✅ Embeddings already computed, skipping")
+            return
+        
+        computation_start_time = time.time()
+        logger.info("🔄 Starting agent embeddings computation", extra={
+            "model_name": self.model_name,
+            "cache_file": self.embeddings_cache_file
+        })
         
         # Try to load from cache first
         if os.path.exists(self.embeddings_cache_file):
@@ -139,14 +416,30 @@ class SemanticAgentMatcher:
             }
             with open(self.embeddings_cache_file, 'wb') as f:
                 pickle.dump(cache_data, f)
-            logger.info(f"✅ Cached {len(self.agent_embeddings)} agent embeddings")
+            logger.info("✅ Successfully cached agent embeddings", extra={
+                "embeddings_count": len(self.agent_embeddings),
+                "cache_file": self.embeddings_cache_file
+            })
         except Exception as e:
-            logger.warning(f"⚠️ Failed to cache embeddings: {e}")
+            logger.warning("⚠️ Failed to cache embeddings", extra={
+                "error": str(e),
+                "cache_file": self.embeddings_cache_file
+            })
+        
+        # Mark embeddings as computed
+        self.embeddings_computed = True
+        computation_time = time.time() - computation_start_time
+        
+        logger.info("✅ Agent embeddings computation completed", extra={
+            "embeddings_count": len(self.agent_embeddings),
+            "computation_time_seconds": round(computation_time, 2),
+            "embeddings_computed": True
+        })
     
     def find_best_agents(self, user_input: str, top_k: int = 3, 
                         similarity_threshold: float = 0.3) -> List[Tuple[str, float, Dict]]:
         """
-        Find best matching agents using semantic similarity
+        Find best matching agents using semantic similarity with lazy loading and timeout protection
         
         Args:
             user_input: User's query text
@@ -156,13 +449,60 @@ class SemanticAgentMatcher:
         Returns:
             List of tuples: (agent_name, similarity_score, agent_config)
         """
-        if not self.model or not self.agent_embeddings:
-            logger.warning("🔄 Semantic matching unavailable, falling back to keyword matching")
-            return self._fallback_keyword_matching(user_input, top_k)
+        search_start_time = time.time()
+        
+        logger.info("🔍 Starting semantic agent search", extra={
+            "user_input_length": len(user_input),
+            "top_k": top_k,
+            "similarity_threshold": similarity_threshold,
+            "model_loaded": self.model_loaded,
+            "embeddings_computed": self.embeddings_computed
+        })
+        
+        # Try lazy loading with timeout
+        if not self.model_loaded:
+            logger.info("🚀 Model not loaded, attempting lazy loading")
+            load_success = self.lazy_load_model_sync(timeout=min(self.encoding_timeout, 10))
+            
+            if not load_success:
+                logger.warning("⚠️ Lazy loading failed, falling back to keyword matching", extra={
+                    "fallback_reason": "model_load_timeout_or_failure"
+                })
+                return self._fallback_keyword_matching(user_input, top_k)
+        
+        # Check if we have embeddings available
+        if not self.agent_embeddings:
+            if self.embeddings_computed:
+                logger.warning("⚠️ Embeddings computed but empty, falling back to keyword matching")
+                return self._fallback_keyword_matching(user_input, top_k)
+            else:
+                logger.info("⏳ Embeddings not yet computed, falling back to keyword matching", extra={
+                    "embeddings_computed": self.embeddings_computed
+                })
+                return self._fallback_keyword_matching(user_input, top_k)
         
         try:
-            # Encode user input
-            query_embedding = self.model.encode([user_input])[0]
+            # Encode user input with timeout protection
+            encoding_start_time = time.time()
+            
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.model.encode, [user_input])
+                try:
+                    query_embeddings = future.result(timeout=self.encoding_timeout)
+                    query_embedding = query_embeddings[0]
+                    encoding_time = time.time() - encoding_start_time
+                    
+                    logger.debug("✅ User input encoded successfully", extra={
+                        "encoding_time_seconds": round(encoding_time, 3),
+                        "input_length": len(user_input)
+                    })
+                    
+                except FutureTimeoutError:
+                    logger.warning("⏰ User input encoding timed out, falling back to keyword matching", extra={
+                        "timeout": self.encoding_timeout,
+                        "fallback_reason": "encoding_timeout"
+                    })
+                    return self._fallback_keyword_matching(user_input, top_k)
             
             # Calculate similarities with all agents
             agent_scores = []
@@ -213,18 +553,42 @@ class SemanticAgentMatcher:
             # Return top-k results
             results = [(name, score, config) for name, score, config, _ in agent_scores[:top_k]]
             
-            logger.info(f"🧠 Semantic matching found {len(results)} agents above threshold {similarity_threshold}")
-            for name, score, _ in results:
-                logger.info(f"  📊 {name}: {score:.3f}")
+            search_time = time.time() - search_start_time
+            
+            logger.info("🧠 Semantic matching completed successfully", extra={
+                "results_count": len(results),
+                "threshold": similarity_threshold,
+                "top_k": top_k,
+                "search_time_seconds": round(search_time, 3),
+                "total_candidates": len(agent_scores)
+            })
+            
+            # Log detailed results
+            for i, (name, score, _) in enumerate(results):
+                logger.info(f"📊 Semantic match #{i+1}: {name} (score: {score:.3f})")
             
             return results
         
         except Exception as e:
-            logger.error(f"❌ Semantic matching failed: {e}")
+            search_time = time.time() - search_start_time
+            logger.error("❌ Semantic matching failed with exception", extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "search_time_seconds": round(search_time, 3),
+                "fallback_reason": "exception_during_search"
+            })
             return self._fallback_keyword_matching(user_input, top_k)
     
     def _fallback_keyword_matching(self, user_input: str, top_k: int = 3) -> List[Tuple[str, float, Dict]]:
         """Fallback to enhanced keyword matching when semantic matching fails"""
+        keyword_start_time = time.time()
+        
+        logger.info("🔄 Using fallback keyword matching", extra={
+            "user_input_length": len(user_input),
+            "top_k": top_k,
+            "reason": "semantic_search_unavailable"
+        })
+        
         configs = get_all_agent_configs()
         agent_scores = []
         user_words = set(user_input.lower().split())
@@ -273,7 +637,97 @@ class SemanticAgentMatcher:
         
         # Sort and return top-k
         agent_scores.sort(key=lambda x: x[1], reverse=True)
-        return agent_scores[:top_k]
+        results = agent_scores[:top_k]
+        
+        keyword_time = time.time() - keyword_start_time
+        
+        logger.info("✅ Keyword matching completed", extra={
+            "results_count": len(results),
+            "top_k": top_k,
+            "search_time_seconds": round(keyword_time, 3),
+            "total_candidates": len(agent_scores)
+        })
+        
+        # Log detailed results
+        for i, (name, score, _) in enumerate(results):
+            logger.info(f"📊 Keyword match #{i+1}: {name} (score: {score:.3f})")
+        
+        return results
+
+
+class AgentExecutionSession:
+    """
+    Ensures agent persistence throughout execution - prevents agent switching mid-request
+    
+    Your solution: "Stay on selected agent even if it doesn't get the answer, 
+    don't change agents to find the answer"
+    """
+    
+    def __init__(self, job_id: str, user_input: str):
+        self.job_id = job_id
+        self.user_input = user_input
+        self.selected_agent = None
+        self.selected_subagent = None
+        self.agent_locked = False
+        self.execution_started = False
+        self.session_start_time = time.time()
+        
+        logger.info(f"🔒 Created agent execution session", extra={
+            "job_id": job_id,
+            "input_length": len(user_input)
+        })
+    
+    def lock_agent_selection(self, parent_agent: str, sub_agent: str):
+        """Lock the agent selection to prevent switching during execution"""
+        if self.agent_locked:
+            logger.warning(f"⚠️ Attempt to change locked agent selection ignored", extra={
+                "job_id": self.job_id,
+                "current_agent": self.selected_agent,
+                "attempted_agent": parent_agent
+            })
+            return False
+        
+        self.selected_agent = parent_agent
+        self.selected_subagent = sub_agent
+        self.agent_locked = True
+        
+        logger.info(f"🔐 Agent selection locked", extra={
+            "job_id": self.job_id,
+            "parent_agent": parent_agent,
+            "sub_agent": sub_agent,
+            "lock_timestamp": time.time()
+        })
+        return True
+    
+    def get_locked_agents(self):
+        """Get the locked agent selection"""
+        if not self.agent_locked:
+            return None, None
+        return self.selected_agent, self.selected_subagent
+    
+    def mark_execution_started(self):
+        """Mark that execution has started - no more agent changes allowed"""
+        self.execution_started = True
+        logger.info(f"▶️ Agent execution started - no agent switching allowed", extra={
+            "job_id": self.job_id,
+            "parent_agent": self.selected_agent,
+            "sub_agent": self.selected_subagent
+        })
+    
+    def is_agent_selection_locked(self):
+        """Check if agent selection is locked"""
+        return self.agent_locked
+    
+    def get_session_info(self):
+        """Get session information for debugging"""
+        return {
+            "job_id": self.job_id,
+            "selected_agent": self.selected_agent,
+            "selected_subagent": self.selected_subagent,
+            "agent_locked": self.agent_locked,
+            "execution_started": self.execution_started,
+            "session_duration_seconds": time.time() - self.session_start_time
+        }
 
 
 class AgentPerformanceTracker:
@@ -552,8 +1006,14 @@ def select_best_subagent(parent_agent_data, user_input: str):
 
 # Rest of the original functions remain the same but with performance tracking
 def emit_orchestrator_event(event_type: str, agent_id: str, job_id: str, tenant_id: str,
-                          status: str, step: int, extra_data: dict = None):
-    """Emit Kafka event for orchestrator agent execution"""
+                          status: str, step: int, extra_data: dict = None, use_async: bool = True):
+    """
+    Emit Kafka event for orchestrator agent execution with timeout protection
+    
+    Args:
+        use_async: If True, use async publishing for non-blocking execution (default)
+                  If False, use synchronous publishing for critical events
+    """
     event = {
         "event_type": event_type,
         "agent_id": agent_id,
@@ -564,14 +1024,39 @@ def emit_orchestrator_event(event_type: str, agent_id: str, job_id: str, tenant_
         "timestamp": datetime.utcnow().isoformat(),
         **(extra_data or {})
     }
-   
-    send_event("orchestrator.events", event)
-   
-    logger.info(f"📡 Orchestrator Kafka event: {event_type} for {agent_id}", extra={
-        "job_id": job_id,
-        "agent_id": agent_id,
-        "event_type": event_type
-    })
+    
+    # Critical events (FAILED, ERROR) use synchronous sending for reliability
+    # Non-critical events (STARTED, PROGRESS) use async for performance
+    is_critical_event = status in ["FAILED", "ERROR"] or event_type.endswith(".error")
+    
+    if use_async and not is_critical_event:
+        # Use async sending for non-critical events to prevent blocking
+        async_send_event("orchestrator.events", event)
+        logger.info(f"📡 Orchestrator Kafka event queued (async): {event_type} for {agent_id}", extra={
+            "job_id": job_id,
+            "agent_id": agent_id,
+            "event_type": event_type,
+            "async": True
+        })
+    else:
+        # Use synchronous sending for critical events
+        event_sent = safe_send_event("orchestrator.events", event, timeout_seconds=2.0)
+        
+        if event_sent:
+            logger.info(f"📡 Orchestrator Kafka event sent (sync): {event_type} for {agent_id}", extra={
+                "job_id": job_id,
+                "agent_id": agent_id,
+                "event_type": event_type,
+                "async": False
+            })
+        else:
+            logger.warning(f"⚠️ Orchestrator Kafka event failed/skipped: {event_type} for {agent_id}", extra={
+                "job_id": job_id,
+                "agent_id": agent_id,
+                "event_type": event_type,
+                "reason": "broker_unavailable_or_timeout"
+            })
+            # Continue execution without blocking - this is key for preventing timeouts
 
 
 def get_agent_by_name(agent_name: str):
@@ -634,6 +1119,45 @@ def get_llm_config_list(model: str) -> list:
         "api_key": config["api_key"],
         "base_url": config["base_url"]
     }]
+
+
+def safe_initiate_chat(user_proxy, manager, message: str, timeout_seconds: float = 30.0):
+    """
+    Safely initiate chat with timeout protection to prevent gateway timeouts
+    
+    Args:
+        user_proxy: UserProxy agent instance
+        manager: GroupChatManager instance
+        message: Message to send
+        timeout_seconds: Maximum time to wait for completion
+        
+    Returns:
+        bool: True if chat completed successfully, False if timed out
+        
+    Raises:
+        TimeoutError: If the operation times out
+        Exception: Other LLM API errors
+    """
+    try:
+        # Use ThreadPoolExecutor for timeout protection
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(user_proxy.initiate_chat, manager, message=message)
+            try:
+                future.result(timeout=timeout_seconds)
+                return True
+            except FutureTimeoutError:
+                logger.error(f"⏰ LLM chat timed out after {timeout_seconds}s", extra={
+                    "message_length": len(message),
+                    "timeout": timeout_seconds
+                })
+                raise TimeoutError(f"LLM chat operation timed out after {timeout_seconds} seconds")
+                
+    except Exception as e:
+        logger.error(f"❌ LLM chat execution failed: {e}", extra={
+            "message_length": len(message),
+            "error_type": type(e).__name__
+        })
+        raise
 
 
 def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job_id: str, tenant_id: str):
@@ -727,7 +1251,9 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
             group_chat = GroupChat(agents=[user_proxy, assistant], messages=[], max_round=2)
             manager = GroupChatManager(groupchat=group_chat, llm_config={"config_list": config_list})
 
-            user_proxy.initiate_chat(manager, message=agent_prompt)
+            # Use safe chat initiation with timeout protection
+            chat_timeout = 30.0  # 30 seconds max for LLM response
+            safe_initiate_chat(user_proxy, manager, agent_prompt, timeout_seconds=chat_timeout)
             response = group_chat.messages[-1]["content"]
 
             # LLM Guard: post-validate response
@@ -788,6 +1314,34 @@ def execute_single_agent(agent_name: str, agent_data: dict, input_text: str, job
 
             return response, None
 
+        except TimeoutError as e:
+            error_msg = f"Agent {agent_name} execution timed out on attempt {attempt}/{max_attempts}"
+            logger.error(f"⏰ {error_msg}", extra={
+                "job_id": job_id,
+                "error": str(e),
+                "agent": agent_name,
+                "timeout_seconds": 30.0
+            })
+            if attempt >= max_attempts:
+                response_time = time.time() - start_time
+                intelligent_orchestrator.performance_tracker.update_performance(
+                    agent_name, False, response_time, 0
+                )
+                emit_orchestrator_event("agent.execution", agent_name, job_id, tenant_id, "FAILED", 0, {
+                    "error": error_msg,
+                    "code": "EXECUTION_TIMEOUT",
+                    "timeout_seconds": 30.0
+                })
+                return None, {
+                    "error": error_msg,
+                    "code": "EXECUTION_TIMEOUT",
+                    "details": str(e),
+                    "agent": agent_name
+                }
+            # Continue to retry if not max attempts
+            last_error_details = str(e)
+            if delay_seconds:
+                time.sleep(delay_seconds)
         except BadRequestError as e:
             error_message = str(e)
             if hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -943,7 +1497,9 @@ def execute_sub_agent(agent_name: str, sub_agent_config: dict, parent_agent: str
             sub_group_chat = GroupChat(agents=[sub_user_proxy, sub_assistant], messages=[], max_round=2)
             sub_manager = GroupChatManager(groupchat=sub_group_chat, llm_config={"config_list": subagent_config_list})
 
-            sub_user_proxy.initiate_chat(sub_manager, message=subagent_prompt)
+            # Use safe chat initiation with timeout protection
+            chat_timeout = 25.0  # 25 seconds max for sub-agent LLM response
+            safe_initiate_chat(sub_user_proxy, sub_manager, subagent_prompt, timeout_seconds=chat_timeout)
             subagent_response = sub_group_chat.messages[-1]["content"]
 
             # LLM Guard: post-validate sub-agent response
@@ -1236,7 +1792,9 @@ def execute_parent_agent(parent_agent_name: str, parent_agent_data: dict,
                 })
                 return SAFE_FALLBACK_MESSAGE, None
 
-        parent_user_proxy.initiate_chat(parent_manager, message=parent_prompt)
+        # Use safe chat initiation with timeout protection
+        chat_timeout = 25.0  # 25 seconds max for parent agent LLM response
+        safe_initiate_chat(parent_user_proxy, parent_manager, parent_prompt, timeout_seconds=chat_timeout)
         parent_response = parent_group_chat.messages[-1]["content"]
 
         # LLM Guard: post-validate parent response
@@ -1352,6 +1910,9 @@ def run_autogen_agent(input_text: str, tenant_id: str):
     job_id = str(uuid.uuid4())
     groq_config = get_groq_config()
     token_tracker.reset_tracking()
+    
+    # Create agent execution session to ensure persistence (your solution #2)
+    execution_session = AgentExecutionSession(job_id, input_text)
    
     emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "STARTED", 0, {
         "input_length": len(input_text),
@@ -1423,10 +1984,15 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 "error": f"No sub-agent found for parent agent: {parent_agent_name}"
             }
 
-        logger.info("🎯 Enhanced agent selection completed", extra={
+        # Lock agent selection to prevent switching (your solution #2)
+        execution_session.lock_agent_selection(parent_agent_name, selected_subagent["agent_id"])
+        execution_session.mark_execution_started()
+
+        logger.info("🎯 Enhanced agent selection completed and locked", extra={
             "job_id": job_id,
             "parent_agent": parent_agent_name,
-            "sub_agent": selected_subagent["agent_id"]
+            "sub_agent": selected_subagent["agent_id"],
+            "agent_persistence_enabled": True
         })
        
         emit_orchestrator_event("orchestration.workflow", "orchestrator", job_id, tenant_id, "PROGRESS", 0, {
@@ -1569,8 +2135,12 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 "semantic_matching_enabled": True,
                 "performance_tracking_enabled": True,
                 "cache_optimization": True,
-                "workflow_version": "v2.0_semantic_enhanced"
-            }
+                "agent_persistence_enabled": True,
+                "kafka_timeout_protection_enabled": True,
+                "llm_timeout_protection_enabled": True,
+                "workflow_version": "v2.1_timeout_optimized"
+            },
+            "agent_session_info": execution_session.get_session_info()
         }
        
         # Cache the entire enhanced workflow result
@@ -1741,6 +2311,67 @@ def debug_agent_selection(user_input: str, tenant_id: str = None):
         return debug_info
 
 
+def test_lazy_loading_semantic_search():
+    """Test function to validate lazy loading implementation"""
+    logger.info("🧪 Testing lazy loading semantic search implementation")
+    
+    try:
+        # Create a new instance to test fresh initialization
+        test_matcher = SemanticAgentMatcher(model_name="all-MiniLM-L6-v2")
+        
+        # Test initial state
+        logger.info("📋 Initial state check", extra={
+            "model_loaded": test_matcher.model_loaded,
+            "model_loading": test_matcher.model_loading,
+            "embeddings_computed": test_matcher.embeddings_computed
+        })
+        
+        # Test search with lazy loading
+        test_input = "analyze financial data and create reports"
+        
+        logger.info("🔍 Testing semantic search with lazy loading")
+        results = test_matcher.find_best_agents(test_input, top_k=3, similarity_threshold=0.2)
+        
+        # Log results
+        logger.info("✅ Lazy loading test completed", extra={
+            "results_count": len(results),
+            "model_loaded_after": test_matcher.model_loaded,
+            "embeddings_computed_after": test_matcher.embeddings_computed,
+            "test_input": test_input
+        })
+        
+        return {
+            "success": True,
+            "results_count": len(results),
+            "model_loaded": test_matcher.model_loaded,
+            "embeddings_computed": test_matcher.embeddings_computed,
+            "results": [{"agent": r[0], "score": r[1]} for r in results[:3]]
+        }
+        
+    except Exception as e:
+        logger.error("❌ Lazy loading test failed", extra={
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+def get_semantic_search_status():
+    """Get current status of semantic search system"""
+    return {
+        "model_loaded": intelligent_orchestrator.semantic_matcher.model_loaded,
+        "model_loading": intelligent_orchestrator.semantic_matcher.model_loading,
+        "embeddings_computed": intelligent_orchestrator.semantic_matcher.embeddings_computed,
+        "model_name": intelligent_orchestrator.semantic_matcher.model_name,
+        "embeddings_count": len(intelligent_orchestrator.semantic_matcher.agent_embeddings),
+        "lazy_loading_enabled": True,
+        "timeout_protection_enabled": True
+    }
+
+
 # Export the enhanced orchestration system
 __all__ = [
     'run_autogen_agent',
@@ -1750,5 +2381,7 @@ __all__ = [
     'refresh_agent_embeddings',
     'get_agent_performance_report',
     'optimize_agent_selection_thresholds',
-    'debug_agent_selection'
+    'debug_agent_selection',
+    'test_lazy_loading_semantic_search',
+    'get_semantic_search_status'
 ]

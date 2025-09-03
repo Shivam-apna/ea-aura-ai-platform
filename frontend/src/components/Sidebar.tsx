@@ -3,12 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'; // Import use
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, DollarSign, Users2, Target, Award, Settings, LogOut, ChevronLeft, Users, UploadCloud } from 'lucide-react'; // Added UploadCloud
+import { LayoutDashboard, DollarSign, Users2, Target, Award, Settings, LogOut, ChevronLeft, Users, UploadCloud, User as UserIcon } from 'lucide-react'; // Added UserIcon
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileDisplay from './ProfileDisplay';
 import { useKeycloakRoles } from '@/hooks/useKeycloakRoles';
 import { useTheme } from '@/components/ThemeProvider'; // Import useTheme
-// Removed: import { useKeycloak } from '@/components/Auth/KeycloakProvider'; // Import useKeycloak
+import { allAgents } from '@/config/sidebar_agents'; // Import allAgents from new config file
 
 interface SidebarProps {
   activeAgent: string;
@@ -17,22 +17,9 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-// Updated list of agents with required client roles and paths
-const allAgents = [
-  { id: 'overview', name: 'Overview', icon: LayoutDashboard, path: '/dashboard', requiredRoles: ['user'] },
-  { id: 'business-vitality', name: 'Business Vitality', icon: DollarSign, path: '/business-vitality', requiredRoles: ['user'] },
-  { id: 'customer-analyzer', name: 'Customer Analysis', icon: Users2, path: '/customer-analyzer', requiredRoles: ['user'] },
-  { id: 'mission-alignment', name: 'Mission Alignment', icon: Target, path: '/mission-alignment', requiredRoles: ['user'] },
-  { id: 'brand-index', name: 'Brand Index', icon: Award, path: '/brand-index', requiredRoles: ['user'] },
-  { id: 'settings', name: 'Settings', icon: Settings, path: '/settings', requiredRoles: ['admin'] },
-  { id: 'users', name: 'Users', icon: Users, path: '/users', requiredRoles: ['admin'] },
-  { id: 'upload-data', name: 'Upload Data', icon: UploadCloud, path: '/upload-data', requiredRoles: ['admin'] },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollapsed, onToggleCollapse }) => {
   const { isAuthenticated, loading: authLoading, logout } = useAuth(); // Destructure logout here
   const { clientRoles } = useKeycloakRoles(); // Removed 'loading' from destructuring
-  // Removed: const { loading: keycloakLoading } = useKeycloak(); // Get loading from useKeycloak
   const location = useLocation();
   const navigate = useNavigate(); // Initialize useNavigate
   const { theme } = useTheme(); // Get the current theme
@@ -108,9 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
     allAgents: allAgents.map(agent => ({ id: agent.id, name: agent.name, requiredRoles: agent.requiredRoles }))
   });
 
-  // Determine if any of the non-dashboard routes are currently active
-  const isNonDashboardRouteActive = ['/profile', '/settings', '/users', '/upload-data'].includes(location.pathname); // Added /upload-data
-
   return (
     <div
       className={cn(
@@ -123,13 +107,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
         <ScrollArea className="flex-grow">
           <nav className="space-y-[20.16px]">
             {visibleAgents.map((agent) => {
-              // Determine active state for each button
-              let isActive = false;
-              if (['/settings', '/users', '/upload-data', '/profile'].includes(agent.path)) { // Added /upload-data and /profile
-                isActive = location.pathname === agent.path;
-              } else { // These are dashboard agents
-                isActive = !isNonDashboardRouteActive && activeAgent === agent.id;
-              }
+              // An agent is active if its ID matches the activeAgent prop
+              const isActive = activeAgent === agent.id;
 
               return (
                 <Button
@@ -138,14 +117,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
                   variant="ghost"
                   className={cn(
                     "w-full justify-start hover:bg-muted hover:text-foreground transition-all duration-200 h-8 text-sm",
-                    isActive ? "bg-primary text-white hover:bg-primary hover:text-blue shadow-md" : "text-foreground", // Changed text-primary-foreground to text-white
+                    isActive ? "bg-primary text-white hover:bg-primary hover:text-blue shadow-md" : "text-foreground",
                     isCollapsed ? "justify-center px-0 rounded-xl" : "justify-start rounded-xl"
                   )}
                   onClick={() => {
-                    // Only call onSelectAgent for dashboard-related agents
-                    if (!['/settings', '/users', '/upload-data', '/profile'].includes(agent.path)) { // Added /upload-data and /profile
-                      onSelectAgent(agent.id);
-                    }
+                    // Always call onSelectAgent to update the activeAgent state in AppLayout
+                    onSelectAgent(agent.id);
                   }}
                 >
                   <Link to={agent.path}>
@@ -185,8 +162,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
           "flex items-center justify-center hover:scale-105 transition-all duration-200",
           "-right-4",
           isDark
-            ? "border-white text-white bg-card hover:bg-secondary" // White border/text, dark card background
-            : "border-primary text-primary bg-background hover:bg-muted" // Primary border/text, light background
+            ? "border-white text-white bg-card hover:bg-secondary"
+            : "border-primary text-primary bg-background hover:bg-muted"
         )}
         aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
       >

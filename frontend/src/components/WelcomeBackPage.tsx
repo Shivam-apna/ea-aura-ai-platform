@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, History } from 'lucide-react';
+import { ArrowRight, History, CircleStop } from 'lucide-react';
 import NewsFeed from './NewsFeed';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useTheme } from '@/components/ThemeProvider';
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
 import { cn } from '@/lib/utils';
 import logoLightImage from '../images/EA-AURA.AI.svg';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface WelcomeBackPageProps {
   userName: string;
@@ -15,6 +21,8 @@ interface WelcomeBackPageProps {
   userDomain: string;
   onContinue: () => void;
 }
+
+
 
 const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({
   fullName,
@@ -34,6 +42,11 @@ const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
   const initials = getInitials(fullName);
+
+  const handleStopTTS = () => {
+    speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
 
   // Load voices
   useEffect(() => {
@@ -108,7 +121,29 @@ const WelcomeBackPage: React.FC<WelcomeBackPageProps> = ({
             (e.target as HTMLImageElement).src = logoLightImage;
           }}
         />
+
         <div className="flex items-center gap-3">
+          {/* Stop button - only visible when speaking, positioned before RG icon */}
+          {isSpeaking && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-full hover:bg-muted transition-colors"
+                    onClick={handleStopTTS}
+                  >
+                    <CircleStop className="h-4 w-4 text-red-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-sm">
+                  Stop Voice
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           <Avatar className="h-9 w-9">
             <AvatarFallback className="w-full h-full text-blue-800 bg-white text-base font-semibold flex items-center justify-center">
               {initials}

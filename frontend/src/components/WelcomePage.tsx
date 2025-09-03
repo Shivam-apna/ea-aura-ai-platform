@@ -2,11 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ArrowRight, History } from 'lucide-react';
+import { ArrowRight, History, CircleStop } from 'lucide-react';
 import NewsFeed from './NewsFeed';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTheme } from '@/components/ThemeProvider';
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 
 // Import both logo images with correct filenames
@@ -37,6 +44,11 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullN
     return (first + last).toUpperCase();
   };
   const initials = getInitials(fullName);
+
+  const handleStopTTS = () => {
+    speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
 
   // Load voices
   useEffect(() => {
@@ -110,12 +122,33 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ userName, onGetStarted, fullN
           }}
         />
         <div className="flex items-center gap-3">
+          {/* Stop button - only visible when speaking, positioned before RG icon */}
+          {isSpeaking && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-full hover:bg-muted transition-colors"
+                    onClick={handleStopTTS}
+                  >
+                    <CircleStop className="h-4 w-4 text-red-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-sm">
+                  Stop Voice
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <Avatar className="h-9 w-9"> {/* Changed to h-9 w-9 */}
             <AvatarFallback className="w-full h-full text-blue-800 bg-white text-base font-semibold flex items-center justify-center"> {/* Explicitly set text-blue-800 and bg-white */}
               {initials}
             </AvatarFallback>
           </Avatar>
           <span className="text-foreground font-medium text-lg">{fullName}</span>
+
         </div>
       </header>
 

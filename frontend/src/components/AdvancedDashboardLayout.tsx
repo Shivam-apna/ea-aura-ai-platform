@@ -11,12 +11,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BarChart2, LineChart, ScatterChart, Settings2, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb, Icon, InfoIcon } from 'lucide-react';
+import { BarChart2, LineChart, ScatterChart, Settings2, CircleStop, X, Eye, EyeOff, Filter, Grid3X3, TrendingUp, Lightbulb, Icon, InfoIcon } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useTheme } from '@/components/ThemeProvider';
 import { cn } from '@/lib/utils';
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"; // Import TooltipPrimitive for the Arrow component
 import { Speech } from "lucide-react";
 import { stopCurrentTTS, createIndividualMetricTTS } from "@/utils/avatars";
 import { CompactVoiceVisualizer } from "@/components/AvatarVisualizer";
@@ -33,12 +34,14 @@ interface KpiItem {
   key: string;
   bgColor: string;
   originalKey?: string;
+  displayName?: string;
 }
 
 interface MetricItem {
   key: string;
   label: string;
   originalKey?: string;
+  displayName?: string;
 }
 
 interface MetricGroups {
@@ -192,6 +195,15 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
           ...prev,
           [chartKey]: speaking,
         }))
+    );
+  };
+
+  const handleStopTTS = (chartKey: string) => {
+    stopCurrentTTS((speaking: boolean) =>
+      setIsSpeakingMap((prev: Record<string, boolean>) => ({
+        ...prev,
+        [chartKey]: speaking,
+      }))
     );
   };
 
@@ -594,10 +606,6 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
           // Check if we're using dynamic colors or default colors
           const isUsingDynamicColor = dynamicBgColor !== (kpi.bgColor || '#FFFFF');
 
-          // Get contrast text color only for dynamic colors
-          // const textColor = isUsingDynamicColor ? getContrastTextColor(dynamicBgColor) : undefined;
-
-          // Force black text if background is white, otherwise use contrast only for dynamic colors
           let textColor: string | undefined;
 
           if (dynamicBgColor.toLowerCase() === '#fff' || dynamicBgColor.toLowerCase() === 'white') {
@@ -610,93 +618,101 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
           const Icon = icons[idx % icons.length];
 
           return (
-            <Card
-              key={idx}
-              style={{
-                backgroundColor: dynamicBgColor,
-                border: shouldShowStroke ? `2px solid ${strokeColor}` : 'none'
-              }}
-              className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg p-0 overflow-hidden group min-h-[90px]"}
-              title={colorInfo ? `${colorInfo.label}` : undefined} // Tooltip showing range
-            >
-              <CardContent className="flex flex-col items-center justify-center py-3 px-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className={cn("text-xs font-medium",
-                      // Use original Tailwind classes when not using dynamic colors
-                      !isUsingDynamicColor && theme === 'dark' && "text-black"
-                    )}
-                    style={{
-                      fontSize: "0.90rem",
-                      // Only use inline color when we have dynamic colors
-                      ...(isUsingDynamicColor && { color: textColor })
-                    }}
-                  >
-                    {kpi.key}
-                  </span>
-                  {idx % 2 === 0 ? (
-                    <BarChart2
-                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
-                    />
-                  ) : (
-                    <LineChart
-                      className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
-                    />
-                  )}
-                </div>
-                <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
-                  {kpiValue !== undefined ? (
-                    <span
-                      className={cn("text-lg font-bold text-foreground transition-colors",
-                        theme === 'dark' && "text-black"
-                      )}
-                      style={{
-                        ...(isUsingDynamicColor && { color: textColor })
-                      }}
-                    >
-                      {kpiValue.toLocaleString()}
-                    </span>
-                  ) : (
-                    <span className="flex flex-col items-center justify-center">
-                      <Icon
-                        className={cn("w-7 h-7 mb-0.5",
-                          theme === 'dark' ? "text-black" : "text-muted-foreground"
-                        )}
-                        style={{
-                          ...(isUsingDynamicColor && { color: textColor })
-                        }}
-                      />
+            <ShadcnTooltip key={idx}>
+              <TooltipTrigger asChild>
+                <Card
+                  style={{
+                    backgroundColor: dynamicBgColor,
+                    border: shouldShowStroke ? `2px solid ${strokeColor}` : 'none'
+                  }}
+                  className={"rounded-xl shadow-md transition-transform hover:scale-105 hover:shadow-lg p-0 overflow-hidden group min-h-[90px]"}
+                >
+                  <CardContent className="flex flex-col items-center justify-center py-3 px-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <span
-                        className={cn("text-[10px] mt-0.5 font-medium",
-                          theme === 'dark' ? "text-black" : "text-muted-foreground"
+                        className={cn("text-xs font-medium",
+                          // Use original Tailwind classes when not using dynamic colors
+                          !isUsingDynamicColor && theme === 'dark' && "text-black"
                         )}
                         style={{
+                          fontSize: "0.90rem",
+                          // Only use inline color when we have dynamic colors
                           ...(isUsingDynamicColor && { color: textColor })
                         }}
                       >
-                        No data
+                        {kpi.key}
                       </span>
+                      {idx % 2 === 0 ? (
+                        <BarChart2
+                          className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
+                        />
+                      ) : (
+                        <LineChart
+                          className={cn("w-4 h-4 text-primary", theme === 'dark' ? "text-black" : "text-primary")}
+                        />
+                      )}
+                    </div>
+                    <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
+                      {kpiValue !== undefined ? (
+                        <span
+                          className={cn("text-lg font-bold text-foreground transition-colors",
+                            theme === 'dark' && "text-black"
+                          )}
+                          style={{
+                            ...(isUsingDynamicColor && { color: textColor })
+                          }}
+                        >
+                          {kpiValue.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="flex flex-col items-center justify-center">
+                          <Icon
+                            className={cn("w-7 h-7 mb-0.5",
+                              theme === 'dark' ? "text-black" : "text-muted-foreground"
+                            )}
+                            style={{
+                              ...(isUsingDynamicColor && { color: textColor })
+                            }}
+                          />
+                          <span
+                            className={cn("text-[10px] mt-0.5 font-medium",
+                              theme === 'dark' ? "text-black" : "text-muted-foreground"
+                            )}
+                            style={{
+                              ...(isUsingDynamicColor && { color: textColor })
+                            }}
+                          >
+                            No data
+                          </span>
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <span
-                  className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" :
-                    chart?.delta < 0 ? "text-red-500" :
-                      "text-muted-foreground"
-                    }`}
-                  style={{
-                    // Only override for neutral delta when using dynamic colors
-                    ...((chart?.delta === undefined || chart?.delta === null || chart?.delta === 0) && isUsingDynamicColor && { color: textColor })
-                  }}
-                >
-                  {chart?.delta === undefined || chart?.delta === null
-                    ? ""
-                    : chart.delta === 0
-                      ? "0%"
-                      : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
-                </span>
-              </CardContent>
-            </Card>
+                    <span
+                      className={`text-[11px] mt-0.5 font-semibold ${chart?.delta > 0 ? "text-green-600" :
+                        chart?.delta < 0 ? "text-red-500" :
+                          "text-muted-foreground"
+                        }`}
+                      style={{
+                        // Only override for neutral delta when using dynamic colors
+                        ...((chart?.delta === undefined || chart?.delta === null || chart?.delta === 0) && isUsingDynamicColor && { color: textColor })
+                      }}
+                    >
+                      {chart?.delta === undefined || chart?.delta === null
+                        ? ""
+                        : chart.delta === 0
+                          ? "0%"
+                          : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
+                    </span>
+                  </CardContent>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {colorInfo ? colorInfo.label : 'Out of range / No data'}
+                </p>
+                <TooltipPrimitive.Arrow className="fill-popover" /> {/* Add the arrow here */}
+              </TooltipContent>
+            </ShadcnTooltip>
           );
         })}
       </div>
@@ -872,15 +888,19 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                   variant="ghost"
                                                   size="icon"
                                                   className={cn("h-8 w-8 rounded-full hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed", iconColorClass)}
-                                                  onClick={() => handleTTSClick(metric.key, metric.label)}
-                                                  disabled={ttsLoadingMap[metric.key] || isSpeakingMap[metric.key]}
+                                                  onClick={() => isSpeakingMap[metric.key] ? handleStopTTS(metric.key) : handleTTSClick(metric.key, metric.label)}
+                                                  disabled={ttsLoadingMap[metric.key]}
                                                 >
                                                   {ttsLoadingMap[metric.key] ? (
                                                     <ClipLoader size={16} color="currentColor" />
+                                                  ) : isSpeakingMap[metric.key] ? (
+                                                    <CircleStop className={cn("h-4 w-4", theme === 'dark' ? 'text-red-400' : 'text-red-500')} />
                                                   ) : (
                                                     <Speech className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
                                                   )}
-                                                  <span className="sr-only">Voice Summary</span>
+                                                  <span className="sr-only">
+                                                    {isSpeakingMap[metric.key] ? 'Stop Voice' : 'Voice Summary'}
+                                                  </span>
                                                 </Button>
                                               </TooltipTrigger>
                                               <TooltipContent>
@@ -888,10 +908,11 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                   {ttsLoadingMap[metric.key]
                                                     ? 'Generating voice...'
                                                     : isSpeakingMap[metric.key]
-                                                      ? 'Currently speaking...'
+                                                      ? 'Stop voice'
                                                       : 'Voice Summary'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
                                             <ShadcnTooltip>
@@ -924,6 +945,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                     : 'Predictive Analysis'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
                                             <ShadcnTooltip>
@@ -956,6 +978,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                                     : 'Next Step Analysis'
                                                   }
                                                 </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
                                               </TooltipContent>
                                             </ShadcnTooltip>
 
@@ -1015,7 +1038,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex-1 w-full h-full" style={{ minHeight: 280, overflow: 'hidden' }}>
+                                    <div className="flex-1 w-full h-full relative" style={{ minHeight: 280, overflow: 'hidden' }}>
                                       <GraphCardContent
                                         chart={chart}
                                         isLoading={loading}

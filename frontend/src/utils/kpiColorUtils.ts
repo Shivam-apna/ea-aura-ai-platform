@@ -19,189 +19,245 @@ interface KpiColorConfig {
     ranges?: ColorRange[];
     stringRules?: StringColorRule[];
     defaultColor: string;
+    defaultLabel?: string;
+    defaultStrokeColor?: string;
     type: 'numeric' | 'string';
+
 }
 
 // Define color ranges for each KPI type using exact names
 const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     // CES Score (Customer Effort Score) - Scale 1-10, lower is better
+    // 1. ✅ Customer Effort Score
     'CES Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 4, max: 8, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 8, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Customer Effort Score (CES), which reflects how easy it is for customers to interact with us, is in the poor range — showing customers face challenges in their journey.' },
+            { min: 4, max: 8, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Customer Effort Score (CES), measuring ease of interactions, is in the good range — indicating a generally smooth experience with room for improvement.' },
+            { min: 8, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Customer Effort Score (CES), reflecting ease of engagement, is in the excellent range — highlighting seamless and effortless customer experiences.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
 
-    // NPS Score (Net Promoter Score) - Scale -100 to +100
+    // 2. ✅ Net Promoter Score
     'NPS Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 4, max: 7, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
-            { min: 7, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
+            { min: 0, max: 4, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Net Promoter Score (NPS), which indicates customer loyalty and advocacy, is in the poor range — showing limited willingness to recommend.' },
+            { min: 4, max: 7, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Net Promoter Score (NPS), reflecting likelihood to recommend, is in the positive range — showing encouraging advocacy with potential to grow stronger.' },
+            { min: 7, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Net Promoter Score (NPS), measuring customer loyalty, is in the very positive range — highlighting strong advocacy and brand promoters.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
 
-    // Sentiment Score - Percentage 0-100%
+    // 3. ✅ Sentiment Score
     'Sentiment Score (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Sentiment Score, which reflects customer emotions from feedback, is in the negative range — showing dissatisfaction and concerns in perception.' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Sentiment Score is in the neutral range — reflecting a balanced perception with opportunities to strengthen positivity.' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Sentiment Score is in the positive range — showing favorable customer emotions and strong brand perception.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
 
-    // CSAT Score (Customer Satisfaction) - Percentage 0-100%
+    // 4. ✅ Customer Satisfaction
     'CSAT (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 60, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Customer Satisfaction Score (CSAT), which measures satisfaction levels, is in the low range — indicating dissatisfaction with experiences.' },
+            { min: 60, max: 80, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Customer Satisfaction Score (CSAT) is in the moderate range — showing mixed satisfaction with scope to improve consistency.' },
+            { min: 80, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Customer Satisfaction Score (CSAT) is in the high range — reflecting strong satisfaction and positive experiences.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 5. ✅ Gross Margin
     'Gross Margin (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Gross Margin, which measures profitability after production costs, is in the low range — signaling pressure on profitability.' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Gross Margin is in the moderate range — indicating reasonable profitability with room to improve efficiency.' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Gross Margin is in the high range — reflecting strong profitability and efficient cost management.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 6. ✅ Net Profit Margin
     'Net Profit Margin (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Net Profit Margin, which reflects profitability after all expenses, is in the low range — indicating limited retained earnings.' },
+            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Net Profit Margin is in the moderate range — showing stable profitability with scope for improvement.' },
+            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Net Profit Margin is in the high range — highlighting strong profitability and efficient financial management.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
-    // Add both variations of Conversion Rate to handle data inconsistencies
+
+    // 7. ✅ Conversion Rate (%)
     'Conversion Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 2, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Conversion Rate, which tracks the percentage of users who complete desired actions, is in the low range — showing limited effectiveness in turning visitors into customers.' },
+            { min: 2, max: 5, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Conversion Rate is in the moderate range — reflecting fair performance with opportunities to boost conversions.' },
+            { min: 5, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Conversion Rate is in the high range — highlighting effective conversion strategies and strong performance.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 8. ✅ Conversion Rate (absolute measure)
     'Conversion Rate': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 10, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 10, max: 20, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 20, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 1, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Conversion Rate, which measures the actual number of users converting, is in the low range — indicating limited outcomes.' },
+            { min: 1, max: 3, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Conversion Rate is in the moderate range — showing decent results with space to scale further.' },
+            { min: 3, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Conversion Rate is in the high range — reflecting strong performance in achieving conversions.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 9. ✅ GMROI
     'GMROI': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 1, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 1, max: 2, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 2, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 1, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Gross Margin Return on Investment (GMROI) is in the poor range — showing low return on inventory investments.' },
+            { min: 1, max: 3, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Gross Margin Return on Investment (GMROI) is in the fair range — indicating balanced returns with potential to optimize.' },
+            { min: 3, max: 10, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Gross Margin Return on Investment (GMROI) is in the strong range — reflecting efficient inventory management and profitability.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 10. ✅ Engagement Rate + Reach
     'Engagement Rate + Reach': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 2, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Engagement Rate + Reach, which captures audience interaction and visibility, is in the low range — showing limited engagement impact.' },
+            { min: 2, max: 5, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Engagement Rate + Reach is in the moderate range — reflecting fair interaction with opportunities to increase reach.' },
+            { min: 5, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Engagement Rate + Reach is in the high range — highlighting strong audience interaction and wide visibility.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+    // 11. ✅ Avg Sentiment Score
     'Avg Sentiment Score': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Average Sentiment Score, which combines overall customer emotions, is in the negative range — showing dissatisfaction in perception.' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Average Sentiment Score is in the neutral range — reflecting mixed emotions with opportunities to foster positivity.' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Average Sentiment Score is in the positive range — showing favorable emotions and healthy perception of the brand.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 12. ✅ Alignment Score (%)
     'Alignment Score (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Positive' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Very Positive' }
+            { min: 0, max: 50, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Alignment Score, which reflects how closely efforts match goals, is in the low range — showing limited alignment with strategic objectives.' },
+            { min: 50, max: 75, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Alignment Score is in the moderate range — showing partial alignment with room to strengthen consistency.' },
+            { min: 75, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Alignment Score is in the high range — reflecting strong alignment between activities and goals.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 13. ✅ Resource Allocation
     'Resource Allocation': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 30000, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 30000, max: 70000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70000, max: 100000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Resource Allocation, which measures effective use of resources, is in the inefficient range — showing suboptimal utilization.' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Resource Allocation is in the balanced range — reflecting reasonable use with potential to optimize further.' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Resource Allocation is in the efficient range — highlighting strong utilization of resources aligned with needs.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 14. ✅ Impact Metrics
     'Impact Metrics': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Impact Metrics, which reflect the overall business contribution of initiatives, are in the low range — showing limited measurable outcomes.' },
+            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Impact Metrics are in the moderate range — indicating reasonable impact with opportunities to scale results.' },
+            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Impact Metrics are in the high range — highlighting strong outcomes and meaningful contributions to business objectives.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 15. ✅ Risks Identified (string-based)
     'Risks Identified': {
         type: 'string',
         stringRules: [
-            { value: 'No Risks Identified', color: '#D4F0A4', strokeColor: '#7BB13D', label: 'No Risks' },
-            // For any other string value, it will fall back to defaultColor (red)
+            {
+                value: 'No Risks Identified',
+                color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Risk assessment shows no risks identified — operations are stable and under control.'
+            }
         ],
-        defaultColor: '#FFE8E8' // Red for any risks identified
+        defaultColor: '#FFE8E8',
+        defaultLabel: 'Risk assessment indicates risks are present — attention is required to manage potential challenges.',
+        defaultStrokeColor: '#FF0000'
     },
+
+    // 16. ✅ Page Views
     'Page Views': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 3000, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 3000, max: 7000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 7000, max: 1000000000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 1000, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Page Views, which track content visibility, are in the low range — showing limited reach and audience exposure.' },
+            { min: 1000, max: 5000, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Page Views are in the moderate range — reflecting steady visibility with opportunities to grow audience engagement.' },
+            { min: 5000, max: 100000, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Page Views are in the high range — highlighting strong content visibility and audience reach.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 17. ✅ Audience Growth
     'Audience Growth': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 20, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 20, max: 50, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 50, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 2, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Audience Growth, which tracks expansion of followers or subscribers, is in the low range — showing limited growth momentum.' },
+            { min: 2, max: 5, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Audience Growth is in the moderate range — reflecting steady expansion with scope to accelerate further.' },
+            { min: 5, max: 50, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Audience Growth is in the high range — showing strong momentum and expanding influence.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 18. ✅ Engagement Rate (%)
     'Engagement Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 2, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Engagement Rate, which measures audience interaction, is in the low range — showing limited audience involvement.' },
+            { min: 2, max: 5, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Engagement Rate is in the moderate range — reflecting steady interaction with potential to strengthen engagement.' },
+            { min: 5, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Engagement Rate is in the high range — highlighting strong interaction and active audience participation.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     },
+
+    // 19. ✅ Bounce Rate (%)
     'Bounce Rate (%)': {
         type: 'numeric',
         ranges: [
-            { min: 0, max: 40, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Poor' },
-            { min: 40, max: 70, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Good' },
-            { min: 70, max: 100, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Excellent' }
+            { min: 0, max: 20, color: '#D4F0A4', strokeColor: '#7BB13D', label: 'Bounce Rate, which measures visitors leaving without engagement, is in the low range — showing effective audience retention.' },
+            { min: 20, max: 50, color: '#FFF7EC', strokeColor: '#FDB458', label: 'Bounce Rate is in the moderate range — indicating partial retention with scope to reduce exits.' },
+            { min: 50, max: 100, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Bounce Rate is in the high range — showing frequent visitor drop-offs and need for stronger engagement strategies.' }
         ],
-        defaultColor: '#FFF'
+        defaultColor: '#FFF',
+        defaultLabel: 'Data Mismatch',
     }
+
+
 };
 
 /**
@@ -232,7 +288,7 @@ function getKpiKey(kpiName: string): string {
         }
     }
 
-    console.warn("❌ No match found for:", kpiName);
+    console.warn("⚠️ No match found for:", kpiName);
     // No match found
     return kpiName;
 }
@@ -319,7 +375,6 @@ export function getKpiColorInfo(
 
     const kpiKey = getKpiKey(kpiName);
     const config = KPI_COLOR_CONFIGS[kpiKey];
-
     if (!config) {
         console.warn(`No color configuration found for KPI: "${kpiName}"`);
         return null;
@@ -339,16 +394,17 @@ export function getKpiColorInfo(
                 }
             }
         }
-        // Return info for default color
+
+        // Return default for strings
         return {
             color: config.defaultColor,
-            label: 'Risk Identified',
+            label: config.defaultLabel || 'Default State',
             value: value.trim(),
-            strokeColor: '#FF0000'
+            strokeColor: config.defaultStrokeColor || '#000000'
         };
     }
 
-    // Handle numeric KPIs - updated to use extractNumericValue helper
+    // Handle numeric KPIs
     if (config.type === 'numeric') {
         const numericValue = extractNumericValue(value);
 
@@ -364,9 +420,19 @@ export function getKpiColorInfo(
                 }
             }
         }
+
+        // ✅ Always return defaults for numeric KPIs when no range matches
+        return {
+            color: config.defaultColor,
+            label: config.defaultLabel || 'Data Mismatch',
+        };
     }
 
-    return null;
+    // ✅ Final fallback
+    return {
+        color: config.defaultColor,
+        label: config.defaultLabel || 'Unknown State',
+    };
 }
 
 /**
