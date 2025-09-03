@@ -245,18 +245,22 @@ class KeycloakAdminService {
 
     console.log('Creating user with data:', userData);
 
-    const result = await this.makeRequest('/users', {
+    await this.makeRequest('/users', {
       method: 'POST',
       body: JSON.stringify(userData)
     });
 
-    console.log('User created successfully:', result);
+    // Fetch created user by username to get its id
+    const createdUsers = await this.makeRequest(`/users?username=${encodeURIComponent(data.username)}`);
+    const createdUser = Array.isArray(createdUsers) && createdUsers.length > 0 ? createdUsers[0] : null;
+
+    console.log('User created successfully:', createdUser);
 
     // If user was created and has an organization, add them to the organization
-    if (result && data.organizationId && data.organizationId.trim() !== '') {
+    if (createdUser && data.organizationId && data.organizationId.trim() !== '') {
       try {
-        console.log('Adding user to organization:', { userId: result.id, organizationId: data.organizationId });
-        await this.addUserToOrganization(result.id, data.organizationId);
+        console.log('Adding user to organization:', { userId: createdUser.id, organizationId: data.organizationId });
+        await this.addUserToOrganization(createdUser.id, data.organizationId);
         console.log('User successfully added to organization');
       } catch (error) {
         console.error('Failed to add user to organization:', error);
@@ -267,7 +271,7 @@ class KeycloakAdminService {
       console.log('No organization specified for user or organizationId is empty');
     }
 
-    return result;
+    return createdUser;
   }
 
   async getUsers(): Promise<any[]> {
@@ -297,18 +301,54 @@ class KeycloakAdminService {
   }
 
   async addUserToOrganization(userId: string, organizationId: string): Promise<void> {
-    try {
-      console.log('Attempting to add user to organization via Organizations API');
-      // Try Organizations API first
-      return await this.makeRequest(`/organizations/${organizationId}/members/${userId}`, {
-        method: 'PUT'
+    // Use Organizations API per latest Keycloak: POST /organizations/{org-id}/members
+    // Body contains the userId. Different builds accept slight variants; try in order.
+    const token = await this.getAdminToken();
+    const url = `${this.baseUrl}/organizations/${organizationId}/members`;
+
+    // 1) application/json with raw UUID (matches your successful request)
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: userId
+    });
+
+    if (response.status === 415) {
+      // 2) application/json with JSON string body
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userId)
       });
-    } catch (error) {
-      console.log('Organizations API not available, falling back to groups');
-      // Fallback to groups
-      return await this.makeRequest(`/users/${userId}/groups/${organizationId}`, {
-        method: 'PUT'
+    }
+
+    if (response.status === 415) {
+      // 3) text/plain with raw UUID
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'text/plain'
+        },
+        body: userId
       });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Keycloak Organizations API Error (add member):', {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint: `/organizations/${organizationId}/members`,
+        error: errorText
+      });
+      throw new Error(`Keycloak Organizations API Error: ${response.status} ${response.statusText}`);
     }
   }
 
@@ -391,6 +431,18 @@ class KeycloakAdminService {
     return await this.makeRequest(`/users/${userId}/role-mappings/realm`, {
       method: 'DELETE',
       body: JSON.stringify([role])
+    });
+  }
+
+  async resetUserPassword(userId: string, newPassword: string, temporary: boolean = false): Promise<void> {
+    const payload = {
+      type: 'password',
+      value: newPassword,
+      temporary
+    };
+    await this.makeRequest(`/users/${userId}/reset-password`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
     });
   }
 }
