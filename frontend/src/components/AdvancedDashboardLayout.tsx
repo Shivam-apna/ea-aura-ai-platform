@@ -437,7 +437,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
     const baseLayout = {
       width: undefined,
-      height: 240, // Reduced height from 280 to 240
+      height: 260, // Reduced height from 280 to 260
       autosize: true,
       title: '',
       font: {
