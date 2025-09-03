@@ -129,6 +129,25 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } =
     useTheme();
 
+  const formatKpiValue = (value: any): string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "number" || typeof value === "bigint") {
+      try {
+        return value.toLocaleString();
+      } catch {
+        return String(value);
+      }
+    }
+    if (value instanceof Date) {
+      try {
+        return value.toLocaleDateString();
+      } catch {
+        return value.toString();
+      }
+    }
+    return String(value);
+  };
+
   const iconColorClass = theme === "dark" ? "text-white" : "text-primary"; // Conditional class
 
   useEffect(() => {
@@ -763,7 +782,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                       )}
                     </div>
                     <span className="flex flex-col items-center justify-center min-h-[1.5rem]">
-                      {kpiValue !== undefined ? (
+                      {kpiValue != null ? (
                         <span
                           className={cn(
                             "text-lg font-bold text-foreground transition-colors",
@@ -773,7 +792,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                             ...(isUsingDynamicColor && { color: textColor }),
                           }}
                         >
-                          {kpiValue.toLocaleString()}
+                          {formatKpiValue(kpiValue)}
                         </span>
                       ) : (
                         <span className="flex flex-col items-center justify-center">
