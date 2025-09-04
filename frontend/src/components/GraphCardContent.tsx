@@ -11,7 +11,7 @@ interface ChartData {
   title: string;
   plotType: string;
   x: any[];
-  y: any;
+  y: any; // Can be any[] or any[][] depending on chart type
   xLabel: string;
   yLabel: string;
   value?: number;

@@ -172,8 +172,6 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const [nextStepModalMetricKey, setNextStepModalMetricKey] = useState<string>('');
 
 
-
-
   const handleTTSClick = (chartKey: string, chartLabel: string) => {
     // Set loading to true for this specific chart
     setTtsLoadingMap((prev: Record<string, boolean>) => ({
@@ -432,12 +430,77 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     return lines.join('<br>');
   };
 
-  // Get Plotly layout and config based on theme
+  // Helper function to calculate dynamic Y-axis domain
+  const calculateYAxisDomain = (yData: any[]): [number, number] => {
+    if (!yData || yData.length === 0) {
+      return [0, 100]; // Default or fallback
+    }
 
+    const numericYData = yData.filter(item => typeof item === 'number' && !isNaN(item));
+
+    if (numericYData.length === 0) {
+      return [0, 100]; // Fallback if no valid numbers
+    }
+
+    const maxValue = Math.max(...numericYData);
+    const minValue = Math.min(...numericYData);
+
+    // Handle case where all values are the same
+    if (maxValue === minValue) {
+      return [Math.max(0, minValue * 0.9), maxValue * 1.1];
+    }
+
+    const isSmallRange = maxValue <= 100; // Define small range threshold
+
+    let effectiveMinValue = Math.min(0, minValue);
+    let paddedMaxValue;
+    let paddedMinValue;
+
+    if (isSmallRange) {
+      // For small ranges, use a smaller padding (20% above max)
+      paddedMaxValue = maxValue * 1.2;
+      paddedMinValue = 0; // Always start at 0 for small positive ranges
+    } else {
+      // For larger ranges, use 15% top padding
+      paddedMaxValue = maxValue * 1.15;
+      paddedMinValue = Math.max(0, effectiveMinValue - (maxValue - effectiveMinValue) * 0.05); // Small padding below, not below 0
+    }
+
+    return [paddedMinValue, paddedMaxValue];
+  };
+
+  // Unified Chart Height
+  const UNIFIED_CHART_HEIGHT = 280;
+
+  // Helper function to calculate dynamic left margin
+  const getDynamicLeftMargin = (yData: any[]): number => {
+    if (!yData || yData.length === 0) return 70; // Default margin
+
+    const numericYData = yData.filter(item => typeof item === 'number' && !isNaN(item));
+    if (numericYData.length === 0) return 70;
+
+    const maxValue = Math.max(...numericYData);
+
+    if (maxValue >= 100000) { // Large values like ₹770,000
+      return 70;
+    } else if (maxValue >= 1000) { // Medium values
+      return 60;
+    } else { // Small values like NPS scores (0-50)
+      return 45;
+    }
+  };
+
+  // Get Plotly layout and config based on theme
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
+    const dynamicLeftMargin = getDynamicLeftMargin(chart.y);
+
+    const numericYData = chart.y.filter(item => typeof item === 'number' && !isNaN(item));
+    const maxChartValue = numericYData.length > 0 ? Math.max(...numericYData) : 0;
+    const isSmallRange = maxChartValue <= 100; // Threshold for small values
+
     const baseLayout = {
       width: undefined,
-      height: 260, // Reduced height from 280 to 260
+      height: UNIFIED_CHART_HEIGHT, // Apply unified height
       autosize: true,
       title: '',
       font: {
@@ -445,19 +508,23 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         size: 16,
       },
       margin: chart.summary ?
-        { l: 50, r: 30, t: 60, b: 75 } : // Reduced from 100 to 80
-        { l: 50, r: 30, t: 60, b: 50 },
+        { l: dynamicLeftMargin, r: 30, t: 60, b: 90 } : // Increased bottom margin (b) to 90 for summary
+        { l: dynamicLeftMargin, r: 30, t: 60, b: 65 }, // Increased bottom margin (b) to 65 without summary
       xaxis: {
         title: chart.xLabel,
         zeroline: false,
         tickfont: { size: 15 },
         titlefont: { size: 17, family: 'Inter, sans-serif' },
+        automargin: true, // Enable automargin for x-axis
       },
       yaxis: {
         title: chart.yLabel,
         zeroline: false,
         tickfont: { size: 15 },
         titlefont: { size: 17, family: 'Inter, sans-serif' },
+        domain: calculateYAxisDomain(chart.y), // Apply dynamic domain
+        tickformat: isSmallRange ? '' : '₹.2s', // Conditional tick format
+        automargin: true, // Enable automargin for y-axis
       },
       legend: {
         orientation: "h",
@@ -466,20 +533,22 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       },
       transition: { duration: 500, easing: 'cubic-in-out' },
       annotations: chart.summary ? [{
-        text: `💡 ${wrapText(chart.summary, 100)}`,
+        text: `💡 ${wrapText(chart.summary, 60)}`, // Changed maxLineLength to 60
         showarrow: false,
         x: 0.5,
-        y: -0.40, // Changed from -0.35 to -0.25 to bring it closer
+        y: -0.40, // Changed from -0.30 to -0.40 to push it further down
         xref: 'paper',
         yref: 'paper',
         xanchor: 'center',
         yanchor: 'top',
+        align: 'left', // Added align property
+        valign: 'top', // Added valign property
         font: {
           size: 13, // Reduced from 14 to 12
           color: isDarkTheme ? '#e5e7eb' : '#1f2937',
           family: 'Inter, sans-serif'
         },
-        width: 800, // Add width constraint for wrapping
+        // Removed width: 800
         bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
 
       }] : [],
@@ -870,7 +939,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                 {...provided.draggableProps}
                                 className={stretchClass}
                               >
-                                <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in">
+                                <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in min-h-[370px]">
                                   <CardContent className="flex flex-col h-full p-0">
                                     <div
                                       className="flex justify-between items-center mb-0 pb-1 border-b border-gray-100 px-2 pt-2 cursor-move"
@@ -1038,7 +1107,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex-1 w-full h-full relative" style={{ minHeight: 280, overflow: 'hidden' }}>
+                                    <div className="flex-1 w-full h-full relative" style={{ minHeight: UNIFIED_CHART_HEIGHT, overflow: 'hidden' }}>
                                       <GraphCardContent
                                         chart={chart}
                                         isLoading={loading}
