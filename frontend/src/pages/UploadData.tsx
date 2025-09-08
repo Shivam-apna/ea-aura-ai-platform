@@ -288,7 +288,7 @@ const UploadData: React.FC = () => {
               <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent || !selectedTenant || !selectedFile}>
+              <Button onClick={handleSubmit} disabled={isLoading || !selectedAgent || !selectedTenant || !selectedFile} className="text-white">
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...
