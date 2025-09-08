@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Palette, Type, RotateCcw, SunMoon, LayoutDashboard } from 'lucide-react'; // Added SunMoon and LayoutDashboard icons
+import { Palette, Type, RotateCcw, SunMoon } from 'lucide-react'; // Removed LayoutDashboard icon
 import { HexColorPicker } from "react-colorful";
 import { useTheme } from '@/components/ThemeProvider';
 import { rgbStringToHex } from '@/utils/color';
@@ -29,7 +29,7 @@ const ThemeSettings: React.FC = () => {
   const defaultFontThemeName = availableFonts[0].name;
 
   const [colorInput, setColorInput] = useState<string>('');
-  const [dashboardDensity, setDashboardDensity] = useState('comfortable'); // New state for dashboard density
+  // Removed dashboardDensity state
 
   // Initialize colorInput when selectedPrimaryColor changes or on mount
   React.useEffect(() => {
@@ -154,21 +154,7 @@ const ThemeSettings: React.FC = () => {
         </p>
       </div>
 
-      {/* Dashboard Density */}
-      <div className="space-y-2">
-        <Label htmlFor="dashboard-density" className="text-muted-foreground flex items-center gap-2">
-          <LayoutDashboard className="h-4 w-4" /> Dashboard Density
-        </Label>
-        <Select onValueChange={setDashboardDensity} value={dashboardDensity}>
-          <SelectTrigger className="w-full bg-input border-border text-foreground">
-            <SelectValue placeholder="Select density" />
-          </SelectTrigger>
-          <SelectContent className="neumorphic-card text-popover-foreground border border-border bg-card">
-            <SelectItem value="comfortable">Comfortable</SelectItem>
-            <SelectItem value="compact">Compact</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Removed Dashboard Density */}
 
       {/* Application Font Theme */}
       <div className="space-y-2">
