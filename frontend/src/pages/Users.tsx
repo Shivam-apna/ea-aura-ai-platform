@@ -370,17 +370,17 @@ const Users = () => {
             </Select>
           </div>
 
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
                 <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">Username</TableHead>
-                  <TableHead className="text-muted-foreground">Email</TableHead>
-                  <TableHead className="text-muted-foreground">Full Name</TableHead>
-                  <TableHead className="text-muted-foreground">Domain</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Last Login</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Username</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Email</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Full Name</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Domain</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Status</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Last Login</TableHead>
+                  <TableHead className="text-muted-foreground bg-card text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -445,14 +445,14 @@ const Users = () => {
           </div>
             </TabsContent>
             <TabsContent value="organizations" className="m-0">
-              <div className="border rounded-md">
+              <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
                     <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground">Name</TableHead>
-                      <TableHead className="text-muted-foreground">Domain</TableHead>
-                      <TableHead className="text-muted-foreground">Alias</TableHead>
-                      <TableHead className="text-muted-foreground">Redirect URL</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Name</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Domain</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Alias</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Redirect URL</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

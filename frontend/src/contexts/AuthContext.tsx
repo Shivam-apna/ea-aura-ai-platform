@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  isLoggingOut: boolean; // New state for logout loading
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +22,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null); // Use UserInfo type
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Initialize new state
 
   useEffect(() => {
     console.log("AuthContext: Initializing authentication check...");
@@ -71,11 +73,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw error;
     } finally {
       setLoading(false);
+      setIsLoggingOut(false); // Ensure this is false after login attempt
     }
   };
 
   const logout = async () => {
-    setLoading(true);
+    setIsLoggingOut(true); // Set logging out state to true
+    setLoading(true); // Also set general loading to true
     try {
       console.log("AuthContext: Attempting logout...");
       await authService.logout();
@@ -86,13 +90,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
+      setIsLoggingOut(false); // Reset logging out state to false
       clearUserSessionData(); // Clear session data on logout
       console.log("AuthContext: Finished logout. isAuthenticated:", false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, isLoggingOut }}>
       {children}
     </AuthContext.Provider>
   );

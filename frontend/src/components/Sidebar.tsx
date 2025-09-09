@@ -18,7 +18,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollapsed, onToggleCollapse }) => {
-  const { isAuthenticated, loading: authLoading, logout } = useAuth(); // Destructure logout here
+  const { isAuthenticated, loading: authLoading, logout, isLoggingOut } = useAuth(); // Destructure logout and isLoggingOut here
   const { clientRoles } = useKeycloakRoles(); // Removed 'loading' from destructuring
   const location = useLocation();
   const navigate = useNavigate(); // Initialize useNavigate
@@ -69,8 +69,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
     }
   };
 
-  // Don't render sidebar on login or landing page
-  if (location.pathname === '/login' || location.pathname === '/landing') {
+  // Don't render sidebar on login, landing page, or if logging out
+  if (location.pathname === '/login' || location.pathname === '/landing' || isLoggingOut) {
     return null;
   }
 

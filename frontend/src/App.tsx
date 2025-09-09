@@ -24,14 +24,20 @@ import UploadData from "./pages/UploadData";
 import { DashboardRefreshProvider } from "./contexts/DashboardRefreshContext";
 import { useTheme } from "./components/ThemeProvider";
 import { allAgents } from "./config/sidebar_agents"; // Import allAgents
+import LogoutLoader from "./components/LogoutLoader"; // Import the new LogoutLoader
 
 const queryClient = new QueryClient();
 
 // ProtectedRoute component to guard routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, isLoggingOut } = useAuth(); // Get isLoggingOut
   const { clientRoles } = useKeycloakRoles();
   const location = useLocation();
+
+  // If currently logging out, don't render anything from ProtectedRoute
+  if (isLoggingOut) {
+    return null;
+  }
 
   console.log("ProtectedRoute Render:", {
     location: location.pathname,
@@ -96,7 +102,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Layout component that conditionally renders header and sidebar
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, isLoggingOut } = useAuth(); // Get isLoggingOut
   const { clientRoles } = useKeycloakRoles();
   const [activeAgent, setActiveAgent] = React.useState('overview'); // Default to 'overview'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
@@ -159,6 +165,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   }, [location.pathname, isAuthPage]); // Only re-run when pathname or authPage status changes
 
+  // If currently logging out, don't render AppHeader or Sidebar
+  if (isLoggingOut) {
+    return null;
+  }
+
   if (isAuthPage) {
     // For login and landing pages, just render children directly.
     // These pages will manage their own full-screen styling.
@@ -189,6 +200,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App = () => {
+  const { isLoggingOut } = useAuth(); // Get isLoggingOut from AuthContext
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -197,6 +210,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <DashboardRefreshProvider>
+              {isLoggingOut && <LogoutLoader />} {/* Render LogoutLoader if logging out */}
               <AppLayout>
                 <Routes>
                   <Route
