@@ -230,8 +230,8 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   >({});
   const [nextStepModalOpen, setNextStepModalOpen] = useState(false);
   const [nextStepModalData, setNextStepModalData] = useState<any>(null);
-  const [nextStepModalMetricKey, setNextStepModalMetricKey] =
-    useState<string>("");
+  const [nextStepModalMetricKey, setNextStepModalMetricKey] = useState<string>('');
+
 
   const handleTTSClick = (chartKey: string, chartLabel: string) => {
     // Set loading to true for this specific chart
@@ -517,65 +517,131 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
     });
 
     if (currentLine) lines.push(currentLine);
-    return lines.join("<br>");
+    return lines.join('<br>');
+  };
+
+  // Helper function to calculate dynamic Y-axis domain
+  const calculateYAxisDomain = (yData: any[]): [number, number] => {
+    if (!yData || yData.length === 0) {
+      return [0, 100]; // Default or fallback
+    }
+
+    const numericYData = yData.filter(item => typeof item === 'number' && !isNaN(item));
+
+    if (numericYData.length === 0) {
+      return [0, 100]; // Fallback if no valid numbers
+    }
+
+    const maxValue = Math.max(...numericYData);
+    const minValue = Math.min(...numericYData);
+
+    // Handle case where all values are the same
+    if (maxValue === minValue) {
+      return [Math.max(0, minValue * 0.9), maxValue * 1.1];
+    }
+
+    const isSmallRange = maxValue <= 100; // Define small range threshold
+
+    let effectiveMinValue = Math.min(0, minValue);
+    let paddedMaxValue;
+    let paddedMinValue;
+
+    if (isSmallRange) {
+      // For small ranges, use a smaller padding (20% above max)
+      paddedMaxValue = maxValue * 1.2;
+      paddedMinValue = 0; // Always start at 0 for small positive ranges
+    } else {
+      // For larger ranges, use 15% top padding
+      paddedMaxValue = maxValue * 1.15;
+      paddedMinValue = Math.max(0, effectiveMinValue - (maxValue - effectiveMinValue) * 0.05); // Small padding below, not below 0
+    }
+
+    return [paddedMinValue, paddedMaxValue];
+  };
+
+  // Unified Chart Height
+  const UNIFIED_CHART_HEIGHT = 280;
+
+  // Helper function to calculate dynamic left margin
+  const getDynamicLeftMargin = (yData: any[]): number => {
+    if (!yData || yData.length === 0) return 70; // Default margin
+
+    const numericYData = yData.filter(item => typeof item === 'number' && !isNaN(item));
+    if (numericYData.length === 0) return 70;
+
+    const maxValue = Math.max(...numericYData);
+
+    if (maxValue >= 100000) { // Large values like ₹770,000
+      return 70;
+    } else if (maxValue >= 1000) { // Medium values
+      return 60;
+    } else { // Small values like NPS scores (0-50)
+      return 45;
+    }
   };
 
   // Get Plotly layout and config based on theme
-
   const getPlotlyLayoutAndConfig = (chart: ChartData) => {
+    const dynamicLeftMargin = getDynamicLeftMargin(chart.y);
+
+    const numericYData = chart.y.filter(item => typeof item === 'number' && !isNaN(item));
+    const maxChartValue = numericYData.length > 0 ? Math.max(...numericYData) : 0;
+    const isSmallRange = maxChartValue <= 100; // Threshold for small values
+
     const baseLayout = {
       width: undefined,
-      height: 240, // Reduced height from 280 to 240
+      height: UNIFIED_CHART_HEIGHT, // Apply unified height
       autosize: true,
       title: "",
       font: {
         family: "Inter, sans-serif",
         size: 16,
       },
-      margin: chart.summary
-        ? { l: 50, r: 30, t: 60, b: 75 } // Reduced from 100 to 80
-        : { l: 50, r: 30, t: 60, b: 50 },
+      margin: chart.summary ?
+        { l: dynamicLeftMargin, r: 30, t: 60, b: 90 } : // Increased bottom margin (b) to 90 for summary
+        { l: dynamicLeftMargin, r: 30, t: 60, b: 65 }, // Increased bottom margin (b) to 65 without summary
       xaxis: {
         title: chart.xLabel,
         zeroline: false,
         tickfont: { size: 15 },
-        titlefont: { size: 17, family: "Inter, sans-serif" },
+        titlefont: { size: 17, family: 'Inter, sans-serif' },
+        automargin: true, // Enable automargin for x-axis
       },
       yaxis: {
         title: chart.yLabel,
         zeroline: false,
         tickfont: { size: 15 },
-        titlefont: { size: 17, family: "Inter, sans-serif" },
+        titlefont: { size: 17, family: 'Inter, sans-serif' },
+        domain: calculateYAxisDomain(chart.y), // Apply dynamic domain
+        tickformat: isSmallRange ? '' : '₹.2s', // Conditional tick format
+        automargin: true, // Enable automargin for y-axis
       },
       legend: {
         orientation: "h",
         y: -0.2,
         font: { size: 15 },
       },
-      transition: { duration: 500, easing: "cubic-in-out" },
-      annotations: chart.summary
-        ? [
-            {
-              text: `💡 ${wrapText(chart.summary, 100)}`,
-              showarrow: false,
-              x: 0.5,
-              y: -0.4, // Changed from -0.35 to -0.25 to bring it closer
-              xref: "paper",
-              yref: "paper",
-              xanchor: "center",
-              yanchor: "top",
-              font: {
-                size: 13, // Reduced from 14 to 12
-                color: isDarkTheme ? "#e5e7eb" : "#1f2937",
-                family: "Inter, sans-serif",
-              },
-              width: 800, // Add width constraint for wrapping
-              bgcolor: isDarkTheme
-                ? "rgba(55, 65, 81, 0.8)"
-                : "rgba(255, 255, 255, 0.8)",
-            },
-          ]
-        : [],
+      transition: { duration: 500, easing: 'cubic-in-out' },
+      annotations: chart.summary ? [{
+        text: `💡 ${wrapText(chart.summary, 60)}`, // Changed maxLineLength to 60
+        showarrow: false,
+        x: 0.5,
+        y: -0.40, // Changed from -0.30 to -0.40 to push it further down
+        xref: 'paper',
+        yref: 'paper',
+        xanchor: 'center',
+        yanchor: 'top',
+        align: 'left', // Added align property
+        valign: 'top', // Added valign property
+        font: {
+          size: 13, // Reduced from 14 to 12
+          color: isDarkTheme ? '#e5e7eb' : '#1f2937',
+          family: 'Inter, sans-serif'
+        },
+        // Removed width: 800
+        bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+
+      }] : [],
     };
 
     if (isDarkTheme) {
@@ -1066,350 +1132,193 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                             parsedSummary[metric.key]?.summary ||
                             "No summary present.";
 
-                          return (
-                            <Draggable
-                              key={metric.key}
-                              draggableId={metric.key}
-                              index={idx}
-                            >
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={stretchClass}
-                                >
-                                  <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in">
-                                    <CardContent className="flex flex-col h-full p-0">
-                                      <div
-                                        className="flex justify-between items-center mb-0 pb-1 border-b border-gray-100 px-2 pt-2 cursor-move"
-                                        {...provided.dragHandleProps} // <-- Only header is the drag handle now!
-                                      >
-                                        <h3 className="text-base font-semibold text-foreground">
-                                          {metric.label}
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                          {chart && (
-                                            <>
-                                              {/* TTS/Avatar Button with Loading Spinner */}
-                                              <ShadcnTooltip>
-                                                <TooltipTrigger asChild>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                      "h-8 w-8 rounded-full hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                      iconColorClass
-                                                    )}
-                                                    onClick={() =>
-                                                      isSpeakingMap[metric.key]
-                                                        ? handleStopTTS(
-                                                            metric.key
-                                                          )
-                                                        : handleTTSClick(
-                                                            metric.key,
-                                                            metric.label
-                                                          )
-                                                    }
-                                                    disabled={
-                                                      ttsLoadingMap[metric.key]
-                                                    }
-                                                  >
-                                                    {ttsLoadingMap[
-                                                      metric.key
-                                                    ] ? (
-                                                      <ClipLoader
-                                                        size={16}
-                                                        color="currentColor"
-                                                      />
-                                                    ) : isSpeakingMap[
-                                                        metric.key
-                                                      ] ? (
-                                                      <CircleStop
-                                                        className={cn(
-                                                          "h-4 w-4",
-                                                          theme === "dark"
-                                                            ? "text-red-400"
-                                                            : "text-red-500"
-                                                        )}
-                                                      />
-                                                    ) : (
-                                                      <Speech
-                                                        className={cn(
-                                                          "h-4 w-4",
-                                                          theme === "dark"
-                                                            ? "text-white"
-                                                            : "text-primary"
-                                                        )}
-                                                      />
-                                                    )}
-                                                    <span className="sr-only">
-                                                      {isSpeakingMap[metric.key]
-                                                        ? "Stop Voice"
-                                                        : "Voice Summary"}
-                                                    </span>
-                                                  </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                  <p>
-                                                    {ttsLoadingMap[metric.key]
-                                                      ? "Generating voice..."
-                                                      : isSpeakingMap[
-                                                          metric.key
-                                                        ]
-                                                      ? "Stop voice"
-                                                      : "Voice Summary"}
-                                                  </p>
-                                                  <TooltipPrimitive.Arrow className="fill-popover" />
-                                                </TooltipContent>
-                                              </ShadcnTooltip>
-                                              <ShadcnTooltip>
-                                                <TooltipTrigger asChild>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                      "h-8 w-8 rounded-full hover:bg-muted transition-colors",
-                                                      iconColorClass
-                                                    )}
-                                                    onClick={() =>
-                                                      handlePredictiveAnalysis(
-                                                        metric.key,
-                                                        metric.label
-                                                      )
-                                                    }
-                                                    disabled={
-                                                      predictiveLoading[
-                                                        metric.key
-                                                      ]
-                                                    }
-                                                  >
-                                                    {predictiveLoading[
-                                                      metric.key
-                                                    ] ? (
-                                                      <ClipLoader
-                                                        size={16}
-                                                        color="currentColor"
-                                                      />
-                                                    ) : (
-                                                      <TrendingUp
-                                                        className={cn(
-                                                          "h-4 w-4",
-                                                          theme === "dark"
-                                                            ? "text-white"
-                                                            : "text-primary"
-                                                        )}
-                                                      />
-                                                    )}
-                                                    <span className="sr-only">
-                                                      Predictive Analysis
-                                                    </span>
-                                                  </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                  <p>
-                                                    {predictiveLoading[
-                                                      metric.key
-                                                    ]
-                                                      ? "Generating predictions..."
-                                                      : "Predictive Analysis"}
-                                                  </p>
-                                                  <TooltipPrimitive.Arrow className="fill-popover" />
-                                                </TooltipContent>
-                                              </ShadcnTooltip>
-                                              <ShadcnTooltip>
-                                                <TooltipTrigger asChild>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                      "h-8 w-8 rounded-full hover:bg-muted transition-colors",
-                                                      iconColorClass
-                                                    )}
-                                                    onClick={() =>
-                                                      handleNextStepAnalysis(
-                                                        metric.key,
-                                                        metric.label
-                                                      )
-                                                    }
-                                                    disabled={
-                                                      nextStepLoading[
-                                                        metric.key
-                                                      ]
-                                                    }
-                                                  >
-                                                    {nextStepLoading[
-                                                      metric.key
-                                                    ] ? (
-                                                      <ClipLoader
-                                                        size={16}
-                                                        color="currentColor"
-                                                      />
-                                                    ) : (
-                                                      <Lightbulb
-                                                        className={cn(
-                                                          "h-4 w-4",
-                                                          theme === "dark"
-                                                            ? "text-white"
-                                                            : "text-primary"
-                                                        )}
-                                                      />
-                                                    )}
-                                                    <span className="sr-only">
-                                                      Next Step
-                                                    </span>
-                                                  </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                  <p>
-                                                    {nextStepLoading[metric.key]
-                                                      ? "Generating next steps..."
-                                                      : "Next Step Analysis"}
-                                                  </p>
-                                                  <TooltipPrimitive.Arrow className="fill-popover" />
-                                                </TooltipContent>
-                                              </ShadcnTooltip>
+                        return (
+                          <Draggable key={metric.key} draggableId={metric.key} index={idx}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={stretchClass}
+                              >
+                                <Card className="rounded-2xl shadow-lg p-2 sm:p-3 relative bg-card transition-shadow hover:shadow-2xl overflow-hidden animate-fade-in min-h-[370px]">
+                                  <CardContent className="flex flex-col h-full p-0">
+                                    <div
+                                      className="flex justify-between items-center mb-0 pb-1 border-b border-gray-100 px-2 pt-2 cursor-move"
+                                      {...provided.dragHandleProps} // <-- Only header is the drag handle now!
+                                    >
+                                      <h3 className="text-base font-semibold text-foreground">{metric.label}</h3>
+                                      <div className="flex items-center gap-2">
 
-                                              <Popover>
-                                                <PopoverTrigger asChild>
+                                        {chart && (
+                                          <>
+                                            {/* TTS/Avatar Button with Loading Spinner */}
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn("h-8 w-8 rounded-full hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed", iconColorClass)}
+                                                  onClick={() => isSpeakingMap[metric.key] ? handleStopTTS(metric.key) : handleTTSClick(metric.key, metric.label)}
+                                                  disabled={ttsLoadingMap[metric.key]}
+                                                >
+                                                  {ttsLoadingMap[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : isSpeakingMap[metric.key] ? (
+                                                    <CircleStop className={cn("h-4 w-4", theme === 'dark' ? 'text-red-400' : 'text-red-500')} />
+                                                  ) : (
+                                                    <Speech className={cn("h-4 w-4", theme === 'dark' ? 'text-white' : 'text-primary')} />
+                                                  )}
+                                                  <span className="sr-only">
+                                                    {isSpeakingMap[metric.key] ? 'Stop Voice' : 'Voice Summary'}
+                                                  </span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {ttsLoadingMap[metric.key]
+                                                    ? 'Generating voice...'
+                                                    : isSpeakingMap[metric.key]
+                                                      ? 'Stop voice'
+                                                      : 'Voice Summary'
+                                                  }
+                                                </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handlePredictiveAnalysis(metric.key, metric.label)}
+                                                  disabled={predictiveLoading[metric.key]}
+                                                >
+                                                  {predictiveLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <TrendingUp className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Predictive Analysis</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {predictiveLoading[metric.key]
+                                                    ? 'Generating predictions...'
+                                                    : 'Predictive Analysis'
+                                                  }
+                                                </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+                                            <ShadcnTooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className={cn(
+                                                    "h-8 w-8 rounded-full hover:bg-muted transition-colors",
+                                                    iconColorClass
+                                                  )}
+                                                  onClick={() => handleNextStepAnalysis(metric.key, metric.label)}
+                                                  disabled={nextStepLoading[metric.key]}
+                                                >
+                                                  {nextStepLoading[metric.key] ? (
+                                                    <ClipLoader size={16} color="currentColor" />
+                                                  ) : (
+                                                    <Lightbulb className={cn(
+                                                      "h-4 w-4",
+                                                      theme === 'dark' ? 'text-white' : 'text-primary'
+                                                    )} />
+                                                  )}
+                                                  <span className="sr-only">Next Step</span>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {nextStepLoading[metric.key]
+                                                    ? 'Generating next steps...'
+                                                    : 'Next Step Analysis'
+                                                  }
+                                                </p>
+                                                <TooltipPrimitive.Arrow className="fill-popover" />
+                                              </TooltipContent>
+                                            </ShadcnTooltip>
+
+                                            <Popover>
+                                              <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="border border-gray-200" title="Change chart type">
+                                                  <Settings2 className="w-5 h-5" />
+                                                </Button>
+                                              </PopoverTrigger>
+                                              <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
+                                                <div className="flex gap-2 mb-2">
                                                   <Button
-                                                    variant="ghost"
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'bar') ? 'secondary' : 'ghost'}
                                                     size="icon"
-                                                    className="border border-gray-200"
-                                                    title="Change chart type"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'bar')}
+                                                    title="Bar Chart"
                                                   >
-                                                    <Settings2 className="w-5 h-5" />
+                                                    <BarChart2 className="w-5 h-5" />
                                                   </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-2 flex flex-col gap-2 justify-center items-center">
-                                                  <div className="flex gap-2 mb-2">
-                                                    <Button
-                                                      variant={
-                                                        (chartTypes[
-                                                          metric.key
-                                                        ] || chart.plotType) ===
-                                                        "bar"
-                                                          ? "secondary"
-                                                          : "ghost"
-                                                      }
-                                                      size="icon"
-                                                      onClick={() =>
-                                                        handleChartTypeChangeInternal(
-                                                          metric.key,
-                                                          "bar"
-                                                        )
-                                                      }
-                                                      title="Bar Chart"
-                                                    >
-                                                      <BarChart2 className="w-5 h-5" />
-                                                    </Button>
-                                                    <Button
-                                                      variant={
-                                                        (chartTypes[
-                                                          metric.key
-                                                        ] || chart.plotType) ===
-                                                        "line"
-                                                          ? "secondary"
-                                                          : "ghost"
-                                                      }
-                                                      size="icon"
-                                                      onClick={() =>
-                                                        handleChartTypeChangeInternal(
-                                                          metric.key,
-                                                          "line"
-                                                        )
-                                                      }
-                                                      title="Line Chart"
-                                                    >
-                                                      <LineChart className="w-5 h-5" />
-                                                    </Button>
-                                                    <Button
-                                                      variant={
-                                                        (chartTypes[
-                                                          metric.key
-                                                        ] || chart.plotType) ===
-                                                        "scatter"
-                                                          ? "secondary"
-                                                          : "ghost"
-                                                      }
-                                                      size="icon"
-                                                      onClick={() =>
-                                                        handleChartTypeChangeInternal(
-                                                          metric.key,
-                                                          "scatter"
-                                                        )
-                                                      }
-                                                      title="Scatter Plot"
-                                                    >
-                                                      <ScatterChart className="w-5 h-5" />
-                                                    </Button>
-                                                    <input
-                                                      type="color"
-                                                      className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
-                                                      value={
-                                                        chartColors[
-                                                          metric.key
-                                                        ] ||
-                                                        chart.marker?.color ||
-                                                        primaryColorForCharts
-                                                      }
-                                                      onChange={(e) =>
-                                                        handleChartColorChangeInternal(
-                                                          metric.key,
-                                                          e.target.value
-                                                        )
-                                                      }
-                                                      title="Pick graph color"
-                                                    />
-                                                  </div>
-                                                </PopoverContent>
-                                              </Popover>
-                                            </>
-                                          )}
-                                          <button
-                                            className="rounded-full p-1 bg-muted/50 hover:bg-destructive/20 text-gray-400 hover:text-red-500 z-10 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                            onClick={() =>
-                                              handleChartClose(metric.key)
-                                            }
-                                            aria-label={`Hide ${metric.label} graph`}
-                                            type="button"
-                                            title="Hide this chart"
-                                            disabled={
-                                              visibleMetrics.length === 1
-                                            }
-                                          >
-                                            <X className="w-5 h-5" />
-                                          </button>
-                                        </div>
+                                                  <Button
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'line') ? 'secondary' : 'ghost'}
+                                                    size="icon"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'line')}
+                                                    title="Line Chart"
+                                                  >
+                                                    <LineChart className="w-5 h-5" />
+                                                  </Button>
+                                                  <Button
+                                                    variant={((chartTypes[metric.key] || chart.plotType) === 'scatter') ? 'secondary' : 'ghost'}
+                                                    size="icon"
+                                                    onClick={() => handleChartTypeChangeInternal(metric.key, 'scatter')}
+                                                    title="Scatter Plot"
+                                                  >
+                                                    <ScatterChart className="w-5 h-5" />
+                                                  </Button>
+                                                  <input
+                                                    type="color"
+                                                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer ml-2"
+                                                    value={chartColors[metric.key] || chart.marker?.color || primaryColorForCharts}
+                                                    onChange={e => handleChartColorChangeInternal(metric.key, e.target.value)}
+                                                    title="Pick graph color"
+                                                  />
+                                                </div>
+                                              </PopoverContent>
+                                            </Popover>
+                                          </>
+                                        )}
+                                        <button
+                                          className="rounded-full p-1 bg-muted/50 hover:bg-destructive/20 text-gray-400 hover:text-red-500 z-10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                          onClick={() => handleChartClose(metric.key)}
+                                          aria-label={`Hide ${metric.label} graph`}
+                                          type="button"
+                                          title="Hide this chart"
+                                          disabled={visibleMetrics.length === 1}
+                                        >
+                                          <X className="w-5 h-5" />
+                                        </button>
                                       </div>
-                                      <div
-                                        className="flex-1 w-full h-full relative"
-                                        style={{
-                                          minHeight: 280,
-                                          overflow: "hidden",
-                                        }}
-                                      >
-                                        <GraphCardContent
-                                          chart={chart}
-                                          isLoading={loading}
-                                          isDarkTheme={isDarkTheme}
-                                          chartType={
-                                            chartTypes[metric.key] ||
-                                            chart?.plotType ||
-                                            "bar"
-                                          }
-                                          chartColor={
-                                            chartColors[metric.key] ||
-                                            chart?.marker?.color ||
-                                            primaryColorForCharts
-                                          }
-                                          primaryColorForCharts={
-                                            primaryColorForCharts
-                                          }
-                                          colors={COLORS}
-                                          getPlotlyLayoutAndConfig={
-                                            getPlotlyLayoutAndConfig
-                                          }
-                                        />
+                                    </div>
+                                    <div className="flex-1 w-full h-full relative" style={{ minHeight: UNIFIED_CHART_HEIGHT, overflow: 'hidden' }}>
+                                      <GraphCardContent
+                                        chart={chart}
+                                        isLoading={loading}
+                                        isDarkTheme={isDarkTheme}
+                                        chartType={chartTypes[metric.key] || chart?.plotType || 'bar'}
+                                        chartColor={chartColors[metric.key] || chart?.marker?.color || primaryColorForCharts}
+                                        primaryColorForCharts={primaryColorForCharts}
+                                        colors={COLORS}
+                                        getPlotlyLayoutAndConfig={getPlotlyLayoutAndConfig}
+                                      />
 
                                         {/* Voice Visualizer - Now shows for any chart when speaking */}
                                         {isSpeakingMap[metric.key] && (

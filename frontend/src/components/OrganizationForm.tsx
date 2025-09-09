@@ -237,6 +237,7 @@ const OrganizationForm: React.FC<OrganizationFormProps> = ({
             <Button
               type="submit"
               disabled={isLoading}
+              className="text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               {isLoading ? 'Creating...' : 'Create Organization'}
@@ -248,4 +249,4 @@ const OrganizationForm: React.FC<OrganizationFormProps> = ({
   );
 };
 
-export default OrganizationForm; 
+export default OrganizationForm;
