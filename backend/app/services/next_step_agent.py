@@ -18,15 +18,33 @@ class NextStepAnalyser:
             raise RuntimeError(f"Configuration error: {str(e)}")
 
         try:
-            # Decide backend: LM Studio → ChatOpenAI | Groq → ChatGroq
+            # Decide backend: LM Studio → ChatOpenAI | OpenRouter → ChatOpenAI | Groq → ChatGroq
             if "pinguaicloud" in groq_config["base_url"]:  # LM Studio
+                clean_base_url = groq_config["base_url"].rstrip('/')
+                if not clean_base_url.endswith('/v1'):
+                    clean_base_url += '/v1'
+                
                 self.llm = ChatOpenAI(
                     api_key=groq_config["api_key"],
-                    base_url=groq_config["base_url"],
+                    base_url=clean_base_url,
                     model=groq_config["model"],
                     temperature=0.3,  # Lower temperature for more consistent predictions
                     max_tokens=800
                 )
+                logger.info(f"Using LM Studio with base_url: {clean_base_url}")
+            elif "openrouter.ai" in groq_config["base_url"]:  # OpenRouter
+                clean_base_url = groq_config["base_url"].rstrip('/')
+                if not clean_base_url.endswith('/v1'):
+                    clean_base_url += '/v1'
+                
+                self.llm = ChatOpenAI(
+                    api_key=groq_config["api_key"],
+                    base_url=clean_base_url,
+                    model=groq_config["model"],
+                    temperature=0.3,  # Lower temperature for more consistent predictions
+                    max_tokens=800
+                )
+                logger.info(f"Using OpenRouter with base_url: {clean_base_url}")
             else:  # Groq
                 self.llm = ChatGroq(
                     groq_api_key=groq_config["api_key"],
@@ -35,6 +53,7 @@ class NextStepAnalyser:
                     temperature=0.3,  # Lower temperature for more consistent predictions
                     max_tokens=800
                 )
+                logger.info("Using Groq API")
         except Exception as e:
             logger.error(f"Failed to initialize LLM: {str(e)}")
             raise RuntimeError(f"LLM initialization error: {str(e)}")

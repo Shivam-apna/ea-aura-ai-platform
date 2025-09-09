@@ -12,8 +12,16 @@ class GeneralAgent:
     def __init__(self):
         groq_config = get_groq_config()
 
-        # Decide backend: LM Studio → ChatOpenAI | Groq → ChatGroq
+        # Decide backend: LM Studio → ChatOpenAI | OpenRouter → ChatOpenAI | Groq → ChatGroq
         if "pinguaicloud" in groq_config["base_url"]:  # LM Studio
+            self.llm = ChatOpenAI(
+                api_key=groq_config["api_key"],
+                base_url=groq_config["base_url"],
+                model=groq_config["model"],
+                temperature=0.7,
+                max_tokens=500
+            )
+        elif "openrouter.ai" in groq_config["base_url"]:  # OpenRouter
             self.llm = ChatOpenAI(
                 api_key=groq_config["api_key"],
                 base_url=groq_config["base_url"],

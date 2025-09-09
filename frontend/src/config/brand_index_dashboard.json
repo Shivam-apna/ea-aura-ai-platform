@@ -9,7 +9,7 @@
       "bgColor": "#FFFFFF"
     },
     {
-      "key": "Engagement Rate (%)",
+      "key": "Impressions",
       "bgColor": "#FFFFFF"
     },
     {
@@ -22,14 +22,6 @@
       {
         "key": "Impressions",
         "label": "Impressions"
-      },
-      {
-        "key": "Engagement Rate (%)",
-        "label": "Engagement Rate"
-      },
-      {
-        "key": "Sentiment Score",
-        "label": "Sentiment Score"
       },
       {
         "key": "Share of Voice (%)",

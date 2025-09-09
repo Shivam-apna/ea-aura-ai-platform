@@ -56,3 +56,4 @@ dateparser==1.2.1
 openpyxl==3.1.5
 python-multipart==0.0.20
 PyMuPDF==1.23.1
+fuzzywuzzy[speedup]==0.18.0

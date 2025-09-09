@@ -3,12 +3,12 @@ import os
 
 def get_groq_config():
     """
-    Updated configuration to support both Groq and hosted LM Studio
+    Updated configuration to support Groq, hosted LM Studio, and OpenRouter
     """
-    # Check if we're using LM Studio or Groq
-    use_lm_studio = os.getenv("USE_LM_STUDIO", "false").lower() == "true"
+    # Check which provider to use based on environment variables
+    provider = os.getenv("AI_PROVIDER", "openrouter").lower()
     
-    if use_lm_studio:
+    if provider == "lm_studio":
         # Hosted LM Studio configuration
         # Try to get API key from vault, fallback to environment variable
         try:
@@ -22,8 +22,21 @@ def get_groq_config():
             "api_key": api_key,
             "base_url": os.getenv("LM_STUDIO_BASE_URL", "https://api.pinguaicloud.com/v1")
         }
+    elif provider == "openrouter":
+        # OpenRouter configuration
+        # Try to get API key from vault, fallback to environment variable
+        try:
+            api_key = get_vault_secret(secret_path="openrouter", key="api_key")
+        except:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+        
+        return {
+            "model": os.getenv("OPENROUTER_MODEL", "openai/gpt-4.1-mini"),
+            "api_key": api_key,
+            "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        }
     else:
-        # Original Groq configuration
+        # Default Groq configuration
         api_key = get_vault_secret(secret_path="groq", key="api_key")
         return {
             "model": os.getenv("GROQ_MODEL", "gemma2-9b-it"),
