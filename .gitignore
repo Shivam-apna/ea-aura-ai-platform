@@ -39,3 +39,5 @@ backend/temp_audio
 
 
 kafka/
+
+backend/agent_performance_cache.json

@@ -92,6 +92,7 @@ interface AdvancedDashboardLayoutProps {
   dynamicKpiKeys: KpiItem[];
   dynamicMetricGroups: MetricGroups;
   storagePrefix: string;
+  kpiStorageKey?: string;
   onChartClose: (key: string) => void;
   onRestoreCharts: () => void;
   onChartTypeChange: (key: string, type: string) => void;
@@ -123,8 +124,9 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   onTabChange,
   tenantId,
   tabNames,
-  hideTabsList = false, // Default to false
+  hideTabsList = false,// Default to false
   onRefreshCharts,
+  kpiStorageKey
 }) => {
   const { selectedPrimaryColor, previewPrimaryColorHex, themeColors, theme } =
     useTheme();
@@ -494,6 +496,84 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
   const currentTab = activeTab || Object.keys(dynamicMetricGroups)[0];
   const metrics = dynamicMetricGroups[currentTab] || [];
 
+  // Load KPI summary exclusively from provided storage key or fall back to page-level key
+  const pageLevelSummaryKey = kpiStorageKey || `${storagePrefix}_parsed_summary_page`;
+  const pageLevelSummary: Record<string, any> = (() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(pageLevelSummaryKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return {};
+        }
+      }
+    }
+    return {};
+  })();
+
+  // Resolve a KPI key to the best-matching key present in the KPI storage
+  const resolveMetricKeyForKpi = (kpiKey: string): string | undefined => {
+    if (!pageLevelSummary) return undefined;
+    if (pageLevelSummary[kpiKey] !== undefined) return kpiKey;
+
+    const availableKeys = Object.keys(pageLevelSummary || {});
+    const lower = kpiKey.toLowerCase();
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // 1) case-insensitive exact
+    const exactCaseInsensitive = availableKeys.find(k => k.toLowerCase() === lower);
+    if (exactCaseInsensitive) return exactCaseInsensitive;
+
+    // 2) normalized exact (strip spaces/specials)
+    const normalizedTarget = normalize(kpiKey);
+    const normalizedExact = availableKeys.find(k => normalize(k) === normalizedTarget);
+    if (normalizedExact) return normalizedExact;
+
+    // 3) normalized includes (either direction)
+    const includesMatch = availableKeys.find(k => {
+      const nk = normalize(k);
+      return nk.includes(normalizedTarget) || normalizedTarget.includes(nk);
+    });
+    if (includesMatch) return includesMatch;
+
+    return undefined;
+  };
+
+  // Try multiple candidates (key, displayName, originalKey) and common nests (kpis, metrics)
+  const getPageMetricForKpi = (kpi: KpiItem): { metric: any, resolvedKey?: string } => {
+    const candidateKeys = [kpi.key, (kpi as any).displayName, (kpi as any).originalKey].filter(Boolean) as string[];
+    const sources: Record<string, any>[] = [pageLevelSummary];
+    if (pageLevelSummary && typeof pageLevelSummary === 'object') {
+      if (pageLevelSummary.kpis && typeof pageLevelSummary.kpis === 'object') sources.push(pageLevelSummary.kpis);
+      if (pageLevelSummary.metrics && typeof pageLevelSummary.metrics === 'object') sources.push(pageLevelSummary.metrics);
+      if (pageLevelSummary.data && typeof pageLevelSummary.data === 'object' && !Array.isArray(pageLevelSummary.data)) sources.push(pageLevelSummary.data);
+    }
+
+    for (const source of sources) {
+      for (const key of candidateKeys) {
+        const rk = (() => {
+          if (source[key] !== undefined) return key;
+          const availableKeys = Object.keys(source);
+          const lower = key.toLowerCase();
+          const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const exactCI = availableKeys.find(k => k.toLowerCase() === lower);
+          if (exactCI) return exactCI;
+          const normalizedTarget = normalize(key);
+          const normalizedExact = availableKeys.find(k => normalize(k) === normalizedTarget);
+          if (normalizedExact) return normalizedExact;
+          const includesMatch = availableKeys.find(k => {
+            const nk = normalize(k);
+            return nk.includes(normalizedTarget) || normalizedTarget.includes(nk);
+          });
+          return includesMatch;
+        })();
+        if (rk) return { metric: source[rk], resolvedKey: rk };
+      }
+    }
+    return { metric: undefined, resolvedKey: undefined };
+  };
+
   // Define the modebar buttons explicitly to control grouping
   const customModeBarButtons = [
     ["toImage"], // Download button in its own group
@@ -768,7 +848,23 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2 w-full">
         {dynamicKpiKeys.map((kpi, idx) => {
           const chart = charts[kpi.key];
-          const kpiValue = chart?.y?.at(-1);
+          const { metric: pageMetric } = getPageMetricForKpi(kpi);
+
+          // Derive KPI value strictly from KPI storage
+          let kpiValue: any = (pageMetric && typeof pageMetric === 'object') ? pageMetric.value : pageMetric;
+          if ((kpiValue === undefined || kpiValue === null) && pageMetric && typeof pageMetric === 'object' && Array.isArray(pageMetric.data) && pageMetric.data.length > 0) {
+            const last = pageMetric.data[pageMetric.data.length - 1];
+            if (last && typeof last === 'object') {
+              const keys = Object.keys(last);
+              const xKey = keys[0];
+              const yKey = keys.find(k => k !== xKey) || keys[1];
+              if (yKey && last[yKey] !== undefined) {
+                kpiValue = last[yKey];
+              }
+            }
+          }
+
+          const kpiDelta = (pageMetric && typeof pageMetric === 'object') ? pageMetric.delta : undefined;
 
           // Get dynamic background color based on KPI name and value
           const dynamicBgColor =
@@ -890,26 +986,20 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                       )}
                     </span>
                     <span
-                      className={`text-[11px] mt-0.5 font-semibold ${
-                        chart?.delta > 0
-                          ? "text-green-600"
-                          : chart?.delta < 0
-                          ? "text-red-500"
-                          : "text-muted-foreground"
-                      }`}
+                      className={`text-[11px] mt-0.5 font-semibold ${kpiDelta > 0 ? "text-green-600" :
+                        kpiDelta < 0 ? "text-red-500" :
+                          "text-muted-foreground"
+                        }`}
                       style={{
                         // Only override for neutral delta when using dynamic colors
-                        ...((chart?.delta === undefined ||
-                          chart?.delta === null ||
-                          chart?.delta === 0) &&
-                          isUsingDynamicColor && { color: textColor }),
+                        ...((kpiDelta === undefined || kpiDelta === null || kpiDelta === 0) && isUsingDynamicColor && { color: textColor })
                       }}
                     >
-                      {chart?.delta === undefined || chart?.delta === null
+                      {kpiDelta === undefined || kpiDelta === null
                         ? ""
-                        : chart.delta === 0
-                        ? "0%"
-                        : `${chart.delta > 0 ? "+" : ""}${chart.delta}%`}
+                        : kpiDelta === 0
+                          ? "0%"
+                          : `${kpiDelta > 0 ? "+" : ""}${kpiDelta}%`}
                     </span>
                   </CardContent>
                 </Card>
@@ -1119,18 +1209,14 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                               ? "sm:col-span-2"
                               : "";
 
-                          // Retrieve summary text for the current metric
-                          const summaryStorageKey = `${storagePrefix}_parsed_summary_${currentTab}`;
-                          const cachedSummary =
-                            typeof window !== "undefined"
-                              ? localStorage.getItem(summaryStorageKey)
-                              : null;
-                          const parsedSummary = cachedSummary
-                            ? JSON.parse(cachedSummary)
-                            : {};
-                          const graphSummaryText =
-                            parsedSummary[metric.key]?.summary ||
-                            "No summary present.";
+                        // Retrieve summary text with fallback to page-level summary
+                        const summaryStorageKey = `${storagePrefix}_parsed_summary_${currentTab}`;
+                        const cachedSummary = typeof window !== 'undefined' ? localStorage.getItem(summaryStorageKey) : null;
+                        const parsedSummary = cachedSummary ? JSON.parse(cachedSummary) : {};
+                        const pageSummaryKey = `${storagePrefix}_parsed_summary_page`;
+                        const cachedPageSummary = typeof window !== 'undefined' ? localStorage.getItem(pageSummaryKey) : null;
+                        const parsedPageSummary = cachedPageSummary ? JSON.parse(cachedPageSummary) : {};
+                        const graphSummaryText = parsedSummary[metric.key]?.summary || parsedPageSummary[metric.key]?.summary || "No summary present.";
 
                         return (
                           <Draggable key={metric.key} draggableId={metric.key} index={idx}>
