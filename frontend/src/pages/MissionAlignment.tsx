@@ -461,6 +461,8 @@ const MissionAlignment = () => {
 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+      // Save KPI data to a page-level key for KPI cards
+      localStorage.setItem("mission_kpi_data", JSON.stringify(mergedSummary));
 
 
       // Get all available keys from API response
@@ -610,6 +612,7 @@ const MissionAlignment = () => {
             dynamicKpiKeys={dynamicKpiKeys}
             dynamicMetricGroups={dynamicMetricGroups}
             storagePrefix="mission_alignment"
+            kpiStorageKey="mission_kpi_data"
             onChartClose={handleCloseChart}
             onRestoreCharts={handleRestoreCharts}
             onChartTypeChange={handleChartTypeChange}
