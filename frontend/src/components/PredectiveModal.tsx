@@ -53,7 +53,7 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
     if (!isOpen || !chartData) return null;
     const { theme } = useTheme();
 
-
+    const isDarkTheme = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const COLORS = [chartColor || chartData.marker?.color || '#3B82F6', '#A0A0A0'];
 
@@ -64,34 +64,34 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
         autosize: true,
         title: {
             text: `${chartData.title} - Predictive Analysis`,
-            font: { size: 18, family: 'Inter, sans-serif', color: '#1f2937' }
+            font: { size: 18, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
         },
-        font: { family: 'Inter, sans-serif', size: 14, color: '#1f2937' },
+        font: { family: 'Inter, sans-serif', size: 14, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
         margin: { l: 60, r: 40, t: 80, b: 100 },
-        plot_bgcolor: "white",
-        paper_bgcolor: "white",
+        plot_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
+        paper_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
         xaxis: {
             title: chartData.xLabel,
             zeroline: false,
-            tickfont: { size: 13, color: '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: '#1f2937' },
-            gridcolor: '#e5e7eb',
-            linecolor: '#d1d5db',
+            tickfont: { size: 13, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
+            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
+            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
         },
         yaxis: {
             title: chartData.yLabel,
             zeroline: false,
-            tickfont: { size: 13, color: '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: '#1f2937' },
-            gridcolor: '#e5e7eb',
-            linecolor: '#d1d5db',
+            tickfont: { size: 13, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
+            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
+            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
         },
         legend: {
             orientation: "h",
             x: 0.5,
             xanchor: "center",
             y: -0.2,
-            font: { size: 13, color: '#1f2937' },
+            font: { size: 13, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
         },
         transition: { duration: 300, easing: 'ease-out' },
         annotations: [{
@@ -103,7 +103,7 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
             yref: 'paper',
             xanchor: 'center',
             yanchor: 'top',
-            font: { size: 14, color: '#1f2937' }
+            font: { size: 14, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
         }],
     };
 
@@ -127,13 +127,13 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
-                className={`max-w-5xl max-h-[80vh] overflow-y-auto bg-white/90 backdrop-blur-md border border-gray-200/50 shadow-2xl`}>
+                className={`max-w-5xl max-h-[80vh] overflow-y-auto bg-card text-foreground border border-border shadow-2xl`}>
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-xl">
+                    <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
                         <BarChart3 className="w-6 h-6 text-primary" />
                         {chartData.popup?.title || `Predictive Analysis - ${metricKey}`}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-muted-foreground">
                         {chartData.popup?.subtitle || 'AI-generated predictions based on historical data trends and patterns'}
                     </DialogDescription>
                 </DialogHeader>
@@ -141,29 +141,20 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                 <div className="space-y-6">
                     {/* Popup Message Section */}
                     {chartData.popup && (
-                        <Card className={`border-l-4 border-l-blue-500 ${transparent
-                            ? 'bg-white/90 backdrop-blur-sm'
-                            : 'bg-white dark:bg-gray-800'
-                            }`}>
+                        <Card className={`border-l-4 border-l-blue-500 bg-card text-foreground`}>
                             <CardContent className="p-4">
                                 <div className="flex items-start gap-3">
                                     <Lightbulb className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
                                     <div className="space-y-3">
                                         <div>
-                                            <p className={`leading-relaxed ${transparent
-                                                ? 'text-gray-800'
-                                                : 'text-gray-800 dark:text-gray-200'
-                                                }`}>
+                                            <p className={`leading-relaxed text-foreground`}>
                                                 {chartData.popup.intro}
                                             </p>
                                         </div>
 
                                         {chartData.popup.bullets && chartData.popup.bullets.length > 0 && (
                                             <div>
-                                                <ul className={`space-y-1 text-sm ${transparent
-                                                    ? 'text-gray-600'
-                                                    : 'text-gray-600 dark:text-gray-400'
-                                                    }`}>
+                                                <ul className={`space-y-1 text-sm text-muted-foreground`}>
                                                     {chartData.popup.bullets.map((bullet, index) => (
                                                         <li key={index} className="flex items-start gap-2">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
@@ -175,14 +166,8 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                                         )}
 
                                         {chartData.popup.howToUse && (
-                                            <div className={`pt-2 border-t ${transparent
-                                                ? 'border-gray-200'
-                                                : 'border-gray-200 dark:border-gray-700'
-                                                }`}>
-                                                <p className={`text-sm italic ${transparent
-                                                    ? 'text-gray-500'
-                                                    : 'text-gray-500 dark:text-gray-400'
-                                                    }`}>
+                                            <div className={`pt-2 border-t border-border`}>
+                                                <p className={`text-sm italic text-muted-foreground`}>
                                                     <span className="font-medium">How to use:</span> {chartData.popup.howToUse}
                                                 </p>
                                             </div>
@@ -194,10 +179,7 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                     )}
 
                     {/* Chart Display */}
-                    <Card className={transparent
-                        ? 'bg-white/90 backdrop-blur-sm'
-                        : 'bg-white dark:bg-gray-800'
-                    }>
+                    <Card className="bg-card text-foreground">
                         <CardContent className="p-4">
                             <div style={{ width: '100%', height: '400px' }}>
                                 <Plot
@@ -241,22 +223,13 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
 
                     {/* Trend Analysis Section */}
                     {chartData.prediction_metadata?.trend_analysis && (
-                        <Card className={transparent
-                            ? 'bg-white/90 backdrop-blur-sm'
-                            : 'bg-white dark:bg-gray-800'
-                        }>
+                        <Card className="bg-card text-foreground">
                             <CardContent className="p-4">
                                 <div className="flex items-start gap-3">
                                     <Lightbulb className="w-5 h-5 text-amber-500 mt-1 flex-shrink-0" />
                                     <div>
-                                        <h3 className={`font-semibold text-sm mb-2 ${transparent
-                                            ? 'text-gray-600'
-                                            : 'text-gray-600 dark:text-gray-400'
-                                            }`}>Trend Analysis</h3>
-                                        <p className={`leading-relaxed ${transparent
-                                            ? 'text-gray-800'
-                                            : 'text-gray-800 dark:text-gray-200'
-                                            }`}>
+                                        <h3 className={`font-semibold text-sm mb-2 text-foreground`}>Trend Analysis</h3>
+                                        <p className={`leading-relaxed text-muted-foreground`}>
                                             {chartData.prediction_metadata.trend_analysis}
                                         </p>
                                     </div>

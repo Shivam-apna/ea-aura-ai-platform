@@ -719,7 +719,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
           family: 'Inter, sans-serif'
         },
         // Removed width: 800
-        bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+        bgcolor: isDarkTheme ? 'hsl(var(--card))' : 'rgba(255, 255, 255, 0.8)',
 
       }] : [],
     };

@@ -194,4 +194,24 @@
     top: auto;
     bottom: 0px;
   } */
+
+  /* Specific scrollbar styles for dark mode in tables */
+  .dark .user-table-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 20%); /* Dark gray thumb */
+    border-radius: 8px;
+  }
+
+  .dark .user-table-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 30%); /* Lighter gray on hover */
+  }
+
+  .dark .user-table-scrollbar::-webkit-scrollbar-track {
+    background: hsl(0 0% 15%); /* Darker track, blending with card */
+    border-radius: 8px;
+  }
+
+  /* For Firefox in dark mode */
+  .dark .user-table-scrollbar {
+    scrollbar-color: hsl(0 0% 20%) hsl(0 0% 15%); /* thumb track */
+  }
 }
