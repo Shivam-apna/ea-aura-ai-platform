@@ -541,6 +541,8 @@ const CustomerAnalyzer = () => {
 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+      // Save KPI data to a page-level key for KPI cards
+      localStorage.setItem("customer_analyzer_kpi_summary", JSON.stringify(mergedSummary));
 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(
@@ -704,6 +706,7 @@ const CustomerAnalyzer = () => {
             dynamicKpiKeys={dynamicKpiKeys}
             dynamicMetricGroups={dynamicMetricGroups}
             storagePrefix="customer_analyzer"
+            kpiStorageKey="customer_analyzer_kpi_summary"
             onChartClose={handleCloseChart}
             onRestoreCharts={handleRestoreCharts}
             onChartTypeChange={handleChartTypeChange}

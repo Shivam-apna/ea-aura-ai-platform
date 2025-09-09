@@ -466,6 +466,8 @@ const BusinessDashboard = () => {
 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+      // Also save to a strict KPI data key for page-level KPIs
+      localStorage.setItem("business_kpi_data", JSON.stringify(mergedSummary));
 
 
       // Get all available keys from API response
@@ -615,6 +617,7 @@ const BusinessDashboard = () => {
             dynamicKpiKeys={dynamicKpiKeys}
             dynamicMetricGroups={dynamicMetricGroups}
             storagePrefix="business_vitality"
+            kpiStorageKey="business_kpi_data"
             onChartClose={handleCloseChart}
             onRestoreCharts={handleRestoreCharts}
             onChartTypeChange={handleChartTypeChange}

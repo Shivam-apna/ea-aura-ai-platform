@@ -460,6 +460,8 @@ const BrandIndex = () => {
 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+      // Save KPI data to a page-level key for KPI cards
+      localStorage.setItem("brand_kpi_data", JSON.stringify(mergedSummary));
 
 
       // Get all available keys from API response
@@ -609,6 +611,7 @@ const BrandIndex = () => {
             dynamicKpiKeys={dynamicKpiKeys}
             dynamicMetricGroups={dynamicMetricGroups}
             storagePrefix="brand_index"
+            kpiStorageKey="brand_kpi_data"
             onChartClose={handleCloseChart}
             onRestoreCharts={handleRestoreCharts}
             onChartTypeChange={handleChartTypeChange}
