@@ -32,6 +32,20 @@ class PredictiveAnalysisAgent:
                     max_tokens=4000
                 )
                 logger.info(f"Using LM Studio with base_url: {clean_base_url}")
+        elif "openrouter.ai" in groq_config["base_url"]:
+                # OpenRouter configuration
+                clean_base_url = groq_config["base_url"].rstrip('/')
+                if not clean_base_url.endswith('/v1'):
+                    clean_base_url += '/v1'
+                
+                self.llm = ChatOpenAI(
+                    api_key=groq_config["api_key"],
+                    base_url=clean_base_url,
+                    model=groq_config["model"],
+                    temperature=0.2,
+                    max_tokens=4000
+                )
+                logger.info(f"Using OpenRouter with base_url: {clean_base_url}")
         else:
             self.llm = ChatGroq(
                 groq_api_key=groq_config["api_key"],
