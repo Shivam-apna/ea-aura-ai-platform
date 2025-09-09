@@ -21,6 +21,14 @@ import tempfile
 from app.services.predictive_analysis import  get_predictive_analysis,generate_predictive_report
 from app.services.next_step_agent import  next_step_analyser
 
+# Add these imports at the top of your agent_job.py file
+
+import re
+import asyncio
+import tempfile
+import time
+from datetime import datetime
+from typing import List
 
 
 
@@ -174,58 +182,147 @@ async def upload_file(
     tenant_id: str = Form(...)
 ):
     temp_path = None
+    start_time = time.time()
+    
     try:
-        # Validate file type
+        # Enhanced validation
+        if not file.filename:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No filename provided"}
+            )
+            
         if not file.filename.endswith(('.xlsx', '.xls')):
             return JSONResponse(
                 status_code=400,
                 content={"error": "Only Excel files (.xlsx, .xls) are supported"}
             )
 
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
-            content = await file.read()
+        # File size validation (e.g., 10MB limit)
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "error": f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB",
+                    "actual_size_mb": round(len(content) / (1024*1024), 2)
+                }
+            )
+
+        # Validate input parameters
+        if not all([sub_index.strip(), index_name.strip(), tenant_id.strip()]):
+            return JSONResponse(
+                status_code=400,
+                content={"error": "All parameters (sub_index, index_name, tenant_id) must be non-empty"}
+            )
+
+        # Sanitize parameters to prevent injection
+        sub_index = re.sub(r'[^a-zA-Z0-9_-]', '', sub_index.strip())
+        index_name = re.sub(r'[^a-zA-Z0-9_-]', '', index_name.strip())
+        tenant_id = re.sub(r'[^a-zA-Z0-9_-]', '', tenant_id.strip())
+
+        # Save uploaded file temporarily with better naming
+        file_extension = os.path.splitext(file.filename)[1]
+        with tempfile.NamedTemporaryFile(
+            delete=False, 
+            suffix=file_extension,
+            prefix=f"{tenant_id}_{sub_index}_"
+        ) as temp_file:
             temp_file.write(content)
             temp_path = temp_file.name
 
-        logger.info(f"Processing file: {file.filename}, size: {len(content)} bytes")
+        logger.info(f"Processing file: {file.filename}, size: {len(content)} bytes, tenant: {tenant_id}")
 
         # Initialize and validate Elasticsearch connection
-        pipeline = ExcelToElasticsearch(index_name=index_name, sub_index=sub_index,tenant_id=tenant_id)
+        pipeline = ExcelToElasticsearch(
+            index_name=index_name, 
+            sub_index=sub_index,
+            tenant_id=tenant_id
+        )
         
         if not pipeline.validate_elasticsearch_connection():
             return JSONResponse(
                 status_code=503,
-                content={"error": "Elasticsearch connection failed"}
+                content={
+                    "error": "Elasticsearch connection failed",
+                    "suggestion": "Please check Elasticsearch service status"
+                }
             )
 
-        # Process the Excel file
-        pipeline.process_excel(temp_path)
+        # Process the Excel file with progress tracking
+        try:
+            processing_result = pipeline.process_excel(temp_path)
+            processing_time = time.time() - start_time
+            
+            # Get additional metrics if available
+            stats = {}
+            if hasattr(processing_result, 'get') and isinstance(processing_result, dict):
+                stats = processing_result
+            
+            return {
+                "message": f"File '{file.filename}' processed and indexed successfully.",
+                "index_name": index_name,
+                "sub_index": sub_index,
+                "tenant_id": tenant_id,
+                "processing_time_seconds": round(processing_time, 2),
+                "file_size_mb": round(len(content) / (1024*1024), 2),
+                "stats": stats,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as processing_error:
+            logger.error(f"Excel processing failed: {str(processing_error)}")
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "error": f"Failed to process Excel file: {str(processing_error)}",
+                    "file": file.filename,
+                    "suggestion": "Please check if the Excel file format is valid and contains data"
+                }
+            )
 
-        return {
-            "message": f"File '{file.filename}' processed and indexed successfully.",
-            "index_name": index_name,
-            "sub_index": sub_index,
-            "tenant_id": pipeline.tenant_id
-        }
-
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            status_code=408,
+            content={
+                "error": "File processing timeout",
+                "file": file.filename if file.filename else "unknown"
+            }
+        )
+    except MemoryError:
+        return JSONResponse(
+            status_code=413,
+            content={
+                "error": "File too large to process in memory",
+                "suggestion": "Please try with a smaller file"
+            }
+        )
     except Exception as e:
-        logger.exception(f"Error processing file {file.filename}: {str(e)}")
+        logger.exception(f"Unexpected error processing file {getattr(file, 'filename', 'unknown')}: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={
-                "error": f"Failed to process file: {str(e)}",
-                "file": file.filename
+                "error": f"Internal server error: {str(e)}",
+                "file": getattr(file, 'filename', 'unknown'),
+                "error_type": type(e).__name__
             }
         )
     finally:
-        # Clean up temporary file
+        # Enhanced cleanup with retry mechanism
         if temp_path and os.path.exists(temp_path):
-            try:
-                os.unlink(temp_path)
-                logger.info(f"Temporary file {temp_path} cleaned up")
-            except Exception as e:
-                logger.warning(f"Failed to clean up temporary file: {str(e)}")
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    os.unlink(temp_path)
+                    logger.info(f"Temporary file {temp_path} cleaned up successfully")
+                    break
+                except Exception as cleanup_error:
+                    if attempt == max_retries - 1:
+                        logger.error(f"Failed to clean up temporary file after {max_retries} attempts: {cleanup_error}")
+                    else:
+                        logger.warning(f"Cleanup attempt {attempt + 1} failed, retrying: {cleanup_error}")
+                        await asyncio.sleep(0.1)  # Brief pause before retry
 
 
 @router.post("/text-to-speech")

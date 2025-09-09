@@ -58,7 +58,6 @@ def query_sales_data(
 
         # Always include sub_index match
         filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
-        print("tenant_id4444444444444444444444444",sub_index,tenant_id)
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))

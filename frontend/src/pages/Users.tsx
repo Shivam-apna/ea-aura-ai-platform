@@ -490,7 +490,7 @@ const Users = () => {
           <DialogHeader>
             <DialogTitle className="text-foreground">Add New User</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Create a new user account. The user will receive an email to set up their password.
+              Create a new user account
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
