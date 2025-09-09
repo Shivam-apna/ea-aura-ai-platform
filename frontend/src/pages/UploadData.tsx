@@ -34,6 +34,7 @@ const AGENT_SUB_INDEX_MAP = {
   "customer-support-agent": "support_tickets_dataset",
   "mission-alignment-agent": "mission_alignment_dataset",
   "brand-social-agent": "social_media_engagement_dataset",
+  "brand-website-agent": "brand_audit_dataset",
 };
 
 // Static index name as mentioned in requirements
@@ -268,6 +269,9 @@ const UploadData: React.FC = () => {
                     <SelectItem value="brand-social-agent">
                       Brand Social Agent
                     </SelectItem>
+                    <SelectItem value="brand-website-agent">
+                      Brand Social Agent
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -283,7 +287,7 @@ const UploadData: React.FC = () => {
 
             {/* Select Organization */}
             <div className="space-y-2">
-              <label
+              <label 
                 htmlFor="select-tenant"
                 className="text-sm font-medium text-muted-foreground"
               >
