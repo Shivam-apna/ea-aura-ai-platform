@@ -701,26 +701,23 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         y: -0.2,
         font: { size: 15 },
       },
-      transition: { duration: 500, easing: 'cubic-in-out' },
       annotations: chart.summary ? [{
-        text: `💡 ${wrapText(chart.summary, 60)}`, // Changed maxLineLength to 60
+        text: `💡 ${wrapText(chart.summary, 60)}`,
         showarrow: false,
-        x: 0.5,
-        y: -0.40, // Changed from -0.30 to -0.40 to push it further down
+        x: 0, // Change x to 0 for left alignment
+        y: -0.40,
         xref: 'paper',
         yref: 'paper',
-        xanchor: 'center',
+        xanchor: 'left', // Change xanchor to 'left'
         yanchor: 'top',
-        align: 'left', // Added align property
-        valign: 'top', // Added valign property
+        align: 'left',
+        valign: 'top',
         font: {
-          size: 13, // Reduced from 14 to 12
+          size: 13,
           color: isDarkTheme ? '#e5e7eb' : '#1f2937',
           family: 'Inter, sans-serif'
         },
-        // Removed width: 800
-        bgcolor: isDarkTheme ? 'rgba(55, 65, 81, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-
+        bgcolor: isDarkTheme ? 'hsl(var(--card))' : 'rgba(255, 255, 255, 0.8)',
       }] : [],
     };
 
@@ -850,7 +847,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
           const chart = charts[kpi.key];
           const { metric: pageMetric } = getPageMetricForKpi(kpi);
 
-          // Derive KPI value strictly from KPI storage
+          // Derive KPI value strictly from provided storage key or fallback
           let kpiValue: any = (pageMetric && typeof pageMetric === 'object') ? pageMetric.value : pageMetric;
           if ((kpiValue === undefined || kpiValue === null) && pageMetric && typeof pageMetric === 'object' && Array.isArray(pageMetric.data) && pageMetric.data.length > 0) {
             const last = pageMetric.data[pageMetric.data.length - 1];

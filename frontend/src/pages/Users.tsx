@@ -65,6 +65,10 @@ const Users = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // New states for password validation feedback
+  const [newPasswordErrors, setNewPasswordErrors] = useState<string[]>([]);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
+
   // State for Edit User Dialog
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DisplayUser | null>(null);
@@ -301,6 +305,39 @@ const Users = () => {
     }
   };
 
+  // Password validation function
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    if (password.length < 8) {
+      errors.push('Minimum 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('At least one uppercase letter (A-Z)');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('At least one lowercase letter (a-z)');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('At least one number (0-9)');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
+      errors.push('At least one special character');
+    }
+    return errors;
+  };
+
+  // Effect to validate new password in real-time
+  useEffect(() => {
+    setNewPasswordErrors(validatePassword(newPassword));
+    if (newPassword !== confirmNewPassword && confirmNewPassword.length > 0) {
+      setConfirmPasswordError('Passwords do not match');
+    } else {
+      setConfirmPasswordError(null);
+    }
+  }, [newPassword, confirmNewPassword]);
+
+  const isSetPasswordButtonEnabled = newPasswordErrors.length === 0 && confirmPasswordError === null && newPassword.length > 0;
+
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background">
       <HolographicCard className="col-span-full">
@@ -370,17 +407,17 @@ const Users = () => {
             </Select>
           </div>
 
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
                 <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">Username</TableHead>
-                  <TableHead className="text-muted-foreground">Email</TableHead>
-                  <TableHead className="text-muted-foreground">Full Name</TableHead>
-                  <TableHead className="text-muted-foreground">Domain</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Last Login</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Username</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Email</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Full Name</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Domain</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Status</TableHead>
+                  <TableHead className="text-muted-foreground bg-card">Last Login</TableHead>
+                  <TableHead className="text-muted-foreground bg-card text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -445,14 +482,14 @@ const Users = () => {
           </div>
             </TabsContent>
             <TabsContent value="organizations" className="m-0">
-              <div className="border rounded-md">
+              <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
                     <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground">Name</TableHead>
-                      <TableHead className="text-muted-foreground">Domain</TableHead>
-                      <TableHead className="text-muted-foreground">Alias</TableHead>
-                      <TableHead className="text-muted-foreground">Redirect URL</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Name</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Domain</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Alias</TableHead>
+                      <TableHead className="text-muted-foreground bg-card">Redirect URL</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -612,8 +649,12 @@ const Users = () => {
       </Dialog>
 
       {/* Set Password Dialog */}
-      <Dialog open={isSetPasswordDialogOpen} onOpenChange={setIsSetPasswordDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-card border border-border text-foreground">
+      <Dialog open={isSetPasswordDialogOpen}> {/* Removed onOpenChange to prevent closing */}
+        <DialogContent 
+          className="sm:max-w-[425px] bg-card border border-border text-foreground [&>button]:hidden" // Hide default close button
+          onEscapeKeyDown={(e) => e.preventDefault()} // Prevent closing with ESC
+          onPointerDownOutside={(e) => e.preventDefault()} // Prevent closing with outside click
+        >
           <DialogHeader>
             <DialogTitle className="text-foreground">Set Password</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -631,7 +672,7 @@ const Users = () => {
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-input border-border text-foreground pr-10"
+                  className={cn("bg-input border-border text-foreground pr-10", newPasswordErrors.length > 0 && "border-red-500")}
                   placeholder="Enter new password"
                 />
                 <Button
@@ -645,6 +686,13 @@ const Users = () => {
                 </Button>
               </div>
             </div>
+            {newPasswordErrors.length > 0 && (
+              <div className="col-span-4 col-start-2 text-red-500 text-xs space-y-1 -mt-2">
+                {newPasswordErrors.map((error, index) => (
+                  <p key={index}>• {error}</p>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="confirmNewPassword" className="text-right text-muted-foreground">
                 Confirm Password <span className="text-red-500">*</span>
@@ -655,7 +703,7 @@ const Users = () => {
                   type={showConfirmNewPassword ? 'text' : 'password'}
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="bg-input border-border text-foreground pr-10"
+                  className={cn("bg-input border-border text-foreground pr-10", confirmPasswordError && "border-red-500")}
                   placeholder="Confirm new password"
                 />
                 <Button
@@ -669,24 +717,18 @@ const Users = () => {
                 </Button>
               </div>
             </div>
+            {confirmPasswordError && (
+              <p className="col-span-4 col-start-2 text-red-500 text-xs -mt-2">
+                • {confirmPasswordError}
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsSetPasswordDialogOpen(false)} 
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              disabled={loading}
-            >
-              Cancel
-            </Button>
+            {/* Removed Cancel button */}
             <Button 
               onClick={async () => {
-                if (!newPassword || newPassword.length < 8) {
-                  toast.error('Password must be at least 8 characters');
-                  return;
-                }
-                if (newPassword !== confirmNewPassword) {
-                  toast.error('Passwords do not match');
+                if (!isSetPasswordButtonEnabled) {
+                  toast.error('Please ensure both passwords meet all criteria and match.');
                   return;
                 }
                 if (!setPasswordUser) {
@@ -700,6 +742,8 @@ const Users = () => {
                   setIsSetPasswordDialogOpen(false);
                   setNewPassword('');
                   setConfirmNewPassword('');
+                  setNewPasswordErrors([]);
+                  setConfirmPasswordError(null);
                 } catch (error) {
                   console.error('Failed to set password:', error);
                   toast.error(`Failed to set password: ${error.message}`);
@@ -709,9 +753,9 @@ const Users = () => {
               }} 
               style={{ backgroundColor: primaryColorHex }} 
               className="text-white hover:opacity-90"
-              disabled={loading}
+              disabled={loading || !isSetPasswordButtonEnabled}
             >
-              Set Password
+              {loading ? 'Setting Password...' : 'Set Password'}
             </Button>
           </div>
         </DialogContent>

@@ -27,6 +27,7 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
     if (!isOpen || !nextStepData) return null;
 
     const { theme } = useTheme();
+    const isDarkTheme = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     // Extract the main title and description from the response
     const mainTitleKey = Object.keys(nextStepData).find(key => key.startsWith('Next Steps to Boost'));
@@ -57,12 +58,12 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-foreground border border-border shadow-2xl">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-semibold text-gray-900">
+                    <DialogTitle className="text-xl font-semibold text-foreground">
                         Next Steps to Boost {displayTitle}
                     </DialogTitle>
-                    <DialogDescription className="text-gray-600 text-sm mt-2">
+                    <DialogDescription className="text-muted-foreground text-sm mt-2">
                         {mainDescription}
                     </DialogDescription>
                 </DialogHeader>
@@ -71,23 +72,23 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
                     {steps.map((step, index) => (
                         <Card
                             key={step.number}
-                            className="border border-gray-200/80 hover:border-gray-300/80 transition-all duration-200 hover:shadow-md bg-white/80"
+                            className="border border-border hover:border-primary/50 transition-all duration-200 hover:shadow-md bg-card text-foreground"
                         >
                             <CardContent className="p-4">
                                 <div className="flex gap-4">
                                     {/* Step Number Circle */}
                                     <div className="flex-shrink-0">
-                                        <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                                        <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
                                             {step.number}
                                         </div>
                                     </div>
 
                                     {/* Step Content */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-base font-semibold text-gray-900 mb-2 leading-tight">
+                                        <h3 className="text-base font-semibold text-foreground mb-2 leading-tight">
                                             {step.title}
                                         </h3>
-                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                        <p className="text-muted-foreground text-sm leading-relaxed">
                                             {step.description}
                                         </p>
                                     </div>
@@ -99,7 +100,7 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
 
                 {/* Footer with metadata if available */}
                 {nextStepData.tenant_id && (
-                    <div className="mt-6 pt-4 border-t border-gray-200/50 text-xs text-gray-500 text-center">
+                    <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground text-center">
                         Analysis generated for {nextStepData.chart_title || metricKey}
                     </div>
                 )}

@@ -336,7 +336,7 @@ const BrandIndex = () => {
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the org id or fallback
+        body: JSON.stringify({ input: `${prompt} in brand`, tenant_id: tenantId }), // Use the org id or fallback
         signal: abortControllerRef.current.signal, // Add abort signal
       });
 
@@ -441,7 +441,7 @@ const BrandIndex = () => {
 
       const summaryKey = `brand_parsed_summary${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
       // Merge new parsed response
       for (const key in parsed) {
@@ -583,7 +583,7 @@ const BrandIndex = () => {
           onSubmit={fetchData}
           onLoadingChange={setLoading}
           className="mt-4 mb-2"
-          initialPrompt="What are the Bounce Rate, Page Views, Brand, Audience Growth, Engagement Rate, Sentiment Score, Share of Voice, and Impressions of AIM Elevate?"
+          initialPrompt="What are the Bounce Rate, Page Views, Brand, Audience Growth, Engagement Rate, Sentiment Score, Share of Voice, and Impressions?"
           storageKeyForInput="brand_index_prompt_input"
           pageId="brand_index_page"
         />
