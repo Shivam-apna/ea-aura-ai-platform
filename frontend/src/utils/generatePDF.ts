@@ -52,14 +52,42 @@ export const generatePDF = async (
             for (const [index, card] of Array.from(chartCards).entries()) {
                 if (card instanceof HTMLElement && !card.style.display?.includes('none')) {
                     try {
-                        const canvas = await html2canvas(card, {
+                        // Find the Plotly chart element directly
+                        const plotlyElement = card.querySelector('.plotly.js-plotly-plot') as HTMLElement;
+
+                        if (!plotlyElement) {
+                            console.warn(`Chart ${index + 1}: Plotly element not found`);
+                            continue;
+                        }
+
+                        // Find and temporarily hide the modebar
+                        const modebar = plotlyElement.querySelector('.modebar') as HTMLElement;
+                        let originalModebarDisplay = '';
+
+                        if (modebar) {
+                            originalModebarDisplay = modebar.style.display;
+                            modebar.style.display = 'none';
+                        }
+
+                        const canvas = await html2canvas(plotlyElement, {
                             scale: 2,
                             useCORS: true,
                             allowTaint: true,
                             backgroundColor: '#ffffff',
-                            width: card.offsetWidth,
-                            height: card.offsetHeight,
+                            width: plotlyElement.offsetWidth,
+                            height: plotlyElement.offsetHeight,
+                            // Ignore elements with specific classes or IDs
+                            ignoreElements: (element) => {
+                                return element.classList.contains('modebar') ||
+                                    element.id?.includes('modebar') ||
+                                    element.closest('.modebar') !== null;
+                            }
                         });
+
+                        // Restore the modebar visibility
+                        if (modebar) {
+                            modebar.style.display = originalModebarDisplay;
+                        }
 
                         const imgData = canvas.toDataURL('image/png');
                         const imgWidth = pageWidth - 20;
@@ -76,10 +104,17 @@ export const generatePDF = async (
                         const adjustedHeight = Math.min(imgHeight, maxHeight);
                         const marginTop = 40;
 
-                        pdf.addImage(imgData, 'PNG', 0, marginTop, imgWidth, adjustedHeight);
+                        pdf.addImage(imgData, 'PNG', 10, marginTop, imgWidth, adjustedHeight);
                         chartsAdded = true;
                     } catch (error) {
                         console.error(`Error generating chart ${index + 1}:`, error);
+
+                        // Make sure to restore modebar visibility even if there's an error
+                        const plotlyElement = card.querySelector('.plotly.js-plotly-plot') as HTMLElement;
+                        const modebar = plotlyElement?.querySelector('.modebar') as HTMLElement;
+                        if (modebar) {
+                            modebar.style.display = '';
+                        }
                     }
                 }
             }
@@ -99,17 +134,17 @@ export const generatePDF = async (
             pdf.addPage();
             let y = 20;
 
-            pdf.setFontSize(16);
+            pdf.setFontSize(14);
             pdf.setTextColor(40, 40, 40);
             const summaryTitle = activeTab ? `${activeTab} Summary` : "Summary";
-            pdf.text(summaryTitle, 10, y);
-            y += 15;
+            pdf.text(summaryTitle, 8, y);
+            y += 13;
 
             pdf.setFontSize(12);
             pdf.setTextColor(60, 60, 60);
 
             for (const bullet of summaryEntries) {
-                const wrapped = pdf.splitTextToSize(bullet, pageWidth - 20);
+                const wrapped = pdf.splitTextToSize(bullet, pageWidth - 25);
                 if (y + wrapped.length * 7 > pageHeight - 20) {
                     pdf.addPage();
                     y = 20;
