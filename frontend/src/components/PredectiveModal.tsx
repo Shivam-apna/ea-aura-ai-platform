@@ -55,7 +55,11 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
 
     const isDarkTheme = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    const COLORS = [chartColor || chartData.marker?.color || '#3B82F6', '#A0A0A0'];
+    // Define theme-aware colors for traces
+    const traceColors = {
+        actual: isDarkTheme ? '#3b82f6' : '#3B82F6', // Blue-500
+        predicted: isDarkTheme ? '#8b5cf6' : '#A0A0A0', // Violet-500 for predicted in dark, Gray-500 in light
+    };
 
     // Plot configuration
     const plotLayout = {
@@ -105,6 +109,11 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
             yanchor: 'top',
             font: { size: 14, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
         }],
+        hoverlabel: {
+            bgcolor: isDarkTheme ? 'hsl(var(--muted))' : '#ffffff',
+            bordercolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            font: { color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937', size: 15 },
+        },
     };
 
     const plotConfig = {
@@ -197,8 +206,8 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                                                 type: finalChartType,
                                                 name: 'Actual',
                                                 mode: 'lines+markers',
-                                                line: { color: COLORS[0], width: 3, dash: 'solid' },
-                                                marker: { size: 8, color: COLORS[0] },
+                                                line: { color: traceColors.actual, width: 3, dash: 'solid' },
+                                                marker: { size: 8, color: traceColors.actual },
                                             },
                                             predictedY.length > 0 && {
                                                 x: chartData.x.slice(actualLength - 1),
@@ -206,8 +215,8 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                                                 type: finalChartType,
                                                 name: 'Predicted',
                                                 mode: 'lines+markers',
-                                                line: { color: COLORS[0], width: 3, dash: 'dot' },
-                                                marker: { size: 8, color: COLORS[0] },
+                                                line: { color: traceColors.predicted, width: 3, dash: 'dot' },
+                                                marker: { size: 8, color: traceColors.predicted },
                                             }
                                         ];
 
