@@ -123,7 +123,7 @@ const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("das
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_last_prompt", tab);
 
 // Define the specific prompt for the Overview page
-const OVERVIEW_PROMPT = "What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS of AIM Elevate?";
+const OVERVIEW_PROMPT = "What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS?";
 
 
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {

@@ -166,7 +166,7 @@
       "Content",
       "Sentiment Score",
       "Issue Category",
-      "First Response Time (hrs)",
+      "Response Rate %",
       "Resolution Time (hrs)"
     ],
     "llm_config": {
@@ -251,13 +251,7 @@
         "keywords": [
     
           "Engagement Rate",
-          "Social Platform",
-          "Content Tags",
-          "Social Content Analysis",
-          "Customer Sentiment Score",
-          "social media feedback",
-          "customer social engagement",
-          "social customer service"
+          "Response Rate %"
         ],
         "llm_config": {
           "model": "openai/gpt-4.1-mini",
@@ -288,16 +282,11 @@
           "visualization"
         ],
         "keywords": [
-          "Issue Category",
           "SLA Met (%)",
-          "Agent Assigned",
-          "First Response Time (hrs)",
           "Resolution Time (hrs)",
           "support tickets",
           "ticket resolution",
-          "support metrics",
-          "help desk",
-          "customer support"
+          "support metrics"
         ],
         "llm_config": {
           "model": "openai/gpt-4.1-mini",
@@ -367,7 +356,7 @@
           "visualization"
         ],
         "keywords": [
-          "Alignment Score",
+          "Alignment Score",  
           "mission",
           "metrics",
           "aligned activities",
@@ -412,32 +401,19 @@
       "brand",
       "Bounce Rate",
       "Impressions",
-      "digital footprint",
-      "website",
-      "tone",
-      "reputation",
-      "Backlinks",
-      "Website Visitors",
-      "Unique visitors",
       "Page views",
       "time Spent",
-      "Reach",
-      "Likes",
-      "Comments",
-      "Social Platform",
-      "Post",
       "Session Growth",
-      "Visitors",
-      "brand perception",
-      "digital presence",
-      "web analytics",
-      "social media engagement",
-      "brand awareness"
+      "share of voice",
+      "Traffic by Location (%)",
+      "Traffic by Location",
+      "Audience Growth",
+      "Audience Growth (%)"
     ],
     "llm_config": {
       "model": "openai/gpt-4.1-mini"
     },
-    "prompt_template": "You are a brand performance strategist with deep expertise in digital engagement analytics. You have received a detailed brand index report from a specialized analytics agent.\n\nYour task is to:\n1. Analyze all the provided data including Website Visitors, Session Growth, Bounce Rate, Page Views, and any other relevant engagement metrics.\n2. Identify trends, patterns, and potential issues in user behavior and brand engagement.\n3. Evaluate how these metrics reflect overall brand visibility, user interest, and content effectiveness.\n4. Recommend strategies to improve brand perception, engagement, and digital presence based on the data.\n5. Structure your response in clearly labeled sections:\n   - Overview\n   - Key Insights\n   - Behavioral Trends\n   - Strategic Recommendations\n\nIMPORTANT:\n- Do not include any code or technical tools—focus on strategic business analysis and marketing impact.\n- Reference specific figures from the provided data in your insights.\n- Ensure recommendations are actionable and measurable.\n\nBRAND INDEX DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nProvide a thorough brand engagement analysis with specific observations and actionable marketing and content recommendations.",
+    "prompt_template": "You are a brand performance strategist with deep expertise in digital engagement analytics. You have received a detailed brand index report from a specialized analytics agent.\n\nYour task is to:\n1. Analyze all the provided data including Traffic by Location, Audience Growth, Bounce Rate, Page Views,Impression and any other relevant engagement metrics.\n2. Identify trends, patterns, and potential issues in user behavior and brand engagement.\n3. Evaluate how these metrics reflect overall brand visibility, user interest, and content effectiveness.\n4. Recommend strategies to improve brand perception, engagement, and digital presence based on the data.\n5. Structure your response in clearly labeled sections:\n   - Overview\n   - Key Insights\n   - Behavioral Trends\n   - Strategic Recommendations\n\nIMPORTANT:\n- Do not include any code or technical tools—focus on strategic business analysis and marketing impact.\n- Reference specific figures from the provided data in your insights.\n- Ensure recommendations are actionable and measurable.\n\nBRAND INDEX DATA:\n{{input}}\n\nUSER QUESTION:\n{{question}}\n\nProvide a thorough brand engagement analysis with specific observations and actionable marketing and content recommendations.",
     "sub_agents": [
       {
         "agent_id": "website_analyzer_agent",
@@ -463,14 +439,13 @@
           "Backlinks",
           "Website Visitors",
           "Unique visitors",
+          "Session Growth",
           "Page views",
           "time Spent",
-          "Visitors",
-          "Session Growth",
-          "website analytics",
-          "web traffic",
-          "site performance",
-          "user behavior"
+          "Audience Growth",
+          "Audience Growth (%)",
+          "Traffic by Location (%)",
+          "Traffic by Location"
         ],
         "llm_config": {
           "model": "openai/gpt-4.1-mini"
@@ -500,20 +475,7 @@
         ],
         "keywords": [
           "Impressions",
-          "Brand Platform",
-          "Post ID",
-          "Post Type",
-          "Followers",
-          "Reach",
-          "Likes",
-          "Shares",
-          "Comments",
-          "Engagement Rate",
-          "Brand Sentiment Score",
-          "brand engagement",
-          "social media reach",
-          "post performance",
-          "brand social presence"
+          "share of voice"
         ],
         "llm_config": {
           "model": "openai/gpt-4.1-mini",

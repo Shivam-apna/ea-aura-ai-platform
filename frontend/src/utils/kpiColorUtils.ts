@@ -137,7 +137,7 @@ const KPI_COLOR_CONFIGS: Record<string, KpiColorConfig> = {
     },
 
     // 10. ✅ Engagement Rate + Reach
-    'Engagement Rate + Reach': {
+    'Engagement Level': {
         type: 'numeric',
         ranges: [
             { min: 0, max: 2, color: '#FFE8E8', strokeColor: '#FF0000', label: 'Engagement Rate + Reach, which captures audience interaction and visibility, is in the low range — showing limited engagement impact.' },

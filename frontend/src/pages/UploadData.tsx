@@ -270,7 +270,7 @@ const UploadData: React.FC = () => {
                       Brand Social Agent
                     </SelectItem>
                     <SelectItem value="brand-website-agent">
-                      Brand Social Agent
+                      Brand WebSite Agent
                     </SelectItem>
                   </SelectContent>
                 </Select>

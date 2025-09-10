@@ -24,18 +24,14 @@
     ],
     "Social Media": [
       {
-        "key": "Engagement Rate + Reach",
-        "label": "Engagement & Reach"
-      },
-      {
-        "key": "Response Rate (%)",
-        "label": "Response Rate (%)"
+        "key": "Engagement Level",
+        "label": "Engagement Level"
       }
     ],
     "Support Tickets": [
       {
-        "key": "Avg Resolution Time",
-        "label": "Avg Resolution Time"
+        "key": "Response Time",
+        "label": "Response Time"
       },
       {
         "key": "% SLA Met",
@@ -49,7 +45,7 @@
       "bgColor": "#FFFFFF"
     },
     {
-      "key": "Engagement Rate + Reach",
+      "key": "Engagement Level",
       "bgColor": "#FFFFFF"
     },
     {
