@@ -431,10 +431,10 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           disabled={isLoading || !input.trim()}
           variant="default"
           className={cn(
-            "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200",
+            "h-8 px-4 py-1.5 rounded-full mr-1 flex-shrink-0 disabled:opacity-100 text-white shadow hover:shadow-md transition-all duration-200", // text-white is now consistently applied
             isListening
               ? "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-              : "bg-[#3b82f6] hover:bg-[#3b82f6]/90"
+              : "bg-primary hover:bg-primary/90" // Removed text-primary-foreground
           )}
         >
           {isLoading ? (
