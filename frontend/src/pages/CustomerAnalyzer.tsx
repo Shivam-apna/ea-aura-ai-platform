@@ -408,7 +408,7 @@ const CustomerAnalyzer = () => {
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
+        body: JSON.stringify({ input: `${prompt} in customer`, tenant_id: tenantId }), // Use the prompt from the argument
         signal: abortControllerRef.current.signal, // Add abort signal
       });
 
@@ -678,7 +678,7 @@ const CustomerAnalyzer = () => {
           onSubmit={fetchData}
           onLoadingChange={setLoading}
           className="mt-4 mb-2"
-          initialPrompt="What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS of AIM Elevate?"
+          initialPrompt="What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS?"
           storageKeyForInput="customer_analyzer_prompt_input"
           pageId="customer_analyzer_page" // Unique page ID for caching
         />

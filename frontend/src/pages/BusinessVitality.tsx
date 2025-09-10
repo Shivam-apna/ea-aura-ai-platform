@@ -102,7 +102,7 @@ const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("bus
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("business_last_prompt", tab);
 
 // Define the specific prompt for Business Vitality
-const BUSINESS_PROMPT = "What are the GMROI, Net Profit Margin, COGS, Gross Profit Margin, Net Sales and Conversion Rate of AIM Elevate?";
+const BUSINESS_PROMPT = "What are the GMROI, Net Profit Margin, COGS, Gross Profit Margin, Net Sales and Conversion Rate?";
 
 
 const BusinessDashboard = () => {

@@ -100,7 +100,7 @@ const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mis
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("mission_alignment_last_prompt", tab);
 
 // Define the specific prompt for Mission Alignment (AIM Elevate)
-const MISSION_PROMPT = "What are the Alignment Score, Resource Allocation, Impact Metrics, and Risks Identified of AIM Elevate?";
+const MISSION_PROMPT = "What are the Alignment Score, Resource Allocation, Impact Metrics, and Risks Identified?";
 
 
 const MissionAlignment = () => {
@@ -442,7 +442,7 @@ const MissionAlignment = () => {
 
       const summaryKey = `mission_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
       // Merge new parsed response
       for (const key in parsed) {
