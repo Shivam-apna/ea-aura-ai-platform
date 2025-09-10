@@ -123,7 +123,7 @@ const METRIC_GROUPS_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("das
 const LAST_PROMPT_STORAGE_KEY = (tab: string) => getTabSpecificStorageKey("dashboard_last_prompt", tab);
 
 // Define the specific prompt for the Overview page
-const OVERVIEW_PROMPT = "What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS?";
+const OVERVIEW_PROMPT = "What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS of AIM Elevate?";
 
 
 const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => {
@@ -487,6 +487,8 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
 
       // Save merged summary
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
+      // Save KPI data to a page-level key for KPI cards
+      localStorage.setItem("overview_kpi_key", JSON.stringify(mergedSummary));
 
 
       // Get all available keys from API response
@@ -637,6 +639,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
             dynamicKpiKeys={dynamicKpiKeys}
             dynamicMetricGroups={dynamicMetricGroups}
             storagePrefix="dashboard"
+            kpiStorageKey="overview_kpi_key"
             onChartClose={handleCloseChart}
             onRestoreCharts={handleRestoreCharts}
             onChartTypeChange={handleChartTypeChange}

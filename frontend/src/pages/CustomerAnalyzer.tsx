@@ -183,6 +183,27 @@ const CustomerAnalyzer = () => {
   // Add AbortController ref for canceling requests
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Helpers to detect KPI-related keys and avoid unnecessary refreshes
+  const normalizeKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const getKpiCandidateSet = (): Set<string> => {
+    const candidates = new Set<string>();
+    // Current dynamic KPI keys for active tab
+    dynamicKpiKeys.forEach((k) => {
+      candidates.add(normalizeKey(k.key));
+      if (k.displayName) candidates.add(normalizeKey(k.displayName));
+      if (k.originalKey) candidates.add(normalizeKey(k.originalKey));
+    });
+    // Fallback to default KPI keys
+    KPI_KEYS.forEach((k) => {
+      candidates.add(normalizeKey(k.key));
+    });
+    return candidates;
+  };
+  const hasKpiRelatedKeys = (keys: string[]) => {
+    const candidates = getKpiCandidateSet();
+    return keys.some((k) => candidates.has(normalizeKey(k)));
+  };
+
   // Restore input, charts, and dynamic keys from cache on mount
   useEffect(() => {
     // Restore charts and input for active tab
@@ -539,18 +560,36 @@ const CustomerAnalyzer = () => {
         }
       });
 
-      // Save merged summary
+      // Save merged summary for this tab
       localStorage.setItem(summaryKey, JSON.stringify(mergedSummary));
-      // Save KPI data to a page-level key for KPI cards
-      localStorage.setItem("customer_analyzer_kpi_summary", JSON.stringify(mergedSummary));
 
       // Get all available keys from API response
       const apiResponseKeys = Object.keys(parsed).filter(
         (key) => !["response", "task", "columns", "filters"].includes(key)
       );
 
-      // Update dynamic keys based on API response
-      updateDynamicKeys(apiResponseKeys);
+      // Only update global KPI data if incoming data contains KPI-related fields
+      const containsKpiRelated = hasKpiRelatedKeys(apiResponseKeys);
+      if (containsKpiRelated) {
+        try {
+          const existingKpiRaw = localStorage.getItem("customer_analyzer_kpi_summary");
+          const existingKpi = existingKpiRaw ? JSON.parse(existingKpiRaw) : {};
+          const toMerge: Record<string, any> = {};
+          apiResponseKeys.forEach((k) => {
+            toMerge[k] = mergedSummary[k] ?? parsed[k];
+          });
+          const mergedKpi = { ...existingKpi, ...toMerge };
+          localStorage.setItem("customer_analyzer_kpi_summary", JSON.stringify(mergedKpi));
+        } catch (e) {
+          // Fallback: do not overwrite KPI data on error
+          console.warn("Failed to merge KPI data:", e);
+        }
+      }
+
+      // Update dynamic keys based on API response only when relevant to KPI
+      if (containsKpiRelated) {
+        updateDynamicKeys(apiResponseKeys);
+      }
 
       const chartMap: Record<string, any> = {};
 
@@ -596,8 +635,10 @@ const CustomerAnalyzer = () => {
           (key) => !["response", "task", "columns", "filters"].includes(key)
         );
 
-        // ✅ Update dynamic keys using all current keys
-        updateDynamicKeys(mergedKeys);
+        // ✅ Update dynamic keys using all current keys only if KPI-related
+        if (hasKpiRelatedKeys(mergedKeys)) {
+          updateDynamicKeys(mergedKeys);
+        }
 
         // Save to localStorage
         localStorage.setItem(

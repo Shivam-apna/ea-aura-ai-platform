@@ -1,9 +1,10 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lightbulb, X } from 'lucide-react';
+import { Lightbulb, X, BarChart3 } from 'lucide-react'; // Added BarChart3 icon
 import { useTheme } from '@/components/ThemeProvider';
 import { Button } from '@/components/ui/button';
+import Plot from 'react-plotly.js'; // Import Plotly
 
 interface NextStepModalProps {
     isOpen: boolean;
@@ -14,6 +15,19 @@ interface NextStepModalProps {
         tenant_id?: string;
         metric_key?: string;
         chart_title?: string;
+        chart_data?: { // Added chart_data definition
+            title: string;
+            plotType: string;
+            x: any[];
+            y: any;
+            xLabel: string;
+            yLabel: string;
+            value?: number;
+            delta?: number;
+            marker?: {
+                color: string;
+            };
+        };
     };
     metricKey: string;
 }
@@ -56,6 +70,69 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
             ...nextStepData[key]
         }));
 
+    // Plotly configuration for the chart_data
+    const chartData = nextStepData.chart_data;
+
+    const plotLayout = chartData ? {
+        width: undefined,
+        height: 300,
+        autosize: true,
+        title: {
+            text: `Historical Data for ${chartData.title}`,
+            font: { size: 16, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
+        },
+        font: { family: 'Inter, sans-serif', size: 12, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+        margin: { l: 60, r: 40, t: 60, b: 80 },
+        plot_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
+        paper_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
+        xaxis: {
+            title: chartData.xLabel,
+            zeroline: false,
+            tickfont: { size: 11, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
+            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
+            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+        },
+        yaxis: {
+            title: chartData.yLabel,
+            zeroline: false,
+            tickfont: { size: 11, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
+            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
+            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+        },
+        legend: {
+            orientation: "h",
+            x: 0.5,
+            xanchor: "center",
+            y: -0.2,
+            font: { size: 11, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+        },
+        transition: { duration: 300, easing: 'ease-out' },
+        hoverlabel: {
+            bgcolor: isDarkTheme ? 'hsl(var(--muted))' : '#ffffff',
+            bordercolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            font: { color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937', size: 13 },
+        },
+    } : {};
+
+    const plotConfig = {
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: [
+            'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d',
+            'autoScale2d', 'resetScale2d', 'sendDataToCloud', 'editInChartStudio'
+        ],
+        responsive: true,
+        toImageButtonOptions: {
+            format: 'png',
+            filename: `${metricKey}_historical_data`,
+            height: 500,
+            width: 800,
+            scale: 1
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-foreground border border-border shadow-2xl">
@@ -69,6 +146,30 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
                 </DialogHeader>
 
                 <div className="space-y-4 mt-6">
+                    {/* Conditional Chart Display */}
+                    {chartData && (
+                        <Card className="bg-card text-foreground">
+                            <CardContent className="p-4">
+                                <div style={{ width: '100%', height: '300px' }}>
+                                    <Plot
+                                        data={[{
+                                            x: chartData.x,
+                                            y: chartData.y,
+                                            type: chartData.plotType || 'line',
+                                            mode: 'lines+markers',
+                                            name: 'Historical Data',
+                                            line: { color: isDarkTheme ? '#3b82f6' : '#3B82F6', width: 2 },
+                                            marker: { size: 6, color: isDarkTheme ? '#3b82f6' : '#3B82F6' },
+                                        }]}
+                                        layout={plotLayout}
+                                        config={plotConfig}
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {steps.map((step, index) => (
                         <Card
                             key={step.number}

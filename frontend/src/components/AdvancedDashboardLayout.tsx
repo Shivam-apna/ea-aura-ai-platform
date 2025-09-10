@@ -702,7 +702,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         font: { size: 15 },
       },
       annotations: chart.summary ? [{
-        text: `💡 ${wrapText(chart.summary, 60)}`,
+        text: `💡 ${wrapText(chart.summary, 80)}`,
         showarrow: false,
         x: 0, // Change x to 0 for left alignment
         y: -0.40,
@@ -1026,7 +1026,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
                   "rounded-full px-4 py-2 text-sm transition-all duration-300 active:scale-95",
                   "bg-muted/50 border border-border text-muted-foreground font-medium",
                   "hover:bg-muted/70",
-                  "data-[state=active]:bg-[rgb(59,130,246)] data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent",
+                  "data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-lg data-[state=active]:border-transparent", // Changed text-primary-foreground to text-white
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 )}
               >
