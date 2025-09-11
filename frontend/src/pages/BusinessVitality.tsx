@@ -30,6 +30,7 @@ import { generatePDF } from "@/utils/generatePDF";
 import { useDashboardRefresh } from "@/contexts/DashboardRefreshContext"; // Import useDashboardRefresh
 import { useAuth } from "@/contexts/AuthContext";
 import { createTTS } from "@/utils/avatars";
+import GraphLoader from '@/components/GraphLoader'; // Import the new GraphLoader
 
 // Type definitions
 interface KpiItem {
@@ -49,38 +50,6 @@ interface MetricItem {
 interface MetricGroups {
   [groupName: string]: MetricItem[];
 }
-
-const NoDataGhost = () => (
-  <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-    <ellipse cx="24" cy="30" rx="16" ry="10" fill="#e0e7ef" />
-    <path d="M12 36V18a12 12 0 1 1 24 0v18c0 2-2 2-3 0s-3-2-4 0-3 2-4 0-3-2-4 0-3 2-3 0z" fill="#fff" />
-    <circle cx="18" cy="24" r="2" fill="#a0aec0" />
-    <circle cx="30" cy="24" r="2" fill="#a0aec0" />
-    <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#cbd5e1" />
-  </svg>
-);
-
-// Custom animated SVG graph loader
-const GraphLoader = () => (
-  <svg width="80" height="40" viewBox="0 0 90 40" fill="none">
-    <rect x="10" y="20" width="10" height="20" rx="2" fill="#4CB2FF">
-      <animate attributeName="height" values="20;35;20" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="20;5;20" dur="1s" repeatCount="indefinite" />
-    </rect>
-    <rect x="30" y="10" width="10" height="30" rx="2" fill="#A8C574">
-      <animate attributeName="height" values="30;15;30" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="10;25;10" dur="1s" repeatCount="indefinite" />
-    </rect>
-    <rect x="50" y="25" width="10" height="15" rx="2" fill="#4CB2FF">
-      <animate attributeName="height" values="15;30;15" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="25;10;25" dur="1s" repeatCount="indefinite" />
-    </rect>
-    <rect x="70" y="15" width="10" height="25" rx="2" fill="#A8C574">
-      <animate attributeName="height" values="25;10;25" dur="1s" repeatCount="indefinite" />
-      <animate attributeName="y" values="15;30;15" dur="1s" repeatCount="indefinite" />
-    </rect>
-  </svg>
-);
 
 const DEFAULT_MODEBAR = {
   toImage: true,
@@ -604,20 +573,7 @@ const BusinessDashboard = () => {
     <div className="relative min-h-screen">
       {/* Loader Overlay */}
       {loading && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/30 backdrop-blur">
-          <div className="flex flex-col items-center gap-4">
-            <GraphLoader />
-            <span className="text-lg font-semibold text-blue-600 animate-pulse">Generating your dashboard...</span>
-            <Button
-              onClick={handleStopProcess}
-              variant="ghost"
-              size="sm"
-              className="mt-2 flex items-center gap-2 bg-[rgb(59,130,246)] hover:bg-[rgb(233,73,73)] text-white hover:text-white"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
+        <GraphLoader onCancel={handleStopProcess} />
       )}
 
       {/* Common wrapper for prompt bar */}

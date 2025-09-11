@@ -74,45 +74,46 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
     const chartData = nextStepData.chart_data;
 
     const plotLayout = chartData ? {
+        template: isDarkTheme ? 'plotly_dark' : 'plotly_white', // Apply dark template
         width: undefined,
         height: 300,
         autosize: true,
         title: {
             text: `Historical Data for ${chartData.title}`,
-            font: { size: 16, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
+            font: { size: 16, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' }
         },
-        font: { family: 'Inter, sans-serif', size: 12, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+        font: { family: 'Inter, sans-serif', size: 12, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
         margin: { l: 60, r: 40, t: 60, b: 80 },
-        plot_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
-        paper_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
+        plot_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
+        paper_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
         xaxis: {
             title: chartData.xLabel,
             zeroline: false,
-            tickfont: { size: 11, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
-            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
-            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            tickfont: { size: 11, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
+            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
+            linecolor: isDarkTheme ? '#0a0c0bff' : '#d1d5db',
         },
         yaxis: {
             title: chartData.yLabel,
             zeroline: false,
-            tickfont: { size: 11, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
-            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
-            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            tickfont: { size: 11, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
+            titlefont: { size: 13, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
+            linecolor: isDarkTheme ? '#6b7280' : '#d1d5db',
         },
         legend: {
             orientation: "h",
             x: 0.5,
             xanchor: "center",
             y: -0.2,
-            font: { size: 11, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            font: { size: 11, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
         },
         transition: { duration: 300, easing: 'ease-out' },
         hoverlabel: {
-            bgcolor: isDarkTheme ? 'hsl(var(--muted))' : '#ffffff',
-            bordercolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
-            font: { color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937', size: 13 },
+            bgcolor: isDarkTheme ? '#374151' : '#ffffff',
+            bordercolor: isDarkTheme ? '#6b7280' : '#d1d5db',
+            font: { color: isDarkTheme ? '#e5e7eb' : '#1f2937', size: 13 },
         },
     } : {};
 
@@ -158,8 +159,8 @@ export const NextStepModal: React.FC<NextStepModalProps> = ({
                                             type: chartData.plotType || 'line',
                                             mode: 'lines+markers',
                                             name: 'Historical Data',
-                                            line: { color: isDarkTheme ? '#3b82f6' : '#3B82F6', width: 2 },
-                                            marker: { size: 6, color: isDarkTheme ? '#3b82f6' : '#3B82F6' },
+                                            line: { color: isDarkTheme ? '#4A90E2' : '#3B82F6', width: 2 }, // Blue for historical data
+                                            marker: { size: 6, color: isDarkTheme ? '#4A90E2' : '#3B82F6' },
                                         }]}
                                         layout={plotLayout}
                                         config={plotConfig}

@@ -24,6 +24,7 @@ import { authService } from "@/services/authService"; // Import authService to g
 import { getApiEndpoint } from "@/config/environment"; // Import getApiEndpoint
 import { useAuth } from "@/contexts/AuthContext";
 import { keycloakAdminService } from "@/services/keycloakAdminService";
+import GraphLoader from '@/components/GraphLoader'; // Import GraphLoader
 
 // Define the mapping between agents and their corresponding sub_index values
 const AGENT_SUB_INDEX_MAP = {
@@ -48,13 +49,12 @@ const UploadData: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [orgLoading, setOrgLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
   // Load organizations from Keycloak
   const loadOrganizations = async () => {
-    setOrgLoading(true);
+    setIsLoading(true); // Use the same loading state for organizations
     try {
       const orgs = await keycloakAdminService.getOrganizations();
       setOrganizations(orgs);
@@ -62,7 +62,7 @@ const UploadData: React.FC = () => {
       console.error("Failed to load organizations:", error);
       toast.error("Failed to load organizations");
     } finally {
-      setOrgLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -215,6 +215,7 @@ const UploadData: React.FC = () => {
 
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background">
+      {isLoading && <GraphLoader onCancel={handleCancel} />} {/* Render GraphLoader */}
       <HolographicCard className="col-span-full neumorphic-card flex-grow">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -296,7 +297,7 @@ const UploadData: React.FC = () => {
               <Select
                 onValueChange={setSelectedTenant}
                 value={selectedTenant}
-                disabled={isLoading || orgLoading}
+                disabled={isLoading}
               >
                 <SelectTrigger
                   id="select-tenant"
@@ -304,7 +305,7 @@ const UploadData: React.FC = () => {
                 >
                   <SelectValue
                     placeholder={
-                      orgLoading
+                      isLoading
                         ? "Loading organizations..."
                         : "Choose organization..."
                     }
