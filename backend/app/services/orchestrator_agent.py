@@ -656,7 +656,6 @@ def run_autogen_agent(input_text: str, tenant_id: str):
         if not parent_agent_name:
             general_agent = GeneralAgent()
             general_response = general_agent.run(input_text)
-            full_output = "No matching agent found. Handing over to my general agent friend...\n\n" + general_response
 
             token_tracker.track_agent_tokens(
                 agent_id="GeneralAgent",
@@ -666,7 +665,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 step=0
             )
 
-            logger.warning("⚠️ No matching parent agent found. Using GeneralAgent fallback.", extra={
+            logger.info("🤖 No matching parent agent found. Using GeneralAgent fallback.", extra={
                 "job_id": job_id,
                 "token_summary": token_tracker.get_job_token_summary(job_id)
             })
@@ -676,7 +675,7 @@ def run_autogen_agent(input_text: str, tenant_id: str):
                 tenant_id=tenant_id,
                 step=-1,
                 input_text=input_text,
-                output_text=full_output
+                output_text=general_response
             )
 
             return {
