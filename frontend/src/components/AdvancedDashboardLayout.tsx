@@ -702,7 +702,7 @@ const AdvancedDashboardLayout: React.FC<AdvancedDashboardLayoutProps> = ({
         font: { size: 15 },
       },
       annotations: chart.summary ? [{
-        text: `💡 ${wrapText(chart.summary, 80)}`,
+        text: `💡 ${wrapText(chart.summary, 75)}`,
         showarrow: false,
         x: 0, // Change x to 0 for left alignment
         y: -0.40,

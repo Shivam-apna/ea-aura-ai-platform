@@ -160,6 +160,7 @@
   /* Ensure modebar-group itself is a flex container for its children */
   .modebar-group {
     display: flex;
+    border-left: none !important; /* Remove any left border on groups */
     /* No gap here, individual buttons will have margin */
   }
 
@@ -170,12 +171,34 @@
     justify-content: center;
     padding: 6px;
     border-radius: 6px;
-    background-color: hsl(var(--muted)/0.5);
-    color: hsl(var(--muted-foreground));
+    background-color: white !important; /* Force white background in light mode */
+    color: hsl(var(--muted-foreground)); /* Default icon color: dark in light, light in dark */
     transition: all 0.2s ease-in-out;
-    border: 1px solid hsl(var(--border));
-    /* Add margin-left to separate each button */
+    border: none !important; /* Ensure no borders */
+    border-left: none !important; /* Explicitly remove left border */
+    border-right: none !important; /* Explicitly remove right border */
+    box-shadow: none !important; /* Remove all box-shadows */
+    cursor: pointer; /* Ensure consistent pointer cursor */
     margin-left: 6px; /* Space between buttons */
+    outline: none !important; /* Ensure no outline */
+    border-image: none !important; /* Ensure no border image */
+  }
+
+  .dark .modebar-container .modebar-btn {
+    background-color: hsl(var(--card)) !important; /* Force card background in dark mode */
+  }
+
+  /* Ensure SVG elements within modebar buttons also have no borders/backgrounds/strokes */
+  .modebar-container .modebar-btn svg {
+    border: none !important;
+    background-color: transparent !important;
+    outline: none !important;
+    stroke: none !important; /* Remove any SVG stroke */
+  }
+
+  /* Also target the path element within the SVG for extra safety */
+  .modebar-container .modebar-btn svg path {
+    stroke: none !important; /* Remove any SVG path stroke */
   }
 
   /* Remove margin-left for the very first button in the entire modebar */
@@ -184,9 +207,42 @@
   }
 
   .modebar-container .modebar-btn:hover {
-    background-color: hsl(var(--accent));
-    color: hsl(var(--accent-foreground));
-    border-color: hsl(var(--primary));
+    background-color: hsl(var(--accent)) !important; /* Hover background */
+    color: #333333; /* Explicitly dark for light mode hover */
+    border-color: transparent; /* Ensure no border on hover */
+  }
+
+  /* Dark mode specific hover state */
+  .dark .modebar-container .modebar-btn:hover {
+    color: #E0E0E0; /* Explicitly light for dark mode hover */
+  }
+
+  /* TARGET THE ACTIVE STATE AGGRESSIVELY */
+  .modebar-container .modebar-btn.active {
+    background-color: white !important; /* Force white for light mode active */
+    color: hsl(var(--primary)) !important; /* Make icon primary color when active */
+    box-shadow: none !important; /* Remove all box-shadows */
+    border: none !important; /* Ensure no borders */
+    border-left: none !important;
+    border-right: none !important;
+    outline: none !important;
+    border-image: none !important; /* Ensure no border image */
+  }
+
+  .dark .modebar-container .modebar-btn.active {
+    background-color: hsl(var(--card)) !important; /* Force card background for dark mode active */
+    color: hsl(var(--primary-foreground)) !important; /* Make icon primary-foreground color when active in dark mode */
+  }
+
+  .modebar-container .modebar-btn.active svg {
+    border: none !important;
+    background-color: transparent !important;
+    outline: none !important;
+    stroke: none !important;
+  }
+
+  .modebar-container .modebar-btn.active svg path {
+    stroke: none !important;
   }
 
   /* For future flexibility: bottom alignment */

@@ -28,96 +28,136 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <InfoIcon className="h-5 w-5 text-primary" /> About EA-AURA.AI
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Your AI-powered platform for comprehensive business insights.
+            Welcome to EA-AURA.AI – your AI-powered analytics assistant. This Help panel gives you quick guidance on how to use prompts, understand your scores, navigate the app, and troubleshooting common issues.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-grow pr-4 mb-4">
           <Accordion type="single" collapsible defaultValue="item-1" className="w-full space-y-4">
-            {/* About EA-AURA.AI Section */}
+            {/* Using Prompts Section */}
             <AccordionItem value="item-1" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
               <AccordionTrigger className="px-4 py-3 text-base font-semibold text-foreground hover:no-underline">
-                What is EA-AURA.AI?
+                1. Using Prompts
               </AccordionTrigger>
               <AccordionContent className="border-t border-border/50 p-4 text-sm text-muted-foreground leading-relaxed">
                 <p className="mb-2">
-                  EA-AURA.AI is an advanced AI-powered analytics platform designed to provide a holistic view of your business.
-                  It integrates data across various domains to deliver actionable insights, helping you accelerate vision,
-                  velocity, and value. Our intelligent agents analyze complex datasets to present clear, concise, and
-                  predictive information, empowering data-driven decision-making.
+                  The search bar at the top is your conversation window with EA-AURA. You can type natural questions or metric-based queries.
                 </p>
-                <p>
-                  The platform covers key areas such as Business Vitality (sales & marketing performance), Customer Analysis
-                  (surveys, social media, support tickets), Mission Alignment (strategic goal tracking), and Brand Index
-                  (social engagement & website analytics).
-                </p>
+                <p className="font-semibold mb-2">Examples of What You Can Ask</p>
+                <ul className="list-disc list-inside space-y-1 pl-4">
+                  <li>“What is CES score?”</li>
+                  <li>“Show the NPS score.”</li>
+                  <li>“Provide CSAT %?”</li>
+                  <li>“Provide me CXHS only from Jan 2025 to Jun 2024=5”</li>
+                  <li>“What are the NPS Score, Engagement Rate, Average Sentiment Score, CSAT, CES Score and CXHS?”</li>
+                  <li>“Give me the Alignment Score.”</li>
+                </ul>
+                <p className="mt-3 font-semibold">Tip: Use clear keywords like CES, NPS, CSAT, Sentiment, Conversion, Brand Index.</p>
               </AccordionContent>
             </AccordionItem>
 
-            {/* How to Use the Dashboard Section */}
+            {/* Understanding Scores Section */}
             <AccordionItem value="item-2" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
               <AccordionTrigger className="px-4 py-3 text-base font-semibold text-foreground hover:no-underline">
-                How to Use the Dashboard
+                2. Understanding Scores
               </AccordionTrigger>
               <AccordionContent className="border-t border-border/50 p-4 text-sm text-muted-foreground">
-                <ul className="list-disc list-inside space-y-2">
+                <p className="mb-2">EA-AURA shows key customer and business health indicators. Here’s what they mean:</p>
+                <ul className="list-disc list-inside space-y-2 pl-4">
                   <li>
-                    <strong>Navigate Modules:</strong> Use the sidebar on the left to switch between different modules
-                    like Overview, Business Vitality, Customer Analysis, Mission Alignment, and Brand Index. Each module
-                    focuses on specific aspects of your business.
+                    <strong>CES (Customer Effort Score):</strong> Measures how easy it is for customers to get their issues resolved or complete a task.
+                    <ul className="list-circle list-inside ml-4 mt-1">
+                      <li>Example: A CES of 8.4 means customers find it relatively easy to engage with your support or services.</li>
+                    </ul>
                   </li>
                   <li>
-                    <strong>Generate Insights:</strong> Utilize the "Ask-Aura" prompt bar at the top of each dashboard.
-                    Type your questions or requests (e.g., "Show me sales trends," "What is the current NPS score?")
-                    and click "Generate" to get AI-powered charts and summaries.
+                    <strong>NPS (Net Promoter Score):</strong> Tracks customer loyalty by asking if they would recommend your brand.
+                    <ul className="list-circle list-inside ml-4 mt-1">
+                      <li>Scale: 1 to 10.</li>
+                      <li>Example: An NPS of 7 means more promoters than detractors, but still room for improvement.</li>
+                    </ul>
                   </li>
                   <li>
-                    <strong>Refresh Data:</strong> Click the refresh icon (<RefreshCw className="inline-block h-4 w-4 align-text-bottom" />) in the header to refresh the current dashboard's data.
+                    <strong>Sentiment Score:</strong> AI-driven metric based on analyzing customer reviews, comments, and feedback for positivity or negativity.
+                    <ul className="list-circle list-inside ml-4 mt-1">
+                      <li>Example: A score of 98 means feedback is overwhelmingly positive.</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>CSAT (Customer Satisfaction %):</strong> Percentage of customers who say they are satisfied with your product/service.
+                    <ul className="list-circle list-inside ml-4 mt-1">
+                      <li>Example: 96% CSAT indicates high satisfaction levels.</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>CXHS (Customer Health Score):</strong> Combines engagement, satisfaction, and retention data into a single measure of overall customer health.
+                    <ul className="list-circle list-inside ml-4 mt-1">
+                      <li>Helps identify at-risk vs loyal customers.</li>
+                    </ul>
                   </li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
 
-            {/* Understanding Graphs & KPIs Section */}
+            {/* Navigation Help Section */}
             <AccordionItem value="item-3" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
               <AccordionTrigger className="px-4 py-3 text-base font-semibold text-foreground hover:no-underline">
-                Understanding Graphs & KPIs
+                3. Navigation Help
               </AccordionTrigger>
               <AccordionContent className="border-t border-border/50 p-4 text-sm text-muted-foreground">
-                <ul className="list-disc list-inside space-y-2">
+                <p className="mb-2">The left-hand menu organizes your dashboards and insights.</p>
+                <ul className="list-disc list-inside space-y-2 pl-4">
                   <li>
-                    <strong>KPI Cards:</strong> Key Performance Indicator (KPI) cards at the top provide quick snapshots of critical metrics. Their colors dynamically change based on performance thresholds, offering immediate visual cues.
+                    <strong>Overview:</strong> Snapshot of key metrics (CES, NPS, Sentiment, CSAT) at a glance.
                   </li>
                   <li>
-                    <strong>Detailed Graphs:</strong> Interactive graphs below offer visual representations of data, often accompanied by AI-generated summaries for deeper understanding. You can change chart types and colors using the settings icon on each graph.
+                    <strong>Business Vitality:</strong> Tracks revenue, growth, and operational health.
                   </li>
                   <li>
-                    <strong>Predictive Analysis:</strong> Use the "Trending Up" icon (<TrendingUp className="inline-block h-4 w-4 align-text-bottom" />) on a graph to generate AI-powered predictions and future trends.
+                    <strong>Customer Analysis:</strong> Deep dive into customer engagement, sentiments and satisfaction.
                   </li>
                   <li>
-                    <strong>Next Step Analysis:</strong> Use the "Lightbulb" icon (<Lightbulb className="inline-block h-4 w-4 align-text-bottom" />) to get AI-driven recommendations and actionable next steps based on the data.
+                    <strong>Mission Alignment:</strong> Measures how well your outcomes align with strategic goals.
+                  </li>
+                  <li>
+                    <strong>Brand Index:</strong> Understand your brand’s reputation, and website positioning.
                   </li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
 
-            {/* Troubleshooting & No Data Cases Section */}
+            {/* Troubleshooting & FAQs Section */}
             <AccordionItem value="item-4" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
               <AccordionTrigger className="px-4 py-3 text-base font-semibold text-foreground hover:no-underline">
-                Troubleshooting & No Data Cases
+                4. Troubleshooting & FAQs
               </AccordionTrigger>
               <AccordionContent className="border-t border-border/50 p-4 text-sm text-muted-foreground">
-                <ul className="list-disc list-inside space-y-2">
+                <ul className="list-disc list-inside space-y-2 pl-4">
                   <li>
-                    <strong>"No Data Available"</strong>: If a graph displays "No data available," it might mean
-                    there's no relevant data for your current query or the data source is unavailable. Try rephrasing your
-                    prompt or checking the data upload status in the "Upload Data" section (for admins).
+                    <strong>Why do I see “No data available”?</strong> Your data source may not be connected, or there’s no data for that metric. Try refreshing or asking a different prompt.
                   </li>
                   <li>
-                    <strong>API Errors</strong>: If you encounter API errors, ensure your internet connection is stable. For persistent issues, contact your administrator.
+                    <strong>How do I refresh my data?</strong> Use the refresh button (<RefreshCw className="inline-block h-4 w-4 align-text-bottom" />) at the top-right corner of the screen.
                   </li>
                   <li>
-                    <strong>Stopping Processes</strong>: If a dashboard is taking too long to load, you can click the "Cancel" button on the loading overlay to stop the process.
+                    <strong>What if my prompt isn’t understood?</strong> Rephrase with simpler terms. Example: Instead of “Show me customer happiness trends,” try “CSAT.”
                   </li>
+                  <li>
+                    <strong>Can I export data or reports?</strong> Yes, look for the export/download PDF option in dashboards where available.
+                  </li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* More Help Section */}
+            <AccordionItem value="item-5" className="bg-card rounded-lg shadow-sm border border-border/50 data-[state=open]:shadow-md transition-shadow duration-200">
+              <AccordionTrigger className="px-4 py-3 text-base font-semibold text-foreground hover:no-underline">
+                5. More Help
+              </AccordionTrigger>
+              <AccordionContent className="border-t border-border/50 p-4 text-sm text-muted-foreground">
+                <p className="mb-2">Need more details?</p>
+                <ul className="list-disc list-inside space-y-2 pl-4">
+                  <li>Contact your system admin for data source issues.</li>
+                  <li>Reach out to the support team for technical help.</li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
