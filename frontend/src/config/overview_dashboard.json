@@ -18,10 +18,6 @@
                 "label": "Impact Metrics"
             },
             {
-                "key": "Audience Growth (%)",
-                "label": "Audience Growth"
-            },
-            {
                 "key": "Traffic by Location",
                 "label": "Traffic by Location"
             }
