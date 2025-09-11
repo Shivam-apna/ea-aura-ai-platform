@@ -111,13 +111,19 @@ def query_sales_data(
             # DEBUG: Try a broader search to see if any data exists for this sub_index
             fallback_query = {
                 "query": {"term": {"sub_index.keyword": sub_index}},
-                "size": 3
+                "size": 5
             }
             fallback_result = es.search(index=index_name, body=fallback_query)
             fallback_hits = fallback_result["hits"]["hits"]
             
             if fallback_hits:
-                return f"No relevant sales data found for your query, but {len(fallback_hits)} documents exist in {sub_index}. Try a broader search term."
+                # Show sample content to help with query refinement
+                sample_content = []
+                for hit in fallback_hits[:3]:
+                    content = hit["_source"]["combined_text"][:200] + "..." if len(hit["_source"]["combined_text"]) > 200 else hit["_source"]["combined_text"]
+                    sample_content.append(f"Sample: {content}")
+                
+                return f"No relevant sales data found for your query, but {len(fallback_hits)} documents exist in {sub_index}.\n\nSample content:\n" + "\n".join(sample_content) + "\n\nTry using terms from the sample content above."
             else:
                 return f"No sales data found in sub_index '{sub_index}'. Available sub_indexes: {[bucket['key'] for bucket in debug_result['aggregations']['sub_indexes']['buckets']]}"
 
