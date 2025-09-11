@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, Loader2, X, Sparkles, AlertCircle, History, Trash2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTheme } from '@/components/ThemeProvider'; // Import useTheme
 
 interface SavedQuery {
   id: string;
@@ -44,6 +45,9 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+
+  const { theme } = useTheme(); // Get current theme
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Generate storage key for queries based on page ID
   const getQueriesStorageKey = () => `saved_queries_${pageId}`;
@@ -369,8 +373,10 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
           className={cn(
             "h-8 w-8 rounded-full ml-1 flex-shrink-0 transition-all duration-300",
             showHistory
-              ? "text-primary bg-primary/10 hover:bg-primary/20"
-              : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+              ? "text-primary bg-primary/10 hover:bg-primary/20" // Active state, consistent across themes
+              : isDark
+                ? "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-primary" // Dark mode default/hover
+                : "text-muted-foreground hover:text-foreground hover:bg-gray-100" // Light mode default/hover
           )}
           onClick={() => setShowHistory(!showHistory)}
           aria-label="Query History"
@@ -401,7 +407,9 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
               "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-all duration-300 flex-shrink-0",
               isListening
                 ? "text-red-500 bg-red-50 hover:bg-red-100"
-                : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
+                : isDark
+                  ? "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-primary" // Dark mode default/hover
+                  : "text-muted-foreground hover:text-foreground hover:bg-gray-100" // Light mode default/hover
             )}
             onClick={handleVoiceInput}
             aria-label="Voice Input"

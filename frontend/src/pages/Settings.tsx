@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -9,10 +9,20 @@ import CacheResetSettings from '@/components/settings/CacheResetSettings.tsx';
 import QueueExecutionSettings from '@/components/settings/QueueExecutionSettings.tsx';
 // import AdvancedSettings from '@/components/settings/AdvancedSettings.tsx';
 import AgentSettings from '@/components/settings/AgentSettings.tsx';
+import GraphLoader from '@/components/GraphLoader'; // Import GraphLoader
+import { toast } from 'sonner';
 
 const Settings = () => {
+  const [pageLoading, setPageLoading] = useState(false); // New state for page-level loading
+
+  const handleCancelLoading = () => {
+    setPageLoading(false);
+    toast.info("Loading cancelled.");
+  };
+
   return (
     <div className="p-6 bg-background min-h-screen"> {/* Main container for the page */}
+      {pageLoading && <GraphLoader onCancel={handleCancelLoading} />} {/* Render GraphLoader */}
       <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
         <SettingsIcon className="h-6 w-6 text-blue-500" /> Settings
       </h1>
@@ -65,7 +75,7 @@ const Settings = () => {
               Agent Settings
             </AccordionTrigger>
             <AccordionContent className="border-t border-border/50">
-              <AgentSettings />
+              <AgentSettings onLoadingChange={setPageLoading} /> {/* Pass setPageLoading to AgentSettings */}
             </AccordionContent>
           </AccordionItem>
         </Accordion>

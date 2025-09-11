@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Bell } from 'lucide-react';
+import { RefreshCw, Bell, InfoIcon } from 'lucide-react'; // Import InfoIcon
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/components/ThemeProvider';
 import { format } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Import Popover components
-import NotificationPopup from './NotificationPopup'; // Import the new component
-import { useDashboardRefresh } from '@/contexts/DashboardRefreshContext'; // Import useDashboardRefresh
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import NotificationPopup from './NotificationPopup';
+import { useDashboardRefresh } from '@/contexts/DashboardRefreshContext';
 
 // Import both logo images with correct filenames
 import logoLightImage from '../images/EA-AURA.AI.svg';
 import logoDarkImage from '../images/EA-AURA.AI_Black.svg';
+import AboutModal from './AboutModal'; // Import the new AboutModal
 
 interface AppHeaderProps {
   companyName: string;
@@ -24,7 +25,7 @@ interface Notification {
   id: string;
   message: string;
   timestamp: string;
-  isRead: boolean; // Changed from 'read' to 'isRead'
+  isRead: boolean;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => {
@@ -32,7 +33,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
   const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
-  const { triggerRefresh } = useDashboardRefresh(); // Use the hook
+  const { triggerRefresh } = useDashboardRefresh();
 
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -42,7 +43,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
     { id: '4', message: 'New feature: AI-powered insights are live!', timestamp: '3 days ago', isRead: false },
     { id: '5', message: 'Reminder: Data backup scheduled for tonight.', timestamp: '4 days ago', isRead: true },
   ]);
-  const unreadCount = notifications.filter(n => !n.isRead).length; // Changed from 'read' to 'isRead'
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false); // State for AboutModal
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -62,12 +64,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isRead: true } : n)) // Changed from 'read' to 'isRead'
+      prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
     );
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); // Changed from 'read' to 'isRead'
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
   if (location.pathname === '/login' || location.pathname === '/landing') {
@@ -93,12 +95,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
             <RefreshCw className="h-5 w-5" />
             <span className="sr-only">Refresh Data</span>
           </Button>
-          {/* Notification Popover - commented out */}
-          {/* <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          </Button> */}
         </div>
       </header>
     );
@@ -131,18 +127,30 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
         />
       </Link>
 
-      <div className="flex items-center gap-3"> {/* Adjusted gap to 4 for better spacing */}
+      <div className="flex items-center gap-3">
         <div className="text-sm text-primary font-normal mr-1 h-8 flex items-center">
           {formattedTime}, {formattedDate} {timezone}
         </div>
 
         <ThemeToggle />
 
+        {/* Info Button */}
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full text-primary hover:bg-muted transition-colors"
-          onClick={triggerRefresh} // Call triggerRefresh on click
+          onClick={() => setIsAboutModalOpen(true)}
+          aria-label="About EA-AURA.AI"
+        >
+          <InfoIcon className="h-5 w-5" />
+          <span className="sr-only">About EA-AURA.AI</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full text-primary hover:bg-muted transition-colors"
+          onClick={triggerRefresh}
         >
           <RefreshCw className="h-5 w-5" />
           <span className="sr-only">Refresh Data</span>
@@ -168,6 +176,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ companyName, onSelectAgent }) => 
           </PopoverContent>
         </Popover> */}
       </div>
+      <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
     </header>
   );
 };

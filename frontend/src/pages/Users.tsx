@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { keycloakAdminService } from '@/services/keycloakAdminService';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import OrganizationForm from '@/components/OrganizationForm';
+import GraphLoader from '@/components/GraphLoader'; // Import GraphLoader
 
 // Type definition for a User (matching Keycloak user structure)
 interface User {
@@ -41,8 +42,7 @@ const Users = () => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterDomain, setFilterDomain] = useState<string>('All');
   const [users, setUsers] = useState<DisplayUser[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [orgLoading, setOrgLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Overall loading for users/orgs
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [isAddOrganizationDialogOpen, setIsAddOrganizationDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'users' | 'organizations'>('users');
@@ -118,7 +118,7 @@ const Users = () => {
       const keycloakUsers = await keycloakAdminService.getUsers();
       const displayUsers = keycloakUsers.map(transformKeycloakUser);
       setUsers(displayUsers);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load users:', error);
       toast.error('Failed to load users');
     } finally {
@@ -131,7 +131,7 @@ const Users = () => {
   }, []);
 
   const loadOrganizations = async () => {
-    setOrgLoading(true);
+    setLoading(true); // Use the same loading state for organizations
     try {
       const list = await keycloakAdminService.getOrganizations();
       setOrganizations(list);
@@ -139,7 +139,7 @@ const Users = () => {
       console.error('Failed to load organizations:', error);
       toast.error('Failed to load organizations');
     } finally {
-      setOrgLoading(false);
+      setLoading(false);
     }
   };
 
@@ -169,8 +169,6 @@ const Users = () => {
       errors.lastName = 'Last name is required';
     }
 
-    // No password validation in Add User form
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -182,7 +180,6 @@ const Users = () => {
 
     setLoading(true);
     try {
-      // Create user data for Keycloak
       const userData = {
         username: formData.username.trim(),
         email: formData.email.trim(),
@@ -191,21 +188,17 @@ const Users = () => {
         domain: formData.domain.trim()
       };
 
-      // Create user via Keycloak Admin Service
       const result = await keycloakAdminService.createUser(userData);
 
       toast.success(`User ${userData.username} created successfully.`);
 
-      // Reload users to get the updated list
       await loadUsers();
 
-      // Open Set Password modal
       if (result && result.id) {
         setSetPasswordUser(transformKeycloakUser(result));
         setIsSetPasswordDialogOpen(true);
       }
 
-      // Reset Add User form
       setFormData({
         username: '',
         email: '',
@@ -215,7 +208,7 @@ const Users = () => {
       });
       setFormErrors({});
       setIsAddUserDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create user:', error);
       toast.error(`Failed to create user: ${error.message}`);
     } finally {
@@ -223,9 +216,8 @@ const Users = () => {
     }
   };
 
-  const handleEditUser = async (user: DisplayUser) => {
+  const handleEditUser = (user: DisplayUser) => {
     setEditingUser(user);
-    // Preselect organization by matching domain if possible
     const match = organizations.find((o) => o.domain && o.domain.toLowerCase() === (user.domain || '').toLowerCase());
     setSelectedOrgId(match?.id || '');
     setIsEditUserDialogOpen(true);
@@ -234,7 +226,6 @@ const Users = () => {
   const handleSaveEditedUser = async (updatedUser: DisplayUser) => {
     setLoading(true);
     try {
-      // Prepare data for Keycloak update
       const updateData = {
         username: updatedUser.username,
         email: updatedUser.email,
@@ -242,26 +233,22 @@ const Users = () => {
         lastName: updatedUser.lastName
       };
 
-      // Update user via Keycloak Admin Service
       await keycloakAdminService.updateUser(updatedUser.id, updateData);
-      // Assign to organization if selected
       if (selectedOrgId) {
         try {
           await keycloakAdminService.addUserToOrganization(updatedUser.id, selectedOrgId);
         } catch (e) {
-          // ignore if already a member or if org API not available
           console.warn('addUserToOrganization failed or user already a member:', e);
         }
       }
       
       toast.success(`User ${updatedUser.username} updated successfully.`);
       
-      // Reload users to get the updated list
       await loadUsers();
       
       setIsEditUserDialogOpen(false);
       setEditingUser(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update user:', error);
       toast.error(`Failed to update user: ${error.message}`);
     } finally {
@@ -284,19 +271,16 @@ const Users = () => {
       setLoading(true);
       try {
         if (confirmAction.type === 'resetPassword') {
-          // Open Set Password modal for manual password set
           setSetPasswordUser(confirmAction.user);
           setIsSetPasswordDialogOpen(true);
         } else if (confirmAction.type === 'suspend') {
-          // Update user to disabled in Keycloak
           await keycloakAdminService.updateUser(confirmAction.user.id, {} as any);
           toast.success(`User ${confirmAction.user.username} has been suspended.`);
-          // Reload users to reflect the change
           await loadUsers();
         }
         setIsConfirmActionDialogOpen(false);
         setConfirmAction(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Action failed:', error);
         toast.error(`Action failed: ${error.message}`);
       } finally {
@@ -305,7 +289,6 @@ const Users = () => {
     }
   };
 
-  // Password validation function
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
     if (password.length < 8) {
@@ -326,7 +309,6 @@ const Users = () => {
     return errors;
   };
 
-  // Effect to validate new password in real-time
   useEffect(() => {
     setNewPasswordErrors(validatePassword(newPassword));
     if (newPassword !== confirmNewPassword && confirmNewPassword.length > 0) {
@@ -338,8 +320,14 @@ const Users = () => {
 
   const isSetPasswordButtonEnabled = newPasswordErrors.length === 0 && confirmPasswordError === null && newPassword.length > 0;
 
+  const handleCancelLoading = () => {
+    setLoading(false);
+    toast.info("Loading cancelled.");
+  };
+
   return (
     <div className="p-4 grid grid-cols-1 gap-4 h-full bg-background">
+      {loading && <GraphLoader onCancel={handleCancelLoading} />} {/* Render GraphLoader */}
       <HolographicCard className="col-span-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -358,7 +346,7 @@ const Users = () => {
               onClick={() => setIsAddOrganizationDialogOpen(true)}
               style={{ backgroundColor: primaryColorHex }}
               className="text-white hover:opacity-90"
-              disabled={orgLoading}
+              disabled={loading}
             >
               <PlusCircle className="h-4 w-4 mr-2" /> Create Organization
             </Button>
@@ -407,9 +395,9 @@ const Users = () => {
             </Select>
           </div>
 
-          <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
+          <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar">
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
+              <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow className="border-border">
                   <TableHead className="text-muted-foreground bg-card">Username</TableHead>
                   <TableHead className="text-muted-foreground bg-card">Email</TableHead>
@@ -482,9 +470,9 @@ const Users = () => {
           </div>
             </TabsContent>
             <TabsContent value="organizations" className="m-0">
-              <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar"> {/* Added user-table-scrollbar class */}
+              <div className="border rounded-md overflow-auto max-h-[calc(100vh-350px)] user-table-scrollbar">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-card"> {/* Added sticky header styles */}
+                  <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow className="border-border">
                       <TableHead className="text-muted-foreground bg-card">Name</TableHead>
                       <TableHead className="text-muted-foreground bg-card">Domain</TableHead>
@@ -493,7 +481,7 @@ const Users = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orgLoading ? (
+                    {loading ? (
                       <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Loading organizations...</TableCell>
                       </TableRow>
@@ -744,7 +732,7 @@ const Users = () => {
                   setConfirmNewPassword('');
                   setNewPasswordErrors([]);
                   setConfirmPasswordError(null);
-                } catch (error) {
+                } catch (error: any) {
                   console.error('Failed to set password:', error);
                   toast.error(`Failed to set password: ${error.message}`);
                 } finally {
@@ -764,10 +752,10 @@ const Users = () => {
       <OrganizationForm
         isOpen={isAddOrganizationDialogOpen}
         onClose={() => setIsAddOrganizationDialogOpen(false)}
-        isLoading={orgLoading}
+        isLoading={loading}
         onSubmit={async (data) => {
           try {
-            setOrgLoading(true);
+            setLoading(true);
             await keycloakAdminService.createOrganization(data as any);
             toast.success('Organization created successfully');
             setIsAddOrganizationDialogOpen(false);
@@ -777,7 +765,7 @@ const Users = () => {
             console.error('Failed to create organization:', error);
             toast.error('Failed to create organization');
           } finally {
-            setOrgLoading(false);
+            setLoading(false);
           }
         }}
       />

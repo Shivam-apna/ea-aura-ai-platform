@@ -57,45 +57,46 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
 
     // Define theme-aware colors for traces
     const traceColors = {
-        actual: isDarkTheme ? '#3b82f6' : '#3B82F6', // Blue-500
-        predicted: isDarkTheme ? '#8b5cf6' : '#A0A0A0', // Violet-500 for predicted in dark, Gray-500 in light
+        actual: isDarkTheme ? '#4A90E2' : '#3B82F6', // Blue for actual data
+        predicted: isDarkTheme ? '#9B59B6' : '#A0A0A0', // Purple for predicted in dark, Gray in light
     };
 
     // Plot configuration
     const plotLayout = {
+        template: isDarkTheme ? 'plotly_dark' : 'plotly_white', // Apply dark template
         width: undefined,
         height: 400,
         autosize: true,
         title: {
             text: `${chartData.title} - Predictive Analysis`,
-            font: { size: 18, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
+            font: { size: 18, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' }
         },
-        font: { family: 'Inter, sans-serif', size: 14, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+        font: { family: 'Inter, sans-serif', size: 14, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
         margin: { l: 60, r: 40, t: 80, b: 100 },
-        plot_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
-        paper_bgcolor: isDarkTheme ? 'hsl(var(--card))' : "white",
+        plot_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
+        paper_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
         xaxis: {
             title: chartData.xLabel,
             zeroline: false,
-            tickfont: { size: 13, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
-            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            tickfont: { size: 13, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
+            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
+            linecolor: isDarkTheme ? '#0a0c0bff' : '#d1d5db',
         },
         yaxis: {
             title: chartData.yLabel,
             zeroline: false,
-            tickfont: { size: 13, color: isDarkTheme ? 'hsl(var(--muted-foreground))' : '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'hsl(var(--border))' : '#e5e7eb',
-            linecolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
+            tickfont: { size: 13, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
+            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
+            linecolor: isDarkTheme ? '#6b7280' : '#d1d5db',
         },
         legend: {
             orientation: "h",
             x: 0.5,
             xanchor: "center",
             y: -0.2,
-            font: { size: 13, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' },
+            font: { size: 13, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
         },
         transition: { duration: 300, easing: 'ease-out' },
         annotations: [{
@@ -107,12 +108,12 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
             yref: 'paper',
             xanchor: 'center',
             yanchor: 'top',
-            font: { size: 14, color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937' }
+            font: { size: 14, color: isDarkTheme ? '#e5e7eb' : '#1f2937' }
         }],
         hoverlabel: {
-            bgcolor: isDarkTheme ? 'hsl(var(--muted))' : '#ffffff',
-            bordercolor: isDarkTheme ? 'hsl(var(--border))' : '#d1d5db',
-            font: { color: isDarkTheme ? 'hsl(var(--foreground))' : '#1f2937', size: 15 },
+            bgcolor: isDarkTheme ? '#374151' : '#ffffff',
+            bordercolor: isDarkTheme ? '#6b7280' : '#d1d5db',
+            font: { color: isDarkTheme ? '#e5e7eb' : '#1f2937', size: 15 },
         },
     };
 
