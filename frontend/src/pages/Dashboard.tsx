@@ -389,7 +389,18 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       }
 
       const data = await res.json();
+      if (data?.error) {
+        console.error("Agent error:", data.details || data.error);
 
+        toast.error(
+          data.details
+            ? `Error: ${data.details}`
+            : "Internal server error during agent execution."
+        );
+
+        setLoading(false);
+        return;
+      }
       // Check for GeneralAgent response first
       if (data.selected_agent === "GeneralAgent") {
         // Show toast with GeneralAgent response for 10 seconds with close button
@@ -432,12 +443,21 @@ const Dashboard: React.FC<DashboardProps> = ({ activeAgent, onSelectAgent }) => 
       // }
       const parsed = data.sub_agent_response;
       // console.log("parsed response:", parsed);
+      if (
+        parsed?.response &&
+        parsed.response.toLowerCase().includes("no relevant") ||
+        parsed.response.toLowerCase().includes("no data") || parsed.response.toLowerCase().includes("not available")
+      ) {
+        toast.info("No data available for this query. Try adjusting your prompt or ensure data exists.");
 
+        setLoading(false);
+        return;
+      }
 
 
       const summaryKey = `overview_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
-      let mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
+      const mergedSummary = { ...(existingSummary ? JSON.parse(existingSummary) : {}) };
 
       // Merge new parsed response
       for (const key in parsed) {

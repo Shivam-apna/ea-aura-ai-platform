@@ -230,7 +230,7 @@ const BusinessDashboard = () => {
   };
 
 
-  // Update the updateDynamicKeys function to include display names
+  // Update the updateDynamicKeys function to preserve existing display names
   const updateDynamicKeys = (apiResponseKeys: string[]) => {
     // Create mapping for KPI keys
     const kpiKeyMapping = createKeyMapping(apiResponseKeys, KPI_KEYS);
@@ -239,23 +239,37 @@ const BusinessDashboard = () => {
     const allMetrics = Object.values(METRIC_GROUPS).flat();
     const metricKeyMapping = createKeyMapping(apiResponseKeys, allMetrics);
 
-    // Update KPI keys with mapped values and display names
-    const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => ({
-      ...kpi,
-      originalKey: kpi.key,
-      key: kpiKeyMapping[kpi.key] || kpi.key,
-      displayName: formatDisplayName(kpiKeyMapping[kpi.key] || kpi.key)
-    }));
+    // Update KPI keys with mapped values, preserving existing display names
+    const updatedKpiKeys: KpiItem[] = KPI_KEYS.map(kpi => {
+      // Find existing KPI item to preserve its display name
+      const existingKpi = dynamicKpiKeys.find(existing => existing.originalKey === kpi.key || existing.key === kpi.key);
+      
+      return {
+        ...kpi,
+        originalKey: kpi.key,
+        key: kpiKeyMapping[kpi.key] || kpi.key,
+        // Preserve existing displayName if it exists, otherwise create new one
+        displayName: existingKpi?.displayName || formatDisplayName(kpiKeyMapping[kpi.key] || kpi.key)
+      };
+    });
 
-    // Update metric groups with mapped values and display names
+    // Update metric groups with mapped values, preserving existing display names
     const updatedMetricGroups: MetricGroups = {};
     Object.entries(METRIC_GROUPS).forEach(([groupName, metrics]) => {
-      updatedMetricGroups[groupName] = metrics.map(metric => ({
-        ...metric,
-        originalKey: metric.key,
-        key: metricKeyMapping[metric.key] || metric.key,
-        displayName: formatDisplayName(metricKeyMapping[metric.key] || metric.key)
-      }));
+      updatedMetricGroups[groupName] = metrics.map(metric => {
+        // Find existing metric item to preserve its display name
+        const existingMetric = dynamicMetricGroups[groupName]?.find(existing => 
+          existing.originalKey === metric.key || existing.key === metric.key
+        );
+        
+        return {
+          ...metric,
+          originalKey: metric.key,
+          key: metricKeyMapping[metric.key] || metric.key,
+          // Preserve existing displayName if it exists, otherwise create new one
+          displayName: existingMetric?.displayName || formatDisplayName(metricKeyMapping[metric.key] || metric.key)
+        };
+      });
     });
 
     // Save updated keys to localStorage
@@ -388,7 +402,19 @@ const BusinessDashboard = () => {
       }
 
       const data = await res.json();
+      // 🚨 Handle backend error response
+      if (data?.error) {
+        console.error("Agent error:", data.details || data.error);
 
+        toast.error(
+          data.details
+            ? `Error: ${data.details}`
+            : "Internal server error during agent execution."
+        );
+
+        setLoading(false);
+        return;
+      }
       // Check for GeneralAgent response first
       if (data.selected_agent === "GeneralAgent") {
         // Show toast with GeneralAgent response for 10 seconds with close button
@@ -432,8 +458,18 @@ const BusinessDashboard = () => {
         return;
       }
       const parsed = data.sub_agent_response;
-      // console.log("parsed response:", parsed);
+      //console.log("parsed responsecccccccccccc:", parsed);
+      // 🚨 Handle no-data case early
+      if (
+        parsed?.response &&
+        parsed.response.toLowerCase().includes("no relevant") ||
+        parsed.response.toLowerCase().includes("no data") || parsed.response.toLowerCase().includes("not available")
+      ) {
+        toast.info("No data available for this query. Try adjusting your prompt or ensure data exists.");
 
+        setLoading(false);
+        return;
+      }
       // Save tab-specific summary
       const summaryKey = `business_parsed_summary_${activeTab}`;
       const existingSummary = localStorage.getItem(summaryKey);
