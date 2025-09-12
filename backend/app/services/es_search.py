@@ -45,19 +45,38 @@ def query_sales_data(
     size: int = 10
 ) -> str:
     try:
+        # DEBUG: First check what data exists in the index
+        debug_query = {
+            "query": {"match_all": {}},
+            "size": 5,
+            "aggs": {
+                "sub_indexes": {"terms": {"field": "sub_index.keyword", "size": 10}},
+                "tenant_ids": {"terms": {"field": "tenant_id.keyword", "size": 10}}
+            }
+        }
+        
+        debug_result = es.search(index=index_name, body=debug_query)
+        print(f"DEBUG: Total documents in index: {debug_result['hits']['total']['value']}")
+        print(f"DEBUG: Available sub_indexes: {[bucket['key'] for bucket in debug_result['aggregations']['sub_indexes']['buckets']]}")
+        print(f"DEBUG: Available tenant_ids: {[bucket['key'] for bucket in debug_result['aggregations']['tenant_ids']['buckets']]}")
+        print(f"DEBUG: Looking for sub_index='{sub_index}', tenant_id='{tenant_id}'")
+
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [
+            {"term": {"tenant_id.keyword": tenant_id}}, 
+            {"term": {"sub_index.keyword": sub_index}}
+        ]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -89,7 +108,24 @@ def query_sales_data(
         hits = result["hits"]["hits"]
 
         if not hits:
-            return "No relevant sales data found."
+            # DEBUG: Try a broader search to see if any data exists for this sub_index
+            fallback_query = {
+                "query": {"term": {"sub_index.keyword": sub_index}},
+                "size": 5
+            }
+            fallback_result = es.search(index=index_name, body=fallback_query)
+            fallback_hits = fallback_result["hits"]["hits"]
+            
+            if fallback_hits:
+                # Show sample content to help with query refinement
+                sample_content = []
+                for hit in fallback_hits[:3]:
+                    content = hit["_source"]["combined_text"][:200] + "..." if len(hit["_source"]["combined_text"]) > 200 else hit["_source"]["combined_text"]
+                    sample_content.append(f"Sample: {content}")
+                
+                return f"No relevant sales data found for your query, but {len(fallback_hits)} documents exist in {sub_index}.\n\nSample content:\n" + "\n".join(sample_content) + "\n\nTry using terms from the sample content above."
+            else:
+                return f"No sales data found in sub_index '{sub_index}'. Available sub_indexes: {[bucket['key'] for bucket in debug_result['aggregations']['sub_indexes']['buckets']]}"
 
         return "\n".join([
             f"Score: {hit['_score']:.2f} | {hit['_source']['combined_text']}"
@@ -111,16 +147,16 @@ def query_marketing_dataset(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
 
         # Add dynamic filters based on content
@@ -176,16 +212,16 @@ def query_customer_survey_data(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         
         
@@ -241,16 +277,16 @@ def query_support_tickets_dataset(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -304,16 +340,16 @@ def query_social_media_dataset(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -367,16 +403,16 @@ def query_mission_alignment_data(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -430,16 +466,16 @@ def query_brand_audit_data(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))
@@ -493,16 +529,16 @@ def query_social_media_engagement_dataset(
         # Get vector for semantic match
         query_vector = embedding_model.embed_query(query_text)
 
-        # Sample a doc to get fields
+        # Sample a doc to get fields - FIXED: Use .keyword for exact matching
         sample = es.search(index=index_name, body={
-            "query": {"match": {"sub_index": sub_index}},
+            "query": {"term": {"sub_index.keyword": sub_index}},
             "size": 1
         })
 
         sample_doc = sample["hits"]["hits"][0]["_source"]["row_data"] if sample["hits"]["hits"] else {}
 
-        # Always include sub_index match
-        filters = [{"match": {"tenant_id": tenant_id}}, {"match": {"sub_index": sub_index}}]
+        # FIXED: Use term queries with .keyword fields for exact matching
+        filters = [{"term": {"tenant_id.keyword": tenant_id}}, {"term": {"sub_index.keyword": sub_index}}]
 
         # Add dynamic filters based on content
         filters.extend(build_dynamic_filters(query_text, sample_doc))

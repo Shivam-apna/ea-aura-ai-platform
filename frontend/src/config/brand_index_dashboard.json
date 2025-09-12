@@ -5,7 +5,7 @@
       "bgColor": "#FFFFFF"
     },
     {
-      "key": "Audience Growth",
+      "key": "Visitors",
       "bgColor": "#FFFFFF"
     },
     {
@@ -36,10 +36,6 @@
       {
         "key": "Bounce Rate (%)",
         "label": "Bounce Rate "
-      },
-      {
-        "key": "Session Growth (%)",
-        "label": "Session Growth"
       },
       {
         "key": "Visitors",

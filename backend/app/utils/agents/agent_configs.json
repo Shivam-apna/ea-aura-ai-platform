@@ -65,6 +65,7 @@
           "visualization"
         ],
         "keywords": [
+          "sales",
           "price",
           "sales margin",
           "profit",
@@ -85,7 +86,7 @@
           "max_tokens": 512
         },
         "params": {
-          "prompt_template": "t wrap your response in markdown or return Python code. Do not include any field with null, None, empty strings, or missing values.\n\nYour JSON format:\n{\n  \"response\": \"...\",\n  \"task\": \"plot\",\n  \"columns\": [...],\n  \"filters\": {...},\n  \"<Metric Name>\": {\n    \"plot_type\": \"line\",\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"\n  }\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be a named key with an object containing `plot_type`, `data`, and `summary`.\n- Each `data` array must contain at least 10 data points if available.\n- `plot_type` must be chosen based on the metric’s trend or data type — options: `bar`, `line`, `trend`, `radar`, `donut`, `connected_scatter`, `bubble`, etc.\n- The `columns` list must include all metric names plus `Date`.\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67).\n- All numerical values must be actual computed values from the dataset — no placeholders.\n- Output must be strictly valid JSON — no markdown, no comments, no extra text.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n{{question}}",
+          "prompt_template": "You are a financial analyst assistant. Based on the provided dataset and user query, respond ONLY in this JSON format. Do not wrap wrap your response in markdown or return Python code. Do not include any field with null, None, empty strings, or missing values.\n\nYour JSON format:\n{\n  \"response\": \"...\",\n  \"task\": \"plot\",\n  \"columns\": [...],\n  \"filters\": {...},\n  \"<Metric Name>\": {\n    \"plot_type\": \"line\",\n    \"data\": [\n      {\"Date\": \"YYYY-MM-DD\", \"<Metric Name>\": value},\n      ...\n    ],\n    \"summary\": \"...\"\n  }\n}\n\nRules:\n- Only include metrics explicitly requested by the user.\n- Each metric must be a named key with an object containing `plot_type`, `data`, and `summary`.\n- Each `data` array must contain at least 10 data points if available.\n- `plot_type` must be chosen based on the metric’s trend or data type — options: `bar`, `line`, `trend`, `radar`, `donut`, `connected_scatter`, `bubble`, etc.\n- The `columns` list must include all metric names plus `Date`.\n- Percentages must be expressed in human-readable form (e.g., 40% or 45% whatever comming rom data instead of 0.4, 1.4% instead of 0.014).\n- Currency values should include symbols and thousand separators (e.g., $12,345.67).\n- All numerical values must be actual computed values from the dataset — no placeholders.\n- Output must be strictly valid JSON — no markdown, no comments, no extra text.\n\nDATASET:\n{{input}}\n\nUSER QUESTION:\n{{question}}",
           "chart_type": "line",
           "chart_params": {
             "x": "date",
