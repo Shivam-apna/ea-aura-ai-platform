@@ -1,11 +1,11 @@
 {
   "kpi_keys": [
     {
-      "key": "Gross Margin (%)",
+      "key": "Gross Profit Margin (%)",
       "bgColor": "#FFFFFF"
     },
     {
-      "key": "Net Profit Margin (%)",
+      "key": "COGS",
       "bgColor": "#FFFFFF"
     },
     {

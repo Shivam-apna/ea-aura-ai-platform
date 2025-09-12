@@ -18,6 +18,7 @@ class NextStepAnalyser:
             raise RuntimeError(f"Configuration error: {str(e)}")
 
         try:
+
             # Decide backend: LM Studio → ChatOpenAI | OpenRouter → ChatOpenAI | Groq → ChatGroq
             if "pinguaicloud" in groq_config["base_url"]:  # LM Studio
                 clean_base_url = groq_config["base_url"].rstrip('/')
