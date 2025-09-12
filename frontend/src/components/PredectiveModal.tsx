@@ -61,42 +61,81 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
         predicted: isDarkTheme ? '#9B59B6' : '#A0A0A0', // Purple for predicted in dark, Gray in light
     };
 
-    // Plot configuration
+    // Enhanced dark theme colors
+    const backgroundColors = {
+        plot_bg: isDarkTheme ? 'rgb(42, 42, 42)' : '#ffffff',
+        paper_bg: isDarkTheme ? 'rgb(42, 42, 42)' : '#ffffff',
+        grid: isDarkTheme ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
+        line: isDarkTheme ? '#374151' : '#d1d5db',
+        text_primary: isDarkTheme ? '#f3f4f6' : '#1f2937',
+        text_secondary: isDarkTheme ? '#9ca3af' : '#6b7280',
+    };
+
+    // Plot configuration with enhanced dark theme support
     const plotLayout = {
-        template: isDarkTheme ? 'plotly_dark' : 'plotly_white', // Apply dark template
+        template: isDarkTheme ? 'plotly_dark' : 'plotly_white',
         width: undefined,
         height: 400,
         autosize: true,
         title: {
             text: `${chartData.title} - Predictive Analysis`,
-            font: { size: 18, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' }
+            font: { 
+                size: 18, 
+                family: 'Inter, sans-serif', 
+                color: backgroundColors.text_primary 
+            }
         },
-        font: { family: 'Inter, sans-serif', size: 14, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+        font: { 
+            family: 'Inter, sans-serif', 
+            size: 14, 
+            color: backgroundColors.text_primary 
+        },
         margin: { l: 60, r: 40, t: 80, b: 100 },
-        plot_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
-        paper_bgcolor: isDarkTheme ? '#1e1e1e' : "white", // Dark charcoal for dark mode
+        plot_bgcolor: backgroundColors.plot_bg,
+        paper_bgcolor: backgroundColors.paper_bg,
         xaxis: {
             title: chartData.xLabel,
             zeroline: false,
-            tickfont: { size: 13, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
-            linecolor: isDarkTheme ? '#0a0c0bff' : '#d1d5db',
+            tickfont: { 
+                size: 13, 
+                color: backgroundColors.text_secondary 
+            },
+            titlefont: { 
+                size: 15, 
+                family: 'Inter, sans-serif', 
+                color: backgroundColors.text_primary 
+            },
+            gridcolor: backgroundColors.grid,
+            linecolor: backgroundColors.line,
+            tickcolor: backgroundColors.line,
         },
         yaxis: {
             title: chartData.yLabel,
             zeroline: false,
-            tickfont: { size: 13, color: isDarkTheme ? '#9ca3af' : '#6b7280' },
-            titlefont: { size: 15, family: 'Inter, sans-serif', color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
-            gridcolor: isDarkTheme ? 'rgba(255,255,255,0.1)' : '#e5e7eb', // Semi-transparent white for dark grid
-            linecolor: isDarkTheme ? '#6b7280' : '#d1d5db',
+            tickfont: { 
+                size: 13, 
+                color: backgroundColors.text_secondary 
+            },
+            titlefont: { 
+                size: 15, 
+                family: 'Inter, sans-serif', 
+                color: backgroundColors.text_primary 
+            },
+            gridcolor: backgroundColors.grid,
+            linecolor: backgroundColors.line,
+            tickcolor: backgroundColors.line,
         },
         legend: {
             orientation: "h",
             x: 0.5,
             xanchor: "center",
             y: -0.2,
-            font: { size: 13, color: isDarkTheme ? '#e5e7eb' : '#1f2937' },
+            font: { 
+                size: 13, 
+                color: backgroundColors.text_primary 
+            },
+            bgcolor: 'rgba(0,0,0,0)',
+            bordercolor: 'rgba(0,0,0,0)',
         },
         transition: { duration: 300, easing: 'ease-out' },
         annotations: [{
@@ -108,12 +147,18 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
             yref: 'paper',
             xanchor: 'center',
             yanchor: 'top',
-            font: { size: 14, color: isDarkTheme ? '#e5e7eb' : '#1f2937' }
+            font: { 
+                size: 14, 
+                color: backgroundColors.text_primary 
+            }
         }],
         hoverlabel: {
-            bgcolor: isDarkTheme ? '#374151' : '#ffffff',
-            bordercolor: isDarkTheme ? '#6b7280' : '#d1d5db',
-            font: { color: isDarkTheme ? '#e5e7eb' : '#1f2937', size: 15 },
+            bgcolor: isDarkTheme ? '#1f2937' : '#ffffff',
+            bordercolor: isDarkTheme ? '#4b5563' : '#d1d5db',
+            font: { 
+                color: backgroundColors.text_primary, 
+                size: 15 
+            },
         },
     };
 
@@ -193,6 +238,7 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                         <CardContent className="p-4">
                             <div style={{ width: '100%', height: '400px' }}>
                                 <Plot
+                                    key={`${isDarkTheme ? 'dark' : 'light'}-${metricKey}`}
                                     data={(() => {
                                         const finalChartType = 'line';
                                         const predictedLength = chartData.prediction_metadata?.predicted_values?.length || 0;
@@ -226,6 +272,7 @@ export const PredictiveModal: React.FC<PredictiveModalProps> = ({
                                     layout={plotLayout}
                                     config={plotConfig}
                                     style={{ width: '100%', height: '100%' }}
+                                    useResizeHandler={true}
                                 />
                             </div>
                         </CardContent>

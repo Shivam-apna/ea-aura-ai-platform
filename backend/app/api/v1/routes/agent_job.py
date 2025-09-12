@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse, FileResponse
 import requests
 import tempfile
 from app.services.predictive_analysis import  get_predictive_analysis,generate_predictive_report
-from app.services.next_step_agent import  next_step_analyser
+from app.services.next_step_agent import get_next_step_analysis
 
 # Add these imports at the top of your agent_job.py file
 
@@ -763,7 +763,7 @@ def run_next_step_analysis(payload: dict = Body(...), request: Request = None):
         logger.info(f"Next-step analysis request: tenant={tenant_id}, metric={metric_key}")
 
         # Run analysis using NextStepAnalyser
-        result = next_step_analyser.analyze(analysis_input)
+        result = get_next_step_analysis(analysis_input)
 
 
         # Handle analysis errors/blocks
