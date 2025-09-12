@@ -14,9 +14,6 @@ export const useKeycloakRoles = (): KeycloakRoles => {
     if (isAuthenticated && user) { // Check user object directly
       const roles: string[] = [];
 
-      // Log the entire user object for full inspection
-      console.log("User Object (Full Object):", user);
-
       // Get realm roles
       const realmAccess = user.realm_access; // Access directly from user
       if (realmAccess && Array.isArray(realmAccess.roles)) {
@@ -30,8 +27,6 @@ export const useKeycloakRoles = (): KeycloakRoles => {
       const clientId = config.keycloakClientId; // Use config.keycloakClientId
       if (clientId) {
         const resourceAccess = user.resource_access as Record<string, { roles: string[] }>; // Access directly from user
-        console.log("Keycloak Client ID (from config):", clientId);
-        console.log("User Resource Access (Full Object):", resourceAccess); // Log the whole resource_access object
 
         const appRoles = resourceAccess?.[clientId]?.roles;
         if (appRoles && Array.isArray(appRoles)) {
@@ -47,7 +42,6 @@ export const useKeycloakRoles = (): KeycloakRoles => {
       // Filter out duplicates and set unique roles, converting all to lowercase
       const uniqueAndLowercasedRoles = Array.from(new Set(roles)).map(role => role.toLowerCase());
       setClientRoles(uniqueAndLowercasedRoles);
-      console.log("Extracted Roles (Final List for Sidebar):", uniqueAndLowercasedRoles);
 
     } else {
       setClientRoles([]);

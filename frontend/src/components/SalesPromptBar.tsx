@@ -89,7 +89,6 @@ const SalesPromptBar: React.FC<SalesPromptBarProps> = () => {
       }
 
       const result = await res.json();
-      console.log('Prompt successfully indexed:', result);
       setResponse("Prompt sent successfully! Analyzing your sales query...");
       toast.success("Prompt sent to Elasticsearch!");
 

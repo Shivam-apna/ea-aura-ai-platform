@@ -25,14 +25,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Initialize new state
 
   useEffect(() => {
-    console.log("AuthContext: Initializing authentication check...");
     const checkAuth = async () => {
       try {
         const authenticated = authService.isAuthenticated();
-        console.log("AuthContext: authService.isAuthenticated() returned:", authenticated);
         if (authenticated) {
           const userInfo = await authService.getUserInfo();
-          console.log("AuthContext: User info fetched:", userInfo);
           setUser(userInfo);
           setIsAuthenticated(true);
         } else {
@@ -49,7 +46,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         clearUserSessionData(); // Clear session data on auth failure
       } finally {
         setLoading(false);
-        console.log("AuthContext: Finished initial auth check. isAuthenticated:", isAuthenticated);
       }
     };
 
@@ -59,14 +55,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (username: string, password: string) => {
     setLoading(true);
     try {
-      console.log("AuthContext: Attempting login...");
       await authService.login(username, password);
       const userInfo = await authService.getUserInfo();
       setUser(userInfo);
       setIsAuthenticated(true);
-      console.log("AuthContext: Login successful. isAuthenticated:", true);
     } catch (error) {
-      console.error("AuthContext: Login failed:", error);
       setIsAuthenticated(false);
       setUser(null);
       clearUserSessionData(); // Clear session data on login failure
@@ -81,9 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoggingOut(true); // Set logging out state to true
     setLoading(true); // Also set general loading to true
     try {
-      console.log("AuthContext: Attempting logout...");
       await authService.logout();
-      console.log("AuthContext: Logout successful.");
     } catch (error) {
       console.error('AuthContext: Logout error:', error);
     } finally {
@@ -92,7 +83,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false);
       setIsLoggingOut(false); // Reset logging out state to false
       clearUserSessionData(); // Clear session data on logout
-      console.log("AuthContext: Finished logout. isAuthenticated:", false);
     }
   };
 

@@ -39,18 +39,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return null;
   }
 
-  console.log("ProtectedRoute Render:", {
-    location: location.pathname,
-    authLoading,
-    isAuthenticated,
-    clientRoles,
-  });
-
   // Add a specific check for roles loading: if authenticated but roles are empty and AuthProvider isn't loading anymore
   const rolesAreLoading = isAuthenticated && clientRoles.length === 0 && !authLoading;
 
   if (authLoading || rolesAreLoading) {
-    console.log("ProtectedRoute: Still loading authentication or roles. Showing loading screen.");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <p>Loading authentication and user roles...</p>
@@ -59,7 +51,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!isAuthenticated) {
-    console.log("ProtectedRoute: Not authenticated. Redirecting to /login.");
     return <Navigate to="/login" replace />;
   }
 
@@ -67,35 +58,26 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   let allowedPaths: string[] = ['/profile', '/landing']; // Profile and Landing are always accessible if authenticated
   let defaultRedirectPath = '/dashboard'; // Default for users
 
-  console.log("ProtectedRoute: Checking roles for path", location.pathname, "with roles:", clientRoles);
-
   if (clientRoles.some(role => role.toLowerCase() === 'admin')) {
-    console.log("ProtectedRoute: User is admin.");
     allowedPaths = allowedPaths.concat([
       '/settings', '/users', '/upload-data', '/dashboard', '/business-vitality',
       '/customer-analyzer', '/mission-alignment', '/brand-index',
     ]);
     defaultRedirectPath = '/settings';
   } else if (clientRoles.some(role => role.toLowerCase() === 'user') && !clientRoles.some(role => role.toLowerCase() === 'admin')) {
-    console.log("ProtectedRoute: User is a standard user (not admin).");
     allowedPaths = allowedPaths.concat([
       '/dashboard', '/business-vitality', '/customer-analyzer',
       '/mission-alignment', '/brand-index',
     ]);
     defaultRedirectPath = '/dashboard';
   } else {
-    // This block should ideally not be hit if roles are properly loaded and user has a role
-    console.warn("ProtectedRoute: User has no recognized roles. Redirecting to login. Current roles:", clientRoles);
     return <Navigate to="/login" replace />;
   }
 
   // Check if the current path is allowed
   if (!allowedPaths.includes(location.pathname)) {
-    console.warn(`ProtectedRoute: Access denied for ${location.pathname}. Redirecting to ${defaultRedirectPath}. Allowed paths:`, allowedPaths);
     return <Navigate to={defaultRedirectPath} replace />;
   }
-
-  console.log(`ProtectedRoute: User is authenticated and authorized for ${location.pathname}. Rendering children.`);
   return <>{children}</>;
 };
 

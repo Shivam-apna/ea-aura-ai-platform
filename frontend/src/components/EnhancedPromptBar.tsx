@@ -105,7 +105,6 @@ const EnhancedPromptBar: React.FC = () => {
       }
 
       const result = await res.json();
-      console.log('Prompt successfully indexed:', result);
       toast.success("Prompt sent to Elasticsearch!");
 
     } catch (error: any) {
@@ -128,7 +127,6 @@ const EnhancedPromptBar: React.FC = () => {
 
   const handleVoiceInput = () => {
     toast.info("Voice input functionality is under development.");
-    console.log("Voice input activated!");
     // In a real application, you would integrate Web Speech API here
   };
 

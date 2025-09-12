@@ -15,13 +15,11 @@ export const DashboardRefreshProvider: React.FC<{ children: ReactNode }> = ({ ch
   // Function to register the refresh handler from the active dashboard page
   const registerRefreshHandler = useCallback((handler: (prompt: string) => Promise<void>, currentPrompt: string) => {
     refreshHandlerRef.current = { handler, prompt: currentPrompt };
-    console.log('DashboardRefreshContext: Handler registered for refresh.');
   }, []);
 
   // Function to trigger a refresh on the currently registered handler
   const triggerRefresh = useCallback(() => {
     if (refreshHandlerRef.current) {
-      console.log('DashboardRefreshContext: Triggering refresh...');
       toast.info("Refreshing dashboard data...");
       // Call the registered handler with its last known prompt
       refreshHandlerRef.current.handler(refreshHandlerRef.current.prompt);

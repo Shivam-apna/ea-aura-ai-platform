@@ -65,13 +65,11 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
     if (type === 'PDF' && onDownloadPDF) {
       onDownloadPDF();
     } else {
-      toast.info(`Simulating ${type} download...`);
-      console.log(`Download ${type} triggered.`);
+      toast.info(`Simulating ${type} download...`);;
     }
   };
 
   const handleTTSClick = () => {
-    console.log('🎤 TTS button clicked');
     setIsVoiceModalOpen(true);
     if (onCreateTTS) {
       onCreateTTS();
@@ -91,12 +89,13 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
       if (speechSynthesis.speaking || speechSynthesis.pending) {
         speechSynthesis.cancel();
       }
-    } catch { }
+    } catch (error) {
+      console.error('Error stopping welcome TTS:', error);
+    }
     setIsWelcomeSpeaking(false);
   };
 
   const handleVoiceModalClose = (open: boolean) => {
-    console.log(' Voice modal close triggered:', { open, isSpeaking, setIsSpeakingAvailable: !!setIsSpeaking });
 
     setIsVoiceModalOpen(open);
 
@@ -105,7 +104,6 @@ const PageHeaderActions: React.FC<PageHeaderActionsProps> = ({
         // Stop audio when dialog closes
 
         stopCurrentTTS(setIsSpeaking);
-        console.log('✅ stopCurrentTTS called');
       } else {
         stopCurrentTTS(() => {
           console.log('⚠️ Dummy setIsSpeaking called - state might not update in UI');

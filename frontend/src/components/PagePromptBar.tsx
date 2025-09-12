@@ -208,7 +208,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
         };
 
         recognitionInstance.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
           setIsListening(false);
           setVoiceLevel(0);
 
@@ -306,7 +305,6 @@ const PagePromptBar: React.FC<PagePromptBarProps> = ({
     try {
       await onSubmit(promptText);
     } catch (error: any) {
-      console.error("Error submitting prompt:", error);
       setErrorMessage(`Failed to submit prompt: ${error.message}`);
     } finally {
       setIsLoading(false);

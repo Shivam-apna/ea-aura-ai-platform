@@ -308,7 +308,7 @@ const MissionAlignment = () => {
       const res = await fetch(getApiEndpoint("/v1/run-autogen"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: prompt, tenant_id: tenantId }), // Use the prompt from the argument
+        body: JSON.stringify({ input: `${prompt} ask from mission`, tenant_id: tenantId }), // Use the prompt from the argument
         signal: abortControllerRef.current.signal, // Add abort signal
       });
 

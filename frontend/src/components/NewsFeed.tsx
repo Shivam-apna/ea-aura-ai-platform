@@ -50,7 +50,6 @@ const NewsFeed: React.FC<NewsFeedProps> = ({ companyDomain }) => {
         });
 
         const url = `${NEWSDATA_BASE_URL}?${params}`;
-        console.log('Fetching news from:', url.replace(NEWSDATA_API_KEY, 'API_KEY_HIDDEN'));
 
         const response = await fetch(url);
         if (!response.ok) {

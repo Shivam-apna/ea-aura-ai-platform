@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    console.log("Sidebar - Authenticated:", isAuthenticated, "Auth Loading:", authLoading, "Client Roles:", clientRoles); // Changed Keycloak Loading to Auth Loading
+   // Changed Keycloak Loading to Auth Loading
   }, [isAuthenticated, authLoading, clientRoles]); // Changed keycloakLoading to authLoading
 
   // Modified hasRequiredRole to implement proper role-based visibility
@@ -39,14 +39,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
 
     const isAdmin = normalizedUserRoles.includes('admin');
     const isUser = normalizedUserRoles.includes('user');
-
-    // Debug logging
-    console.log("hasRequiredRole Debug:", {
-      required: normalizedRequiredRoles,
-      userRoles: normalizedUserRoles,
-      isAdmin,
-      isUser
-    });
 
     // If the tab requires 'admin' and the user is an admin, show it.
     if (normalizedRequiredRoles.includes('admin') && isAdmin) {
@@ -87,13 +79,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeAgent, onSelectAgent, isCollaps
   }
 
   const visibleAgents = allAgents.filter(agent => hasRequiredRole(agent.requiredRoles, clientRoles));
-
-  // Debug logging
-  console.log("Sidebar Debug:", {
-    clientRoles,
-    visibleAgents: visibleAgents.map(agent => ({ id: agent.id, name: agent.name, path: agent.path })),
-    allAgents: allAgents.map(agent => ({ id: agent.id, name: agent.name, requiredRoles: agent.requiredRoles }))
-  });
 
   return (
     <div

@@ -13,19 +13,16 @@ const CacheResetSettings: React.FC = () => {
 
   const handleClearUICache = () => {
     // Simulate clearing UI cache
-    console.log("Clearing UI Cache...");
     toast.success("UI Cache cleared!");
   };
 
   const handleResetAllAgentCache = () => {
     // Simulate resetting all agent cache
-    console.log("Resetting All Agent Cache...");
     toast.success("All Agent Cache reset!");
   };
 
   const handleReIndexAgentData = () => {
     // Simulate re-indexing agent data
-    console.log("Re-indexing Agent Data...");
     toast.success("Agent Data re-indexed!");
   };
 

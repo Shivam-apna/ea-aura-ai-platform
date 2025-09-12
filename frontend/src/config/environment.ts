@@ -26,14 +26,7 @@ const getEnvironmentConfig = (): EnvironmentConfig => {
       environment = 'development';
     }
   }
-  // Debug logging
-  console.log('Environment detection:', {
-    VITE_ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT,
-    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-    VITE_KEYCLOAK_URL: import.meta.env.VITE_KEYCLOAK_URL,
-    detectedEnvironment: environment,
-    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
-  });
+
   switch (environment) {
     case 'staging':
       return {

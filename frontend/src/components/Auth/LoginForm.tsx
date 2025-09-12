@@ -120,7 +120,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (onLoginSuccess) onLoginSuccess();
       navigate(redirectTo);
     } catch (err: any) {
-      console.error('Login error:', err);
       const backendErrorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
 
       // Check for specific Keycloak error messages if available

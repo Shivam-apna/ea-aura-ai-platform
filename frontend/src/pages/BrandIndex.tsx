@@ -302,7 +302,6 @@ const BrandIndex = () => {
 
       toast.success(`PDF for ${activeTab} tab downloaded successfully!`);
     } catch (error) {
-      console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setDownloadingPdf(false);
@@ -378,7 +377,6 @@ const BrandIndex = () => {
         }
 
         toast.error(errorMessage);
-        console.error(`API Error ${res.status}:`, errorMessage);
         return;
       }
 
